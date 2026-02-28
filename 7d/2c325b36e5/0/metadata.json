@@ -1,0 +1,45 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "7d2c325b36e5",
+  "session_id": "bcdf159e-6690-4e1d-b907-0b3c44fc3fda",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-28T13:47:15.4457207Z",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    ".env.development",
+    ".env.production",
+    "README.md",
+    "package.json",
+    "src/App.tsx",
+    "src/auth/AuthContext.tsx",
+    "src/auth/auth.config.ts",
+    "src/components/ProtectedRoute.tsx",
+    "src/pages/CallbackPage.tsx",
+    "src/pages/HubPage.tsx",
+    "src/pages/JoinPage.tsx",
+    "src/pages/LandingPage.tsx",
+    "src/pages/ProfilePage.tsx",
+    "src/pages/VerifyPage.tsx",
+    "src/types/env.d.ts",
+    "vite.config.ts"
+  ],
+  "agent": "Claude Code",
+  "token_usage": {
+    "input_tokens": 1654,
+    "cache_creation_tokens": 774049,
+    "cache_read_tokens": 53050939,
+    "output_tokens": 134254,
+    "api_call_count": 538
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-28T13:47:13.386611286Z",
+    "agent_lines": 346,
+    "human_added": 336,
+    "human_modified": 1,
+    "human_removed": 0,
+    "total_committed": 683,
+    "agent_percentage": 50.658857979502194
+  },
+  "transcript_path": ".claude/projects/-home-tomblume-IdeaProjects-share-platform/bcdf159e-6690-4e1d-b907-0b3c44fc3fda.jsonl"
+}
