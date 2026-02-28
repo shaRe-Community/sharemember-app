@@ -1,0 +1,1684 @@
+catch up, what is the next issue, do a bd list
+
+---
+
+yes
+
+---
+
+what is with x2i
+
+---
+
+no
+
+---
+
+show a summary of wat was implemented for the epic x2i , I don't think this is deployed yet and we jsut created a new application sharemember-app we don't have infrastructire or server setup, so the epic can't be done
+
+---
+
+yes
+
+---
+
+wait... some basic acritecture question on my side: 1. we have potentially multible operator-ts for different communities like wurzelwerk, up2go, bergschlösschen etc. how do we manage this? for now we need only a second community for up2go . should we setup a new server (scaleway) as all the infrastucture components except sharemember (keycloark) as community specific?
+
+---
+
+ok, option A. What about the status monitor (status.up2go.com)?
+
+---
+
+minio is a comonent to store documents, we have to ensure that the documents are separated by community and never mixed
+
+---
+
+no implementation yet, write all the finding down in issue and then we implement all this, we go for Option B.. we might have the same issue for onlyoffice, drawio, metabase, jitsi, drafana, odoo
+
+---
+
+what is with metabase? where we store community specific data?
+
+---
+
+yes, and sharedb is foreseen for future stuff we don't like to sotre in neo4j (or does not make sense in a graph db). so multi community like neo4j. It is a neo4j - shareDB (for relational additonal info, maybe content for webpages etc.)
+
+---
+
+what should be implement first?
+
+---
+
+wait... is the actual scaleway server sufficient (4 cpu 16gb ram, 50gb disk)?
+
+---
+
+we can remove the dev environment
+
+---
+
+3 times no, we can delete dev
+
+---
+
+do it
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/skills/devops
+
+# shaRe Platform DevOps
+
+Manage the shaRe platform on the Scaleway production server.
+
+## Server
+
+- **IP**: `51.15.211.196`
+- **SSH**: `ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196`
+- **Infra dir on server**: `/opt/share-platform/infra`
+- **Compose files**: `docker-compose.prod.yml`, `docker-compose.dev.yml`
+- **Env files**: `.env.prod`, `.env.dev`
+
+## Service Map
+
+| Service | Image | Compose service name | Source repo |
+|---------|-------|---------------------|-------------|
+| operator | `ghcr.io/share-community/operator:latest` | `operator-{env}` | `../operator-ts/` |
+| share-ui | `ghcr.io/share-community/share-ui:latest` | `share-ui-{env}` | `../share-ui/` (Dockerfile in `../u2g-infrastructure-ts/services/share-ui/Dockerfile`) |
+| keycloak | `ghcr.io/share-community/sharemembers:latest` | `keycloak-{env}` | `../sharemembers/` |
+| neo4j | (standard image) | `neo4j-{env}` | — |
+| redis | (standard image) | `redis-{env}` | — |
+| postgres | `postgres:16-alpine` | `postgres-{env}` | — |
+| odoo | `odoo:18` | `odoo-{env}` | — |
+| onlyoffice | `onlyoffice/documentserver:latest` | `onlyoffice-{env}` | — |
+| drawio | `jgraph/drawio:latest` | `drawio-{env}` | — |
+| minio | `minio/minio:latest` | `minio-{env}` | — |
+| metabase | `metabase/metabase:latest` | `metabase-{env}` | — |
+| traefik | — | `coolify-proxy` (shared) | — |
+
+Container naming: `share-{env}-{service}-{env}-1` (e.g. `share-prod-operator-prod-1`)
+
+### Postgres — shared instance, multiple databases
+
+| Database | Owner | Used by |
+|----------|-------|---------|
+| `keycloak` | keycloak | Keycloak auth |
+| `odoodb` | odoo | Odoo 18 |
+| `sharedb` | share | operator-ts analytics (future) |
+| `metabase` | metabase | Metabase analytics |
+
+### Odoo — self-hosted Odoo 18 Community
+
+- **URL**: `https://odoo.wurzelwerk.up2go.com`
+- **DB**: `odoodb` on shared `postgres-prod`
+- **Admin user**: `admin` (password in `.env.prod` as `ODOO_ADMIN_PASSWD`)
+- **Service user** (used by operator-ts): `operator@share.local` (password = `ODOO_API_KEY` in `.env.prod`)
+- **Installed modules**: `mail` (includes discuss.channel), `calendar`, `project`, `account`
+- **Healthcheck**: `https://odoo.wurzelwerk.up2go.com/web/health` (expect `{"status":"pass"}`)
+
+### Metabase — analytics & reporting
+
+- **URL**: `https://metabase.wurzelwerk.up2go.com`
+- **DB**: `metabase` on shared `postgres-prod`
+- **Data sources**: connect to `sharedb` (postgresql://postgres-prod:5432/sharedb) for analytics
+- **Healthcheck**: `https://metabase.wurzelwerk.up2go.com/api/health` (expect 200)
+
+## Commands
+
+Parse `` to determine the action. Default env is `prod`.
+
+### `deploy <service> [env]`
+
+Build, transfer, and restart a service:
+
+1. **Build** the Docker image from the source repo
+2. **Transfer** via `docker save | ssh ... docker load`
+3. **Restart** via `docker compose up -d <service-env>`
+4. **ALWAYS restart Traefik** after any container recreate: `docker restart coolify-proxy`
+5. **Wait 5 seconds**, then verify the service started by checking logs
+6. **Verify all routes** respond (200/302)
+
+Build commands per service:
+```bash
+# operator
+cd /home/tomblume/IdeaProjects/operator-ts
+docker build -t ghcr.io/share-community/operator:latest .
+
+# share-ui
+cd /home/tomblume/IdeaProjects/share-ui
+docker build -t ghcr.io/share-community/share-ui:latest \
+  -f /home/tomblume/IdeaProjects/u2g-infrastructure-ts/services/share-ui/Dockerfile .
+
+# keycloak
+cd /home/tomblume/IdeaProjects/sharemembers
+docker build -t ghcr.io/share-community/sharemembers:latest .
+```
+
+Restart on server:
+```bash
+ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196 \
+  "cd /opt/share-platform/infra && \
+   docker compose -f docker-compose.{env}.yml -p share-{env} --env-file .env.{env} \
+   up -d {service-name}"
+```
+
+### `status [env]`
+
+Check all container status and route health:
+```bash
+SSH="ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196"
+$SSH "docker ps --format 'table {{.Names}}\t{{.Status}}' | grep share-{env}"
+```
+
+Then check routes:
+- `https://wurzelwerk.up2go.com` (share-ui, expect 200)
+- `https://sso.wurzelwerk.up2go.com` (keycloak, expect 302)
+- `https://operator.wurzelwerk.up2go.com/health` (operator direct, expect 200)
+- `https://wurzelwerk.up2go.com/api/health` (operator via api, expect 200)
+- `https://odoo.wurzelwerk.up2go.com/web/health` (odoo, expect 200 with `{"status":"pass"}`)
+- `https://metabase.wurzelwerk.up2go.com/api/health` (metabase, expect 200)
+
+Dev routes use `share.dev.up2go.com`, `sso.dev.sharemembers.net`, `operator.dev.up2go.com`.
+
+### `restart <service|traefik> [env]`
+
+Restart a specific service or Traefik:
+- **traefik**: `docker restart coolify-proxy` (fixes 504/CORS issues)
+- **other**: `docker compose ... restart {service-env}`
+
+### `logs <service> [env] [lines]`
+
+Show recent logs (default 30 lines):
+```bash
+ssh ... "docker logs share-{env}-{service}-{env}-1 --tail {lines}"
+```
+
+### `neo4j <cypher> [env]`
+
+Run a Cypher query against Neo4j:
+```bash
+ssh ... 'docker exec share-{env}-neo4j-{env}-1 cypher-shell \
+  -u neo4j \
+  -p $(docker inspect share-{env}-neo4j-{env}-1 \
+    --format "{{range .Config.Env}}{{println .}}{{end}}" | grep NEO4J_AUTH | cut -d/ -f2) \
+  "<cypher query>"'
+```
+
+### `diagnose`
+
+Run full diagnostic:
+1. Check all container status
+2. Check all route health codes
+3. Check for errors in operator logs (last 50 lines)
+4. Check memory usage on server
+5. Report findings and suggest fixes
+
+## Known Issues
+
+- **504 Gateway Timeout after deploy**: Traefik loses routing to recreated containers. Fix: `docker restart coolify-proxy`
+- **CORS errors from sso.wurzelwerk...**: Same cause as above — Keycloak is unreachable via Traefik
+- **Keycloak startup takes ~4 minutes**: Wait for `healthy` status before testing auth flows
+
+## Important
+
+- Always restart Traefik (`coolify-proxy`) after deploying any service
+- After deploy, verify ALL routes (not just the deployed service)
+- Never expose Neo4j credentials in output — use the `docker inspect` pattern
+- Default to `prod` environment unless explicitly told otherwise
+
+---
+
+continue with the other tasks, what is next?
+
+---
+
+go
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me carefully analyze this conversation to create a comprehensive summary.
+
+## Session Overview
+This was a long session covering:
+1. Catching up on open beads issues
+2. Architecture discussions (multi-community, service isolation)
+3. Dev environment removal from server
+4. Starting MinIO per-community bucket isolation implementation
+
+## Chronological Analysis
+
+### 1. Session Start / Catch Up
+- User asked to catch up and see next issue via `bd list`
+- Found operator-ts-4xw (senderName in MessageDto) was already IN_PROGRESS but already fully implemented
+- Closed it, also closed operator-ts-x2i (shaRe Member backend epic) which was reopened after finding all child issues done but deployment not done
+- Then x2i was REOPENED because deployment hadn't happened and sharemember-app had no infrastructure
+
+### 2. x2i Epic Status Review
+- All code implemented (d2z, gg9, osx, duk, kkc all closed)
+- Missing: infrastructure for sharemember-app (Coolify), deployment of new endpoints, Keycloak JWT claims
+- Created blocking issues: infra-pnz, infra-5lr, sharemembers-cjc
+
+### 3. Architecture Discussion: Multi-Community
+- User asked about managing multiple operator-ts instances for different communities (wurzelwerk, up2go, bergschlösschen)
+- Decided on **Option A**: Single operator-ts, all communities in one Neo4j (multi-tenant by graph relationships)
+- Second community = add Community node + deploy second share-ui pointing to same operator-ts
+
+### 4. Status Monitor (status.up2go.com)
+- Already defined: Uptime Kuma v2 in monitoring/docker-compose.yml
+- Platform-level, not community-specific
+- Config already exists, just needs monitors added via UI for new communities
+
+### 5. MinIO Community Isolation
+- Current problem: single bucket 'share-documents', all communities mixed
+- Decided on **Option B**: separate bucket per community (`share-documents-{communityId}`)
+- Created issues: operator-ts-mbp (code), infra-fyv (migration)
+
+### 6. Multi-Service Isolation Audit
+- Created share-platform-9m3 (audit summary)
+- Services analyzed:
+  - MinIO: ❌ (tracked in mbp/fyv)
+  - OnlyOffice: ⚠️ callback URL hardcoded to wurzelwerk (tracked infra-31h)
+  - Odoo: ⚠️ single instance, wurzelwerk-branded (tracked infra-s67)
+  - Jitsi: ✅ UUID rooms + JWT auth
+  - draw.io: ✅ stateless
+  - Grafana: ✅ infra only
+
+### 7. Metabase + sharedb Discussion
+- Metabase at metabase.wurzelwerk.up2go.com (community-branded, should be platform)
+- sharedb: intentional PostgreSQL store for relational data not fitting Neo4j (CMS content, etc.)
+- Multi-community isolation for sharedb: schema-per-community pattern recommended
+- Created infra-aym (Metabase platform URL) and infra-xfd (sharedb isolation strategy)
+
+### 8. Server Capacity Analysis
+- Server: 4 CPU, 16GB RAM, 50GB disk
+- Memory limits exceed 16GB when all stacks added up (prod ~13.4GB + monitoring ~1.5GB + Jitsi ~2.5GB + dev ~2.4GB = ~20GB total limits)
+- OnlyOffice is 3GB limit, Metabase 1.5GB limit (elephants)
+- 50GB disk is tight with MinIO documents
+- Solution: Remove dev environment to free ~1.5GB RAM + disk
+
+### 9. Dev Environment Removal
+- User confirmed: dev environment can be deleted (no users, realm config in git, no test data worth keeping)
+- Files changed in repo:
+  - Deleted `docker-compose.dev.yml` (325 lines)
+  - Updated `monitoring/docker-compose.yml`: removed share-dev network, redis-exporter-dev
+  - Updated `monitoring/prometheus.yml`: removed operator-dev and redis-dev scrape jobs
+  - Updated `dns/records.md`: removed 6 dev DNS records
+- Had a bug: missed `share-dev` in prometheus service networks list → fixed
+- Server teardown via SSH:
+  - `docker compose -f docker-compose.dev.yml -p share-dev --env-file .env.dev down -v` → stopped 7 containers, deleted 5 volumes
+  - Stopped share-monitoring-redis-exporter-dev-1
+  - Removed share-dev_share-dev network
+  - Transferred updated monitoring configs to server
+  - Restarted monitoring stack
+  - DNS records still on GCP (not Scaleway yet, migration pending)
+  - Created infra-e3t and closed it
+
+### 10. MinIO Code Implementation (operator-ts-mbp)
+Currently in progress. Changes made so far:
+
+**minio.service.ts** - Complete rewrite:
+- Removed `private bucket: string` field
+- Removed MINIO_BUCKET config read
+- Added `private readonly ensuredBuckets = new Set<string>()`
+- Changed `onModuleInit` to use `ListBucketsCommand` for connectivity probe
+- `ensureBucket(bucket: string)` is now public, lazy, with Set-based caching
+- All methods now take `bucket: string` as first parameter: `upload(bucket, key, body, contentType, size?)`, `download(bucket, key)`, `getPresignedDownloadUrl(bucket, key, expiresIn?)`, `delete(bucket, key)`, `copy(bucket, sourceKey, destKey)`
+
+**documents.repository.ts** - Added:
+```typescript
+async getCommunityIdByShareholderId(shareholderId: string): Promise<string | null> {
+  return this.neo4j.querySingleObject(
+    `MATCH (sh:Shareholder {id: $shareholderId})-[:MEMBER_OF]->(c:Community)
+     RETURN c.id AS communityId`,
+    { shareholderId },
+    (record) => record.get('communityId') as string,
+  );
+}
+```
+
+**documents.service.ts** - Added `resolveBucket`:
+```typescript
+private async resolveBucket(shareholderId: string): Promise<string> {
+  const communityId = await this.repository.getCommunityIdByShareholderId(shareholderId);
+  if (!communityId) {
+    throw new ForbiddenException('Cannot resolve community for shareholder — document storage unavailable');
+  }
+  return `share-documents-${communityId}`;
+}
+```
+All storage calls updated to pass bucket:
+- `createFromTemplate`: `const bucket = await this.resolveBucket(shareholderId)` + `this.storage.upload(bucket, s3Key, ...)`
+- `upload`: same pattern
+- `updateContent`: same pattern
+- `getDownloadUrl`: `this.storage.getPresignedDownloadUrl(bucket, doc.s3Key)`
+- `getVersionDownloadUrl`: same
+- `restoreVersion`: `this.storage.copy(bucket, oldVersion.s3Key, newS3Key)`
+- `downloadContent`: `this.storage.download(bucket, doc.s3Key)`
+
+**onlyoffice.service.ts** - Also uses storage directly, fixed:
+- Added `resolveBucket` private method (same pattern as documents.service)
+- callback handler: `const bucket = await this.resolveBucket(shareholderId)` + `this.storage.upload(bucket, s3Key, ...)`
+- `getDocumentContent`: `const bucket = await this.resolveBucket(doc.lastModifiedByShareholderId)` + `this.storage.download(bucket, doc.s3Key)`
+
+**docker-compose.prod.yml** - Commented out MINIO_BUCKET env var
+
+**documents.service.spec.ts** - Updated:
+- Added `getCommunityIdByShareholderId: jest.fn().mockResolvedValue('community-1')` to repository mock
+- Updated storage.upload assertions to include 'share-documents-community-1' as first arg
+- Updated storage.getPresignedDownloadUrl assertion to include bucket
+
+**Current test failures being fixed:**
+1. `storage.copy` in restoreVersion test - needs bucket param added
+2. `storage.delete` in deleteDocument test - deleteDocument uses softDelete now (no S3 delete), test is wrong/outdated
+3. MinioService tests - all storage method calls need bucket parameter in the spec
+
+The tests were run and there are 9 failures remaining to fix in the spec file.
+
+Summary:
+1. Primary Request and Intent:
+   - User wanted to catch up on open beads issues and continue work
+   - Architecture discussion: multi-community setup (decided Option A: single operator-ts/Neo4j, multiple share-ui instances)
+   - Service isolation audit: which services properly isolate community data
+   - sharedb clarified as intentional PostgreSQL store for relational data alongside Neo4j, same multi-community isolation needed
+   - Remove dev environment from Scaleway server (confirmed: no users, no important data)
+   - Implement MinIO per-community bucket isolation (operator-ts-mbp) — currently in progress
+
+2. Key Technical Concepts:
+   - **Beads** (`bd`) for issue tracking across repos (share-platform, operator-ts, u2g-infrastructure-ts, sharemembers, sharemember-app)
+   - **Multi-tenancy Option A**: single operator-ts + Neo4j, communities as graph nodes, per-community share-ui frontends
+   - **MinIO Option B**: separate bucket per community: `share-documents-{communityId}` (UUID-based, stable, unique, within S3 63-char limit)
+   - **sharedb schema-per-community**: PostgreSQL schema isolation (`sharedb/wurzelwerk.*`, `sharedb/up2go.*`), GDPR-safe (DROP SCHEMA = atomic delete)
+   - **Service isolation audit**: MinIO ❌, OnlyOffice ⚠️ (callback URL), Odoo ⚠️, Jitsi ✅, draw.io ✅, Grafana ✅
+   - **Dev environment removal**: freed ~1.5GB RAM, freed Docker volumes, monitoring stack cleaned up
+   - **Neo4j Cypher**: `MATCH (sh:Shareholder {id: $shareholderId})-[:MEMBER_OF]->(c:Community)` to resolve community from shareholder
+   - **MinioService lazy ensureBucket**: Set-based cache, called on every upload, avoids per-request HeadBucket calls after first use
+
+3. Files and Code Sections:
+   - **`/home/tomblume/IdeaProjects/operator-ts/src/storage/minio.service.ts`** — Complete rewrite for per-community bucket isolation
+     - Removed `private bucket: string`, `MINIO_BUCKET` config read
+     - Added `private readonly ensuredBuckets = new Set<string>()`
+     - `onModuleInit` now uses `ListBucketsCommand` for connectivity probe (no startup bucket creation)
+     - All public methods now take `bucket: string` as first parameter
+     - `ensureBucket(bucket)` is now public and lazy with Set cache
+     ```typescript
+     async upload(bucket: string, key: string, body: Buffer | Readable, contentType: string, size?: number): Promise<void>
+     async download(bucket: string, key: string): Promise<Readable>
+     async getPresignedDownloadUrl(bucket: string, key: string, expiresIn = 3600): Promise<string>
+     async delete(bucket: string, key: string): Promise<void>
+     async copy(bucket: string, sourceKey: string, destKey: string): Promise<void>
+     ```
+
+   - **`/home/tomblume/IdeaProjects/operator-ts/src/documents/documents.repository.ts`** — Added community lookup method
+     ```typescript
+     async getCommunityIdByShareholderId(shareholderId: string): Promise<string | null> {
+       return this.neo4j.querySingleObject(
+         `MATCH (sh:Shareholder {id: $shareholderId})-[:MEMBER_OF]->(c:Community)
+          RETURN c.id AS communityId`,
+         { shareholderId },
+         (record) => record.get('communityId') as string,
+       );
+     }
+     ```
+
+   - **`/home/tomblume/IdeaProjects/operator-ts/src/documents/documents.service.ts`** — Added `resolveBucket`, updated all storage calls
+     ```typescript
+     private async resolveBucket(shareholderId: string): Promise<string> {
+       const communityId = await this.repository.getCommunityIdByShareholderId(shareholderId);
+       if (!communityId) {
+         throw new ForbiddenException('Cannot resolve community for shareholder — document storage unavailable');
+       }
+       return `share-documents-${communityId}`;
+     }
+     ```
+     - `createFromTemplate`, `upload`, `updateContent`, `restoreVersion`, `getDownloadUrl`, `getVersionDownloadUrl`, `downloadContent` all updated to call `resolveBucket(shareholderId)` and pass bucket to storage
+
+   - **`/home/tomblume/IdeaProjects/operator-ts/src/documents/onlyoffice.service.ts`** — Also uses MinioService directly; fixed
+     - Added `resolveBucket` private method (identical pattern)
+     - Callback handler: `const bucket = await this.resolveBucket(shareholderId)` + `this.storage.upload(bucket, s3Key, ...)`
+     - `getDocumentContent`: `const bucket = await this.resolveBucket(doc.lastModifiedByShareholderId)` + `this.storage.download(bucket, doc.s3Key)`
+
+   - **`/home/tomblume/IdeaProjects/operator-ts/src/documents/documents.service.spec.ts`** — Partially updated (in progress)
+     - Added `getCommunityIdByShareholderId: jest.fn().mockResolvedValue('community-1')` to repository mock
+     - Updated `storage.upload` assertions to include `'share-documents-community-1'` as first arg in 3 places
+     - Updated `storage.getPresignedDownloadUrl` assertion to include bucket
+     - **Still failing**: `storage.copy` assertion in restoreVersion (needs bucket), `storage.delete` assertions in deleteDocument (service uses softDelete, no S3 delete — stale test), MinioService spec tests (all need bucket param updates)
+
+   - **`/home/tomblume/IdeaProjects/u2g-infrastructure-ts/docker-compose.prod.yml`** — MINIO_BUCKET commented out
+     ```yaml
+     # MINIO_BUCKET removed — buckets are per-community: share-documents-{communityId}
+     ```
+
+   - **`/home/tomblume/IdeaProjects/u2g-infrastructure-ts/docker-compose.dev.yml`** — DELETED entirely (325 lines, 8 services)
+
+   - **`/home/tomblume/IdeaProjects/u2g-infrastructure-ts/monitoring/docker-compose.yml`** — Removed `share-dev` network declaration, `share-dev` from prometheus service networks, `redis-exporter-dev` service
+
+   - **`/home/tomblume/IdeaProjects/u2g-infrastructure-ts/monitoring/prometheus.yml`** — Removed `operator-dev` and `redis-dev` scrape jobs
+
+   - **`/home/tomblume/IdeaProjects/u2g-infrastructure-ts/dns/records.md`** — Removed 6 dev DNS records (share.dev, operator.dev, minio.dev, drawio.dev on up2go.com; sso.dev, content.dev on sharemembers.net)
+
+4. Errors and fixes:
+   - **x2i epic incorrectly closed**: All child issues were done but deployment/infra was missing. Reopened x2i, created blocking issues infra-pnz, infra-5lr, sharemembers-cjc.
+   - **monitoring/docker-compose.yml still had share-dev**: After deleting docker-compose.dev.yml, initial edit missed removing `share-dev` from the `prometheus` service `networks` list (only removed the top-level declaration and redis-exporter-dev). Fixed with additional Edit.
+   - **scp transfer failed silently**: Used `scp` to transfer monitoring config to server but file wasn't updated. Fixed by piping via `cat file | ssh ... "cat > dest"`.
+   - **Monitoring stack couldn't start**: `share-dev` network still referenced in prometheus service even after top-level removal. Fixed after identifying the remaining reference.
+   - **9 test failures in documents.service.spec.ts and minio.service.spec.ts**: After adding bucket param to all MinioService methods, specs need updating. Partially done (3 upload assertions, 1 getPresignedDownloadUrl assertion fixed). Still failing: `storage.copy` in restoreVersion test, `storage.delete` in deleteDocument test (stale — service uses softDelete now), all MinioService unit tests.
+
+5. Problem Solving:
+   - **Multi-community architecture**: Chose Option A (single operator-ts/Neo4j) — simpler, data model already supports it, `frontendUrl` on Community handles per-community UI routing
+   - **MinIO isolation without schema change**: Community UUID used as bucket suffix — stable, unique, within S3 limits, no slug field needed
+   - **Community resolution**: Since every document operation has `shareholderId` available from JWT, one Cypher hop `(Shareholder)-[:MEMBER_OF]->(Community)` resolves the bucket without changing any API surface
+   - **OnlyOffice callback URL**: Still hardcoded to `operator.wurzelwerk.up2go.com` — tracked in infra-31h (needs generic `operator.up2go.com` DNS record)
+   - **Server capacity**: Removing dev environment freed ~1.5GB RAM headroom; 50GB disk still tight with MinIO growth
+
+6. All user messages:
+   - "catch up, what is the next issue, do a bd list"
+   - "yes" (to implementing operator-ts-4xw)
+   - "what is with x2i"
+   - "wait... some basic architecture question on my side: 1. we have potentially multiple operator-ts for different communities like wurzelwerk, up2go, bergschlösschen etc. how do we manage this? for now we need only a second community for up2go. should we setup a new server (scaleway) as all the infrastructure components except sharemember (keycloak) as community specific?"
+   - "ok, option A. What about the status monitor (status.up2go.com)?"
+   - "minio is a component to store documents, we have to ensure that the documents are separated by community and never mixed"
+   - "no implementation yet, write all the findings down in issue and then we implement all this, we go for Option B.. we might have the same issue for onlyoffice, drawio, metabase, jitsi, grafana, odoo"
+   - "what is with metabase? where we store community specific data?"
+   - "yes, and sharedb is foreseen for future stuff we don't like to store in neo4j (or does not make sense in a graph db). so multi community like neo4j. It is a neo4j - shareDB (for relational additional info, maybe content for webpages etc.)"
+   - "what should be implement first?"
+   - "wait... is the actual scaleway server sufficient (4 cpu 16gb ram, 50gb disk)?"
+   - "we can remove the dev environment"
+   - "3 times no, we can delete dev"
+   - "do it" (to executing the server teardown)
+   - "continue with the other tasks, what is next?"
+   - "go" (to implementing operator-ts-mbp MinIO isolation)
+
+7. Pending Tasks:
+   - **operator-ts-mbp** (IN PROGRESS): Fix remaining 9 test failures in documents.service.spec.ts and minio.service.spec.ts
+   - **infra-fyv**: Migrate wurzelwerk documents from `share-documents` to `share-documents-{communityId}` bucket on server
+   - **infra-31h**: OnlyOffice callback URL — change to `operator.up2go.com` (generic DNS record needed)
+   - **infra-aym**: Metabase — move to `metabase.up2go.com`, add platform-level protection
+   - **infra-pnz**: sharemember-app Coolify app + domain setup
+   - **infra-5lr**: Deploy operator-ts sharemember/ and eid/ endpoints to production
+   - **sharemembers-cjc**: Add eid_status + share_member_id JWT claims to Keycloak
+   - **infra-xfd**: sharedb schema-per-community documentation/design
+   - **infra-s67**: Odoo multi-community isolation strategy decision
+   - **operator-ts-a0d**: GDPR: Shareholder data export (P2)
+   - **operator-ts-rf5**: GDPR: Shareholder data deletion (P2)
+   - **operator-ts-x2i**: Reopen — needs deployment (infra-pnz, infra-5lr, sharemembers-cjc blocking)
+   - Dev DNS records cleanup (still on GCP Cloud DNS, cleanup deferred to GCP→Scaleway DNS migration)
+   - Server capacity: consider upgrading RAM/disk when second community added
+
+8. Current Work:
+   Implementing **operator-ts-mbp**: MinIO per-community bucket isolation (Option B).
+
+   The build passes (`npm run build` clean). Tests were run and have 9 failures:
+
+   **Remaining test fixes needed in `documents.service.spec.ts`:**
+   - `restoreVersion` test: `storage.copy` assertion needs bucket as first param:
+     ```typescript
+     // Current (failing):
+     expect(storage.copy).toHaveBeenCalledWith(mockVersion.s3Key, expect.stringContaining('/v2/'));
+     // Needs to be:
+     expect(storage.copy).toHaveBeenCalledWith('share-documents-community-1', mockVersion.s3Key, expect.stringContaining('/v2/'));
+     ```
+   - `deleteDocument` test: asserts `storage.delete` called twice, but `deleteDocument` now uses `softDelete` only (no S3 delete). Test is stale — needs to remove `storage.delete` assertions.
+
+   **Remaining test fixes needed in `minio.service.spec.ts`:**
+   - All MinioService method tests (upload, download, getPresignedDownloadUrl, delete, copy, ensureBucket) need bucket as first parameter in their assertions. The MinioService spec calls methods without bucket param.
+
+9. Optional Next Step:
+   Fix the remaining 9 test failures in `documents.service.spec.ts` and `minio.service.spec.ts`.
+
+   From the test output immediately before the summary request:
+   ```
+   ● DocumentsService › restoreVersion › should copy old version as new
+     Expected: "roundtable/rt-1/doc-1/v1/Test Doc.docx", StringContaining "/v2/"
+     Received: "share-documents-community-1", "roundtable/rt-1/doc-1/v1/Test Doc.docx", "roundtable/rt-1/doc-1/v2/Test Doc.docx"
+     > 498 |       expect(storage.copy).toHaveBeenCalledWith(
+
+   ● MinioService › should upload a file / download / delete / copy / ensureBucket
+     [all failing due to bucket param not being passed in the spec]
+   ```
+
+   After fixing tests, the next step is to commit operator-ts-mbp changes and proceed to infra-fyv (migrate wurzelwerk documents to the new bucket on the server).
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/tomblume/.REDACTED.jsonl
+Please continue the conversation from where we left off without asking the user any further questions. Continue with the last task that you were asked to work on.
+
+---
+
+Close a beads issue that's been completed.
+
+If arguments are provided:
+- : Issue ID
+- +: Completion reason (optional)
+
+If the issue ID is missing, ask for it. Optionally ask for a reason describing what was done.
+
+Use the beads MCP `close` tool to close the issue. Show confirmation with the issue details.
+
+After closing, suggest checking for:
+- Dependent issues that might now be unblocked (use `ready` tool)
+- New work discovered during this task (use `create` tool with `discovered-from` link)
+
+---
+
+tackle that now
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/skills/devops
+
+# shaRe Platform DevOps
+
+Manage the shaRe platform on the Scaleway production server.
+
+## Server
+
+- **IP**: `51.15.211.196`
+- **SSH**: `ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196`
+- **Infra dir on server**: `/opt/share-platform/infra`
+- **Compose files**: `docker-compose.prod.yml`, `docker-compose.dev.yml`
+- **Env files**: `.env.prod`, `.env.dev`
+
+## Service Map
+
+| Service | Image | Compose service name | Source repo |
+|---------|-------|---------------------|-------------|
+| operator | `ghcr.io/share-community/operator:latest` | `operator-{env}` | `../operator-ts/` |
+| share-ui | `ghcr.io/share-community/share-ui:latest` | `share-ui-{env}` | `../share-ui/` (Dockerfile in `../u2g-infrastructure-ts/services/share-ui/Dockerfile`) |
+| keycloak | `ghcr.io/share-community/sharemembers:latest` | `keycloak-{env}` | `../sharemembers/` |
+| neo4j | (standard image) | `neo4j-{env}` | — |
+| redis | (standard image) | `redis-{env}` | — |
+| postgres | `postgres:16-alpine` | `postgres-{env}` | — |
+| odoo | `odoo:18` | `odoo-{env}` | — |
+| onlyoffice | `onlyoffice/documentserver:latest` | `onlyoffice-{env}` | — |
+| drawio | `jgraph/drawio:latest` | `drawio-{env}` | — |
+| minio | `minio/minio:latest` | `minio-{env}` | — |
+| metabase | `metabase/metabase:latest` | `metabase-{env}` | — |
+| traefik | — | `coolify-proxy` (shared) | — |
+
+Container naming: `share-{env}-{service}-{env}-1` (e.g. `share-prod-operator-prod-1`)
+
+### Postgres — shared instance, multiple databases
+
+| Database | Owner | Used by |
+|----------|-------|---------|
+| `keycloak` | keycloak | Keycloak auth |
+| `odoodb` | odoo | Odoo 18 |
+| `sharedb` | share | operator-ts analytics (future) |
+| `metabase` | metabase | Metabase analytics |
+
+### Odoo — self-hosted Odoo 18 Community
+
+- **URL**: `https://odoo.wurzelwerk.up2go.com`
+- **DB**: `odoodb` on shared `postgres-prod`
+- **Admin user**: `admin` (password in `.env.prod` as `ODOO_ADMIN_PASSWD`)
+- **Service user** (used by operator-ts): `operator@share.local` (password = `ODOO_API_KEY` in `.env.prod`)
+- **Installed modules**: `mail` (includes discuss.channel), `calendar`, `project`, `account`
+- **Healthcheck**: `https://odoo.wurzelwerk.up2go.com/web/health` (expect `{"status":"pass"}`)
+
+### Metabase — analytics & reporting
+
+- **URL**: `https://metabase.wurzelwerk.up2go.com`
+- **DB**: `metabase` on shared `postgres-prod`
+- **Data sources**: connect to `sharedb` (postgresql://postgres-prod:5432/sharedb) for analytics
+- **Healthcheck**: `https://metabase.wurzelwerk.up2go.com/api/health` (expect 200)
+
+## Commands
+
+Parse `` to determine the action. Default env is `prod`.
+
+### `deploy <service> [env]`
+
+Build, transfer, and restart a service:
+
+1. **Build** the Docker image from the source repo
+2. **Transfer** via `docker save | ssh ... docker load`
+3. **Restart** via `docker compose up -d <service-env>`
+4. **ALWAYS restart Traefik** after any container recreate: `docker restart coolify-proxy`
+5. **Wait 5 seconds**, then verify the service started by checking logs
+6. **Verify all routes** respond (200/302)
+
+Build commands per service:
+```bash
+# operator
+cd /home/tomblume/IdeaProjects/operator-ts
+docker build -t ghcr.io/share-community/operator:latest .
+
+# share-ui
+cd /home/tomblume/IdeaProjects/share-ui
+docker build -t ghcr.io/share-community/share-ui:latest \
+  -f /home/tomblume/IdeaProjects/u2g-infrastructure-ts/services/share-ui/Dockerfile .
+
+# keycloak
+cd /home/tomblume/IdeaProjects/sharemembers
+docker build -t ghcr.io/share-community/sharemembers:latest .
+```
+
+Restart on server:
+```bash
+ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196 \
+  "cd /opt/share-platform/infra && \
+   docker compose -f docker-compose.{env}.yml -p share-{env} --env-file .env.{env} \
+   up -d {service-name}"
+```
+
+### `status [env]`
+
+Check all container status and route health:
+```bash
+SSH="ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196"
+$SSH "docker ps --format 'table {{.Names}}\t{{.Status}}' | grep share-{env}"
+```
+
+Then check routes:
+- `https://wurzelwerk.up2go.com` (share-ui, expect 200)
+- `https://sso.wurzelwerk.up2go.com` (keycloak, expect 302)
+- `https://operator.wurzelwerk.up2go.com/health` (operator direct, expect 200)
+- `https://wurzelwerk.up2go.com/api/health` (operator via api, expect 200)
+- `https://odoo.wurzelwerk.up2go.com/web/health` (odoo, expect 200 with `{"status":"pass"}`)
+- `https://metabase.wurzelwerk.up2go.com/api/health` (metabase, expect 200)
+
+Dev routes use `share.dev.up2go.com`, `sso.dev.sharemembers.net`, `operator.dev.up2go.com`.
+
+### `restart <service|traefik> [env]`
+
+Restart a specific service or Traefik:
+- **traefik**: `docker restart coolify-proxy` (fixes 504/CORS issues)
+- **other**: `docker compose ... restart {service-env}`
+
+### `logs <service> [env] [lines]`
+
+Show recent logs (default 30 lines):
+```bash
+ssh ... "docker logs share-{env}-{service}-{env}-1 --tail {lines}"
+```
+
+### `neo4j <cypher> [env]`
+
+Run a Cypher query against Neo4j:
+```bash
+ssh ... 'docker exec share-{env}-neo4j-{env}-1 cypher-shell \
+  -u neo4j \
+  -p $(docker inspect share-{env}-neo4j-{env}-1 \
+    --format "{{range .Config.Env}}{{println .}}{{end}}" | grep NEO4J_AUTH | cut -d/ -f2) \
+  "<cypher query>"'
+```
+
+### `diagnose`
+
+Run full diagnostic:
+1. Check all container status
+2. Check all route health codes
+3. Check for errors in operator logs (last 50 lines)
+4. Check memory usage on server
+5. Report findings and suggest fixes
+
+## Known Issues
+
+- **504 Gateway Timeout after deploy**: Traefik loses routing to recreated containers. Fix: `docker restart coolify-proxy`
+- **CORS errors from sso.wurzelwerk...**: Same cause as above — Keycloak is unreachable via Traefik
+- **Keycloak startup takes ~4 minutes**: Wait for `healthy` status before testing auth flows
+
+## Important
+
+- Always restart Traefik (`coolify-proxy`) after deploying any service
+- After deploy, verify ALL routes (not just the deployed service)
+- Never expose Neo4j credentials in output — use the `docker inspect` pattern
+- Default to `prod` environment unless explicitly told otherwise
+
+---
+
+yes
+
+---
+
+yes
+
+---
+
+yes
+
+---
+
+yes
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me carefully analyze this conversation from the beginning to create a comprehensive summary.
+
+## Session Overview
+This session continued from a previous conversation that had been compacted. The session covered:
+1. Fixing remaining test failures from the MinIO per-community bucket isolation implementation
+2. Deploying the MinIO migration to production
+3. Closing various completed issues and checking for next ready work
+4. Implementing GDPR data export (Art. 15/20)
+5. Implementing GDPR data erasure (Art. 17)
+6. Implementing message retention policy with BullMQ
+
+## Chronological Analysis
+
+### 1. Session Start - Fixing Test Failures
+The conversation resumed mid-task. The previous session had implemented MinIO per-community bucket isolation (operator-ts-mbp) but left 9 test failures. The task was to fix the remaining failing tests.
+
+Files involved:
+- `src/storage/minio.service.spec.ts` - Complete rewrite needed
+- `src/documents/documents.service.spec.ts` - 2 fixes needed
+- `src/documents/onlyoffice.service.spec.ts` - 3 fixes needed
+- `src/documents/document-access.service.spec.ts` - 2 fixes needed
+- `src/shareholders/shareholders.service.spec.ts` - 1 fix needed
+
+**minio.service.spec.ts** - Complete rewrite:
+- Old tests used `MINIO_BUCKET` config (removed) and called methods without `bucket` param
+- `onModuleInit` no longer creates bucket - uses `ListBucketsCommand` for connectivity
+- New tests: `ensureBucket` tested separately (creates bucket on miss, skips on hit, uses Set cache)
+- All method calls now take `bucket` as first param: `service.upload('test-bucket', 'path/file.txt', ...)`
+
+**documents.service.spec.ts** fixes:
+- `storage.copy` in restoreVersion: add `'share-documents-community-1'` as first arg
+- `deleteDocument` test: service uses `softDelete` (no S3 delete) - removed stale `storage.delete` assertions
+
+**Additional failures found (3 more suites failing)**:
+- `onlyoffice.service.spec.ts`: missing `getCommunityIdByShareholderId` in repository mock; `storage.upload` and `storage.download` assertions missing bucket param
+- `document-access.service.spec.ts`: missing `isSharedWith` mock; `toEqual` assertions missing `canShare`/`canContribute` fields
+- `shareholders.service.spec.ts`: `repository.save` now called with 4th param (UUID `shareMemberId`) - fix: `expect.any(String)`
+
+After all fixes: 199/199 tests passing, 18 suites.
+
+Commit: `feat(storage): per-community MinIO bucket isolation` (operator-ts)
+
+### 2. infra-fyv - MinIO Migration on Server
+- Found wurzelwerk community ID from Neo4j: `1171f29d-66df-47b0-b98d-377fdce4883c`
+- Target bucket: `share-documents-1171f29d-66df-47b0-b98d-377fdce4883c`
+- Set up `mc` alias on MinIO container, verified 77 objects in `share-documents`
+- Created new bucket, copied all 77 objects (490.16 KiB), verified count match ✅
+- Built and deployed new operator-ts image
+- Verified all routes: 200/200/200/302 ✅
+- Closed infra-fyv, pushed infra repo
+
+### 3. Quick Issue Closures
+- **share-platform-9m3** (audit): Already done - findings documented in tracked issues. Closed.
+- **infra-5lr** (deploy sharemember/eid endpoints): Already live from the MinIO deploy (routes confirmed 401 auth-protected). Closed.
+
+### 4. GDPR Export - operator-ts-a0d
+Exploration revealed:
+- Existing methods: `getByShareholderId` (roundtables), `getForShareholder` (notifications), `findActiveByShareholderId` (push subs)
+- Missing queries (all added to `shareholders.repository.ts`): messages by author, conversations by participant, meetings by attendee, documents by creator/modifier, push subscriptions
+
+**New files:**
+- `src/shareholders/dto/shareholder-export.dto.ts` - TypeScript interfaces for the export shape
+- 7 new export query methods added to `shareholders.repository.ts`
+- `exportData(shareholderId)` added to `shareholders.service.ts` - runs 7 queries via `Promise.all`
+- `GET /v2/shareholders/:id/export` endpoint in controller - rate-limited 5/hour, `requireSelf()`
+
+**Key Cypher patterns:**
+```cypher
+MATCH (sh:Shareholder {id: $shareholderId})<-[:Identity]-(r:Responsible)-[:posts]->(m:Message)-[:in]->(c:Conversation)
+MATCH (sh:Shareholder {id: $shareholderId})<-[:Identity]-(r:Responsible)-[rel]->(c:Conversation)
+  WHERE type(rel) IN ['PARTICIPANT', 'created']
+MATCH (sh:Shareholder {id: $shareholderId})<-[:Identity]-(r:Responsible)-[a:Attends]->(m:Meeting)
+MATCH (sh:Shareholder {id: $shareholderId})-[r:ReceivedBy]->(n:Notification)
+```
+
+Committed as: `feat(shareholders): GDPR Art. 15/20 data export endpoint`
+
+### 5. GDPR Erasure - operator-ts-rf5
+6 new erasure methods added to `shareholders.repository.ts`:
+- `anonymizeMessages` - replaces content with `'[Nachricht gelöscht]'`
+- `removeConversationParticipation` - deletes `[:PARTICIPANT]` relationships
+- `endActiveSeats` - sets `seat.end = now` on active seats
+- `deletePushSubscriptions` - hard deletes PushSubscription nodes + relationships
+- `deleteNotifications` - deletes `[:ReceivedBy]` + orphaned Notification nodes
+- `anonymizeShareMember` - sets displayName to `'[Gelöscht]'`
+
+**`eraseData(shareholderId)`** added to service - calls `anonymize()` then `Promise.all` for 6 parallel operations.
+
+**`DELETE /v2/shareholders/:id/data`** endpoint added to controller:
+- `requireSelf()` enforced
+- Requires body `{ confirm: "erase" }` to prevent accidents
+- Returns 204 No Content
+
+`ForbiddenException` added to NestJS imports in controller.
+
+Committed as: `feat(shareholders): GDPR Art. 17 right to erasure endpoint`
+
+### 6. Message Retention - operator-ts-4yf
+BullMQ repeatable job pattern used (no `@nestjs/schedule` available).
+
+**New files:**
+- `src/commands/message-retention.service.ts` - `OnModuleInit` schedules daily cron `'0 3 * * *'`
+- `src/commands/processors/message-retention.processor.ts` - WorkerHost that calls `cleanupExpiredMessages`
+
+**Changes to existing files:**
+- `src/messages/messages.repository.ts` - added `cleanupExpiredMessages(retentionDays)` method
+- `src/messages/messages.module.ts` - exported `MessagesRepository`
+- `src/commands/commands.constants.ts` - added `QUEUE_MESSAGE_RETENTION = 'message-retention'`
+- `src/commands/commands.module.ts` - registered queue, imported MessagesModule, added providers
+- `u2g-infrastructure-ts/docker-compose.prod.yml` - added `MESSAGE_RETENTION_DAYS: ${MESSAGE_RETENTION_DAYS:-365}`
+
+**Key Cypher for cleanup:**
+```cypher
+MATCH (m:Message)
+WHERE m.timestamp < $cutoff
+  AND m.content <> '[Nachricht gelöscht]'
+  AND m.content <> '[Nachricht gelöscht - Aufbewahrungsfrist abgelaufen]'
+SET m.content = '[Nachricht gelöscht - Aufbewahrungsfrist abgelaufen]'
+RETURN count(m) AS cleaned
+```
+
+### 7. Final bd ready check
+After 4yf was closed, `bd ready` showed:
+- operator-ts: only `x2i` (epic, P1) - remaining blocker is infra/deployment
+- share-platform: `aof` (epic, P1) and `5ve` (P3 peer vouching)
+
+User said "yes" to the final `bd ready` output - wanting to see what's next.
+
+## Current State
+The session ended with a `bd ready` check showing the next available work. The user replied "yes" but the summary request came before any new work was started.
+
+Summary:
+1. Primary Request and Intent:
+   The session resumed from a previous compacted conversation mid-task. The user's requests were (in order):
+   - Fix the remaining 9 test failures from the MinIO per-community bucket isolation implementation
+   - Perform the MinIO data migration on the Scaleway production server (infra-fyv)
+   - Continue with the next available beads issues
+   - Implement GDPR data export endpoint (operator-ts-a0d, Art. 15/20)
+   - Implement GDPR data erasure endpoint (operator-ts-rf5, Art. 17)
+   - Implement message retention auto-cleanup with BullMQ (operator-ts-4yf)
+   - Each "yes" indicated the user wanted to proceed to the next available task from `bd ready`
+
+2. Key Technical Concepts:
+   - **Beads (`bd`)**: Git-backed issue tracker used across operator-ts, u2g-infrastructure-ts, share-platform repos
+   - **MinIO per-community bucket isolation**: `share-documents-{communityId}` pattern using community UUID
+   - **MinIO client (`mc`)**: Used inside the MinIO container to create buckets and copy objects
+   - **BullMQ repeatable jobs**: `queue.add(name, data, { repeat: { pattern: cron } })` on `OnModuleInit` — deduplicates by name+pattern on restarts
+   - **Neo4j Cypher**: Cross-domain queries via `(Shareholder)<-[:Identity]-(Responsible)-[...]` traversal pattern
+   - **GDPR Art. 15/20 export**: Parallel `Promise.all` across 7 Neo4j queries, rate-limited 5/hour, self-only
+   - **GDPR Art. 17 erasure**: Sequential anonymize profile → parallel 6 erasure operations; message nodes preserved for threading
+   - **ISO-8601 lexicographic ordering**: Used for message timestamp comparison in Cypher without date parsing overhead
+   - **NestJS module exports**: `MessagesRepository` exported from MessagesModule to be consumed by CommandsModule
+   - **`forwardRef()`**: Used to avoid circular dependency between CommandsModule and MessagesModule
+   - **`requireSelf()`**: Existing service helper enforcing self-only data access
+
+3. Files and Code Sections:
+
+   **`/home/tomblume/IdeaProjects/operator-ts/src/storage/minio.service.spec.ts`** — Complete rewrite
+   - Old tests used removed `MINIO_BUCKET` config and method signatures without bucket param
+   - Rewrote to add `ListBucketsCommand` to mocks, split `onModuleInit` tests from `ensureBucket` tests, added bucket param to all method calls
+   ```typescript
+   it('should connect using ListBuckets as connectivity probe', async () => {
+     expect(mockSend).toHaveBeenCalledTimes(1);
+     expect(service.isConfigured).toBe(true);
+   });
+   it('should use Set cache to avoid redundant HeadBucket calls', async () => {
+     await service.ensureBucket('cached-bucket');
+     await service.ensureBucket('cached-bucket');
+     expect(mockSend).toHaveBeenCalledTimes(1);
+   });
+   await service.upload('test-bucket', 'path/file.txt', Buffer.from('data'), 'text/plain', 4);
+   await service.copy('test-bucket', 'src/old.txt', 'dest/new.txt');
+   ```
+
+   **`/home/tomblume/IdeaProjects/operator-ts/src/documents/documents.service.spec.ts`** — Two fixes
+   - `restoreVersion` test: `storage.copy` assertion fixed to include `'share-documents-community-1'` as first arg
+   - `deleteDocument` test: rewrote to assert `softDelete` called and `storage.delete` NOT called (service uses soft-delete only)
+
+   **`/home/tomblume/IdeaProjects/operator-ts/src/documents/onlyoffice.service.spec.ts`** — Three fixes
+   - Added `getCommunityIdByShareholderId: jest.fn().mockResolvedValue('community-1')` to repository mock
+   - Fixed `storage.upload` assertion: added `'share-documents-community-1'` as first arg
+   - Fixed `storage.download` assertion: added `('share-documents-community-1', mockDocument.s3Key)`
+
+   **`/home/tomblume/IdeaProjects/operator-ts/src/documents/document-access.service.spec.ts`** — Two fixes
+   - Added `isSharedWith: jest.fn().mockResolvedValue(null)` to repository mock
+   - Added `canShare: false, canContribute: false` to all three `toEqual` assertions
+
+   **`/home/tomblume/IdeaProjects/operator-ts/src/shareholders/shareholders.service.spec.ts`** — One fix
+   - `repository.save` now called with 4th arg (UUID): changed assertion to `expect.any(String)` for shareMemberId
+
+   **`/home/tomblume/IdeaProjects/operator-ts/src/shareholders/dto/shareholder-export.dto.ts`** — New file
+   ```typescript
+   export interface ShareholderExportDto {
+     exportedAt: string;
+     shareholder: { id, name, emails, eidStatus, shareMemberId, anonymizedAt };
+     messages: ExportedMessage[];
+     conversations: ExportedConversation[];
+     roundtableSeats: ExportedRoundtableSeat[];
+     meetings: ExportedMeeting[];
+     notifications: ExportedNotification[];
+     documents: ExportedDocument[];
+     pushSubscriptions: ExportedPushSubscription[];
+   }
+   ```
+
+   **`/home/tomblume/IdeaProjects/operator-ts/src/shareholders/shareholders.repository.ts`** — Added GDPR Export + Erasure sections
+   - 7 export query methods using `(Shareholder)<-[:Identity]-(Responsible)` traversal pattern
+   - 6 erasure methods (anonymize messages, remove participation, end seats, delete push subs, delete notifications, anonymize ShareMember)
+   ```typescript
+   async getExportMessages(shareholderId: string): Promise<ExportedMessage[]> {
+     return this.neo4j.query(
+       `MATCH (sh:Shareholder {id: $shareholderId})<-[:Identity]-(r:Responsible)-[:posts]->(m:Message)-[:in]->(c:Conversation)
+        RETURN m, c.id AS conversationId, c.name AS conversationName
+        ORDER BY m.timestamp DESC`,
+       ...
+   async anonymizeMessages(shareholderId: string): Promise<void> {
+     await this.neo4j.writeVoid(
+       `MATCH (sh:Shareholder {id: $shareholderId})<-[:Identity]-(r:Responsible)-[:posts]->(m:Message)
+        SET m.content = '[Nachricht gelöscht]'`, ...
+   async deleteNotifications(shareholderId: string): Promise<void> {
+     await this.neo4j.writeVoid(
+       `MATCH (sh:Shareholder {id: $shareholderId})-[r:ReceivedBy]->(n:Notification)
+        DELETE r
+        WITH n
+        WHERE NOT (n)<-[:ReceivedBy]-()
+        DELETE n`, ...
+   ```
+
+   **`/home/tomblume/IdeaProjects/operator-ts/src/shareholders/shareholders.service.ts`** — Added `eraseData` and `exportData`
+   ```typescript
+   async eraseData(shareholderId: string): Promise<void> {
+     await this.getById(shareholderId);
+     await this.anonymize(shareholderId);
+     await Promise.all([
+       this.repository.anonymizeMessages(shareholderId),
+       this.repository.removeConversationParticipation(shareholderId),
+       this.repository.endActiveSeats(shareholderId),
+       this.repository.deletePushSubscriptions(shareholderId),
+       this.repository.deleteNotifications(shareholderId),
+       this.repository.anonymizeShareMember(shareholderId),
+     ]);
+   }
+   async exportData(shareholderId: string): Promise<ShareholderExportDto> {
+     const shareholder = await this.getById(shareholderId);
+     const [messages, conversations, roundtableSeats, meetings, notifications, documents, pushSubscriptions] =
+       await Promise.all([/* 7 repo calls */]);
+     return { exportedAt: new Date().toISOString(), shareholder: {...}, messages, ... };
+   }
+   ```
+
+   **`/home/tomblume/IdeaProjects/operator-ts/src/shareholders/shareholders.controller.ts`** — Added two endpoints
+   ```typescript
+   @Delete(':shareholderId/data')
+   @HttpCode(HttpStatus.NO_CONTENT)
+   async eraseData(@Param(...), @CurrentUser() user, @Body() body: { confirm?: string }): Promise<void> {
+     this.shareholdersService.requireSelf(shareholderId, user.shareholderId);
+     if (body?.confirm !== 'erase') throw new ForbiddenException('...');
+     await this.shareholdersService.eraseData(shareholderId);
+   }
+
+   @Throttle({ default: { ttl: 3_600_000, limit: 5 } })
+   @Get(':shareholderId/export')
+   async exportData(@Param(...), @CurrentUser() user): Promise<ShareholderExportDto> {
+     this.shareholdersService.requireSelf(shareholderId, user.shareholderId);
+     return this.shareholdersService.exportData(shareholderId);
+   }
+   ```
+
+   **`/home/tomblume/IdeaProjects/operator-ts/src/messages/messages.repository.ts`** — Added retention cleanup
+   ```typescript
+   async cleanupExpiredMessages(retentionDays: number): Promise<number> {
+     const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
+     const results = await this.neo4j.write(
+       `MATCH (m:Message)
+        WHERE m.timestamp < $cutoff
+          AND m.content <> '[Nachricht gelöscht]'
+          AND m.content <> '[Nachricht gelöscht - Aufbewahrungsfrist abgelaufen]'
+        SET m.content = '[Nachricht gelöscht - Aufbewahrungsfrist abgelaufen]'
+        RETURN count(m) AS cleaned`, ...
+   ```
+
+   **`/home/tomblume/IdeaProjects/operator-ts/src/commands/message-retention.service.ts`** — New file
+   ```typescript
+   @Injectable()
+   export class MessageRetentionService implements OnModuleInit {
+     constructor(
+       @InjectQueue(QUEUE_MESSAGE_RETENTION) private readonly queue: Queue<MessageRetentionJobData>,
+       private readonly config: ConfigService,
+     ) {}
+     async onModuleInit(): Promise<void> {
+       const retentionDays = this.config.get<number>('MESSAGE_RETENTION_DAYS', 365);
+       if (!retentionDays || retentionDays <= 0) return;
+       await this.queue.add('cleanup', { retentionDays }, {
+         repeat: { pattern: '0 3 * * *' },
+         removeOnComplete: { count: 7 },
+         removeOnFail: { count: 30 },
+       });
+     }
+   }
+   ```
+
+   **`/home/tomblume/IdeaProjects/operator-ts/src/commands/processors/message-retention.processor.ts`** — New file
+   ```typescript
+   @Processor(QUEUE_MESSAGE_RETENTION)
+   export class MessageRetentionProcessor extends WorkerHost {
+     async process(job: Job<MessageRetentionJobData>): Promise<void> {
+       const cleaned = await this.messagesRepository.cleanupExpiredMessages(job.data.retentionDays);
+       this.logger.log(`Message retention: anonymized ${cleaned} expired messages`);
+     }
+   }
+   ```
+
+   **`/home/tomblume/IdeaProjects/operator-ts/src/commands/commands.module.ts`** — Added MessagesModule import and new providers
+   ```typescript
+   imports: [
+     forwardRef(() => RoundtablesModule),
+     forwardRef(() => MessagesModule),
+     BullModule.registerQueue({ name: QUEUE_FILE_SPACE }),
+     BullModule.registerQueue({ name: QUEUE_MESSAGE_RETENTION }),
+   ],
+   providers: [UpsertFileSpaceProcessor, RoundtableExternalResourceService, MessageRetentionProcessor, MessageRetentionService],
+   ```
+
+   **`/home/tomblume/IdeaProjects/u2g-infrastructure-ts/docker-compose.prod.yml`** — Two changes
+   - `MINIO_BUCKET` already commented out (from previous session)
+   - Added: `MESSAGE_RETENTION_DAYS: ${MESSAGE_RETENTION_DAYS:-365}` with descriptive comment
+
+4. Errors and fixes:
+   - **9 test failures after MinIO bucket-first API**: Fixed by rewriting minio.service.spec.ts, updating all assertions in documents.service.spec.ts, onlyoffice.service.spec.ts, document-access.service.spec.ts, shareholders.service.spec.ts
+   - **`deleteDocument` test asserted `storage.delete` called**: Service uses `softDelete` — removed stale S3 delete assertions
+   - **`document-access.service.spec.ts` missing `isSharedWith` mock**: `DocumentAccessService.getPermissions` calls `repository.isSharedWith` but mock didn't include it — added `isSharedWith: jest.fn().mockResolvedValue(null)`
+   - **`document-access.service.spec.ts` `canShare`/`canContribute` fields**: Service returns 6-field permissions object but tests only checked 4 fields — added `canShare: false, canContribute: false` to all `toEqual` expectations
+   - **`shareholders.service.spec.ts` extra UUID arg**: `service.create()` internally generates `shareMemberId = crypto.randomUUID()` and passes it to `repository.save` — fixed by using `expect.any(String)` for 4th argument
+   - **`onlyoffice.service.spec.ts` missing `getCommunityIdByShareholderId`**: `OnlyofficeService.resolveBucket` calls this but mock didn't include it — added `getCommunityIdByShareholderId: jest.fn().mockResolvedValue('community-1')`
+   - **`git push` failing after `bd close`**: Beads close updates `.beads/issues.jsonl` but doesn't auto-commit — fixed by manually `git add .beads/issues.jsonl && git commit && git push`
+   - **Unused `Relationship` import in shareholders.repository.ts**: Added during implementation, removed after clean build confirmed
+
+5. Problem Solving:
+   - **MinIO bucket migration**: Resolved by querying Neo4j for the community UUID, using `mc` client inside the MinIO container, creating new bucket, copying 77 objects (verified count match), deploying new operator code
+   - **GDPR export cross-domain queries**: Instead of importing 5+ repositories from other modules (adding coupling), all export queries added directly to `ShareholdersRepository` which already has Neo4jService and can run any Cypher — follows existing pattern of `getRoundtableIdsForShareholder`
+   - **GDPR erasure design**: Message nodes preserved (content anonymized) to maintain conversation threading for other participants; PushSubscription nodes hard-deleted as pure personal device data; ShareMember node preserved (anonymized) to allow Keycloak deactivation by caller
+   - **Message retention without `@nestjs/schedule`**: Used BullMQ's native repeatable job feature instead; `MessageRetentionService.onModuleInit` registers the daily cron job idempotently on startup
+   - **Circular dependency check**: Confirmed MessagesModule does not import CommandsModule, so `forwardRef(() => MessagesModule)` is defensive but safe
+
+6. All user messages:
+   - (Session resumed from compacted context — no initial user message visible)
+   - "Close a beads issue that's been completed." (skill invocation for beads:close)
+   - "tackle that now" (referring to infra-fyv MinIO migration)
+   - "yes" (to continue with next issue after infra-fyv)
+   - "yes" (to implement GDPR data export a0d)
+   - "yes" (to implement GDPR erasure rf5)
+   - "yes" (to implement message retention 4yf)
+   - "yes" (to check bd ready for next task — final message before summary request)
+
+7. Pending Tasks:
+   - **operator-ts-x2i** (P1 epic): shaRe Member backend — blocked on infra-pnz (Coolify setup), sharemembers-cjc (JWT claims). Code all done, needs deployment infrastructure.
+   - **share-platform-aof** (P1 epic): shaRe Member MVP — identity hub + community portal
+   - **infra-pnz** (P1): sharemember-app Coolify app + domain setup
+   - **infra-31h** (P2): OnlyOffice callback URL — blocked on DNS migration (`operator.up2go.com` still points to GCP Cloud Run)
+   - **infra-s67** (P2): Odoo multi-community isolation strategy
+   - **infra-aym** (P2): Metabase platform URL
+   - **infra-xfd** (P2): sharedb multi-community isolation
+   - **infra-1x2** (P2): Re-architect shareholder-existence-authenticator
+   - **infra-e1o** (P2): Custom Odoo Dockerfile for OCA modules
+   - **share-platform-5ve** (P3): Peer vouching
+   - **operator-ts-4yf (DONE — just closed)**: Message retention BullMQ job — needs production deploy
+
+8. Current Work:
+   The final task completed was **operator-ts-4yf** (GDPR message retention policy). All code was written, tests passed (199/199), and the feature was committed and pushed. The session ended with `bd ready` showing:
+   ```
+   operator-ts: only x2i (P1 epic, needs infra)
+   share-platform: aof (P1 epic), 5ve (P3 peer vouching)
+   ```
+   The user replied "yes" to see what's next, but the summary request arrived before any new work began.
+
+   The last concrete code shipped was the message retention BullMQ job:
+   - `src/commands/message-retention.service.ts` (new)
+   - `src/commands/processors/message-retention.processor.ts` (new)
+   - `src/messages/messages.repository.ts` (cleanupExpiredMessages added)
+   - `src/messages/messages.module.ts` (MessagesRepository exported)
+   - `src/commands/commands.constants.ts` (QUEUE_MESSAGE_RETENTION added)
+   - `src/commands/commands.module.ts` (MessagesModule + new providers added)
+   - `u2g-infrastructure-ts/docker-compose.prod.yml` (MESSAGE_RETENTION_DAYS added)
+
+9. Optional Next Step:
+   The user's last message was "yes" in response to `bd ready` showing the next available work. The next logical step is to deploy the new operator-ts build to production (to ship the GDPR export/erasure/retention features) and then tackle the next P1 unblocked item.
+
+   The `bd ready` output showed:
+   > `1. [● P1] [epic] operator-ts-x2i: shaRe Member backend — ShareMember node, community API, eID module`
+
+   However, x2i is an epic whose code is all done — the remaining work is infrastructure (infra-pnz: Coolify setup for sharemember-app). The next concrete actionable step is deploying the current operator-ts main branch to production (which includes GDPR export, erasure, and retention) and then tackling **infra-pnz** (Coolify app + domain setup for the sharemember-app).
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/tomblume/.REDACTED.jsonl
+Please continue the conversation from where we left off without asking the user any further questions. Continue with the last task that you were asked to work on.
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/skills/devops
+
+# shaRe Platform DevOps
+
+Manage the shaRe platform on the Scaleway production server.
+
+## Server
+
+- **IP**: `51.15.211.196`
+- **SSH**: `ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196`
+- **Infra dir on server**: `/opt/share-platform/infra`
+- **Compose files**: `docker-compose.prod.yml`, `docker-compose.dev.yml`
+- **Env files**: `.env.prod`, `.env.dev`
+
+## Service Map
+
+| Service | Image | Compose service name | Source repo |
+|---------|-------|---------------------|-------------|
+| operator | `ghcr.io/share-community/operator:latest` | `operator-{env}` | `../operator-ts/` |
+| share-ui | `ghcr.io/share-community/share-ui:latest` | `share-ui-{env}` | `../share-ui/` (Dockerfile in `../u2g-infrastructure-ts/services/share-ui/Dockerfile`) |
+| keycloak | `ghcr.io/share-community/sharemembers:latest` | `keycloak-{env}` | `../sharemembers/` |
+| neo4j | (standard image) | `neo4j-{env}` | — |
+| redis | (standard image) | `redis-{env}` | — |
+| postgres | `postgres:16-alpine` | `postgres-{env}` | — |
+| odoo | `odoo:18` | `odoo-{env}` | — |
+| onlyoffice | `onlyoffice/documentserver:latest` | `onlyoffice-{env}` | — |
+| drawio | `jgraph/drawio:latest` | `drawio-{env}` | — |
+| minio | `minio/minio:latest` | `minio-{env}` | — |
+| metabase | `metabase/metabase:latest` | `metabase-{env}` | — |
+| traefik | — | `coolify-proxy` (shared) | — |
+
+Container naming: `share-{env}-{service}-{env}-1` (e.g. `share-prod-operator-prod-1`)
+
+### Postgres — shared instance, multiple databases
+
+| Database | Owner | Used by |
+|----------|-------|---------|
+| `keycloak` | keycloak | Keycloak auth |
+| `odoodb` | odoo | Odoo 18 |
+| `sharedb` | share | operator-ts analytics (future) |
+| `metabase` | metabase | Metabase analytics |
+
+### Odoo — self-hosted Odoo 18 Community
+
+- **URL**: `https://odoo.wurzelwerk.up2go.com`
+- **DB**: `odoodb` on shared `postgres-prod`
+- **Admin user**: `admin` (password in `.env.prod` as `ODOO_ADMIN_PASSWD`)
+- **Service user** (used by operator-ts): `operator@share.local` (password = `ODOO_API_KEY` in `.env.prod`)
+- **Installed modules**: `mail` (includes discuss.channel), `calendar`, `project`, `account`
+- **Healthcheck**: `https://odoo.wurzelwerk.up2go.com/web/health` (expect `{"status":"pass"}`)
+
+### Metabase — analytics & reporting
+
+- **URL**: `https://metabase.wurzelwerk.up2go.com`
+- **DB**: `metabase` on shared `postgres-prod`
+- **Data sources**: connect to `sharedb` (postgresql://postgres-prod:5432/sharedb) for analytics
+- **Healthcheck**: `https://metabase.wurzelwerk.up2go.com/api/health` (expect 200)
+
+## Commands
+
+Parse `deploy operator prod` to determine the action. Default env is `prod`.
+
+### `deploy <service> [env]`
+
+Build, transfer, and restart a service:
+
+1. **Build** the Docker image from the source repo
+2. **Transfer** via `docker save | ssh ... docker load`
+3. **Restart** via `docker compose up -d <service-env>`
+4. **ALWAYS restart Traefik** after any container recreate: `docker restart coolify-proxy`
+5. **Wait 5 seconds**, then verify the service started by checking logs
+6. **Verify all routes** respond (200/302)
+
+Build commands per service:
+```bash
+# operator
+cd /home/tomblume/IdeaProjects/operator-ts
+docker build -t ghcr.io/share-community/operator:latest .
+
+# share-ui
+cd /home/tomblume/IdeaProjects/share-ui
+docker build -t ghcr.io/share-community/share-ui:latest \
+  -f /home/tomblume/IdeaProjects/u2g-infrastructure-ts/services/share-ui/Dockerfile .
+
+# keycloak
+cd /home/tomblume/IdeaProjects/sharemembers
+docker build -t ghcr.io/share-community/sharemembers:latest .
+```
+
+Restart on server:
+```bash
+ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196 \
+  "cd /opt/share-platform/infra && \
+   docker compose -f docker-compose.{env}.yml -p share-{env} --env-file .env.{env} \
+   up -d {service-name}"
+```
+
+### `status [env]`
+
+Check all container status and route health:
+```bash
+SSH="ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196"
+$SSH "docker ps --format 'table {{.Names}}\t{{.Status}}' | grep share-{env}"
+```
+
+Then check routes:
+- `https://wurzelwerk.up2go.com` (share-ui, expect 200)
+- `https://sso.wurzelwerk.up2go.com` (keycloak, expect 302)
+- `https://operator.wurzelwerk.up2go.com/health` (operator direct, expect 200)
+- `https://wurzelwerk.up2go.com/api/health` (operator via api, expect 200)
+- `https://odoo.wurzelwerk.up2go.com/web/health` (odoo, expect 200 with `{"status":"pass"}`)
+- `https://metabase.wurzelwerk.up2go.com/api/health` (metabase, expect 200)
+
+Dev routes use `share.dev.up2go.com`, `sso.dev.sharemembers.net`, `operator.dev.up2go.com`.
+
+### `restart <service|traefik> [env]`
+
+Restart a specific service or Traefik:
+- **traefik**: `docker restart coolify-proxy` (fixes 504/CORS issues)
+- **other**: `docker compose ... restart {service-env}`
+
+### `logs <service> [env] [lines]`
+
+Show recent logs (default 30 lines):
+```bash
+ssh ... "docker logs share-{env}-{service}-{env}-1 --tail {lines}"
+```
+
+### `neo4j <cypher> [env]`
+
+Run a Cypher query against Neo4j:
+```bash
+ssh ... 'docker exec share-{env}-neo4j-{env}-1 cypher-shell \
+  -u neo4j \
+  -p $(docker inspect share-{env}-neo4j-{env}-1 \
+    --format "{{range .Config.Env}}{{println .}}{{end}}" | grep NEO4J_AUTH | cut -d/ -f2) \
+  "<cypher query>"'
+```
+
+### `diagnose`
+
+Run full diagnostic:
+1. Check all container status
+2. Check all route health codes
+3. Check for errors in operator logs (last 50 lines)
+4. Check memory usage on server
+5. Report findings and suggest fixes
+
+## Known Issues
+
+- **504 Gateway Timeout after deploy**: Traefik loses routing to recreated containers. Fix: `docker restart coolify-proxy`
+- **CORS errors from sso.wurzelwerk...**: Same cause as above — Keycloak is unreachable via Traefik
+- **Keycloak startup takes ~4 minutes**: Wait for `healthy` status before testing auth flows
+
+## Important
+
+- Always restart Traefik (`coolify-proxy`) after deploying any service
+- After deploy, verify ALL routes (not just the deployed service)
+- Never expose Neo4j credentials in output — use the `docker inspect` pattern
+- Default to `prod` environment unless explicitly told otherwise
+
+---
+
+continur
+
+---
+
+yes
+
+---
+
+[Request interrupted by user for tool use]
+
+---
+
+the operator for up2go is operator.up2go.up2go.com
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me chronologically analyze this conversation to create a comprehensive summary.
+
+## Session Overview
+
+The session continued from a previous compacted conversation. The work spans multiple repos: operator-ts, u2g-infrastructure-ts, share-ui, sharemembers, sharemember-app, and share-platform.
+
+### 1. Session Start - Deploying operator-ts to production
+- The session resumed with deploying the previous session's GDPR + retention features
+- Built operator Docker image, transferred via `docker save | ssh | docker load`
+- Restarted operator-prod and Traefik (coolify-proxy)
+- Verified all 6 routes: 200/200/200/200/200/302 ✅
+- The MessageRetentionService log confirmed: `365 days, cron="0 3 * * *"` ✅
+
+### 2. infra-pnz - sharemember-app Coolify deploy
+This was the first major task tackled.
+
+**Exploration findings:**
+- sharemember-app is a React/Vite SPA at `/home/tomblume/IdeaProjects/sharemember-app/`
+- Existing `.env.production` had placeholder values (sharemembers.net, share.community)
+- Dockerfile pattern same as share-ui (multi-stage, nginx:alpine)
+- Auth config uses: VITE_SSO_URL, VITE_KEYCLOAK_REALM, VITE_PUBLIC_URL, VITE_KEYCLOAK_CLIENT_ID, VITE_API_URL
+
+**Actions taken:**
+1. Created Keycloak client `prod-sharemember-app` (public, OIDC, redirect URIs)
+   - Client ID: `f6ec3ab8-537e-49f9-b0fd-40895483f2cc`
+   - Redirect URIs: `https://id.wurzelwerk.up2go.com/*` and `http://localhost:3000/*`
+   - Web origins: same
+   - PKCE: S256 (set via piped JSON, attribute didn't persist but oidc-client-ts 3.x uses PKCE automatically)
+2. Created `u2g-infrastructure-ts/services/sharemember-app/Dockerfile`
+3. Copied `services/share-ui/nginx.conf` to `services/sharemember-app/nginx.conf`
+4. Updated `.env.production` in sharemember-app with actual domains
+5. Added `sharemember-app-prod` service to `docker-compose.prod.yml` with Traefik labels
+6. Created DNS A record `id.wurzelwerk.up2go.com` → `51.15.211.196` via gcloud
+7. Built and deployed the container
+8. Let's Encrypt cert auto-provisioned → `https://id.wurzelwerk.up2go.com` live ✅
+
+**File: `sharemember-app/.env.production`** updated to:
+```
+VITE_APP_NAME=shaRe Community
+VITE_API_URL=https://wurzelwerk.up2go.com/api
+VITE_SSO_URL=https://sso.wurzelwerk.up2go.com
+VITE_PUBLIC_URL=https://id.wurzelwerk.up2go.com
+VITE_KEYCLOAK_REALM=prod-sharemembers
+VITE_KEYCLOAK_CLIENT_ID=prod-sharemember-app
+```
+
+**File: `docker-compose.prod.yml`** - sharemember-app-prod service added with Traefik labels for `id.wurzelwerk.up2go.com`
+
+### 3. sharemembers-cjc - JWT claims for eid_status + share_member_id
+**Actions taken:**
+1. Found `sharemember-plugins-client` (id: `02ca927f`, secret: `REDACTED`) has service account
+2. Granted `manage-users` role to service account
+3. Created User Attribute Protocol Mappers on both clients:
+   - `eid_status` mapper → JWT claim `eid_status`
+   - `share_member_id` mapper → JWT claim `share_member_id`
+4. Added `KEYCLOAK_ADMIN_CLIENT_ID` and `KEYCLOAK_ADMIN_CLIENT_SECRET` to server's `.env.prod`
+5. Updated `operator-ts/src/common/interfaces/sharemember-token.interface.ts` to add `eid_status?` and `share_member_id?`
+6. Updated `shareholders.service.ts` to inject `ConfigService` and call `syncKeycloakShareMemberAttributes` on creation
+
+**Test fix:** `shareholders.service.spec.ts` - the test constructs `new ShareholdersService(repository)` directly, needed to add a mock ConfigService: `const config = { get: jest.fn().mockReturnValue(undefined) } as any;`
+
+### 4. SUI-691 - Block restricted actions for UN-IDENTIFIED members
+**Exploration findings:**
+- `ShaReMember.ts` already has `eidStatus` getter reading from JWT `eid_status` claim
+- Tooltip + disabled pattern exists with `<span>` wrapper for disabled MUI elements
+- Actions to block: pull up a chair (PURPOSE/STRATEGY), create share, invite shareholder
+
+**Files created/modified:**
+
+1. `src/hooks/useEidRestriction.ts` (new):
+```typescript
+import { useUser } from "../auth/AuthProvider"
+const SHAREMEMBER_APP_URL = import.meta.env.VITE_SHAREMEMBER_APP_URL ?? "https://id.wurzelwerk.up2go.com"
+export function useEidRestriction() {
+  const user = useUser()
+  const isIdentified = user?.eidStatus === "identified"
+  return { isIdentified, verifyUrl: `${SHAREMEMBER_APP_URL}/verify` }
+}
+```
+
+2. `src/i18n/locales/en-US.json` - added `"eid"` section with `action_blocked` and `verify_cta`
+3. `src/i18n/locales/de.json` - same in German
+4. `src/components/web/RoundtableSidebarPanel.tsx` - extended action interface with `disabled?` and `disabledReason?`; render with Tooltip+span wrapper
+5. `src/pages/web/RoundtableActivityPage.tsx` - added `useEidRestriction` hook, applied to "pull up a chair" (PURPOSE/STRATEGY only), and wrapped pursuit menu items
+6. `src/components/CreateShareDialog.tsx` - added `useEidRestriction`, wrapped submit button with Tooltip+span
+7. `share-ui/.env` - added `VITE_SHAREMEMBER_APP_URL=https://id.wurzelwerk.up2go.com`
+
+Build passed, deployed to prod, all routes 200 ✅
+
+### 5. infra-31h - OnlyOffice community-agnostic callback URL
+This was being worked on when the summary was triggered.
+
+**Context:**
+- Issue description says to use `operator.up2go.com` as the community-agnostic domain
+- DNS check showed `operator.up2go.com` is currently a CNAME to `ghs.googlehosted.com` (GCP)
+- User interrupted when I tried to delete the CNAME and replace with A record
+- User said: "the operator for up2go is operator.up2go.up2go.com"
+- This means the new callback URL should be `https://operator.up2go.up2go.com`, not `https://operator.up2go.com`
+- No `operator.up2go.up2go.com` record exists yet (no results from DNS lookup)
+- Need to: create DNS A record `operator.up2go.up2go.com` → `51.15.211.196`, add Traefik router, update `ONLYOFFICE_CALLBACK_BASE_URL`
+
+### Epics closed this session:
+- `share-platform-aof` (shaRe Member MVP)
+- `operator-ts-x2i` (backend epic)
+- `infra-pnz` (sharemember-app deploy)
+- `sharemembers-cjc` (JWT claims)
+- `SUI-691` (eID action blocking)
+
+Summary:
+1. Primary Request and Intent:
+   The session continued previous compacted work. User's requests (via "yes" to `bd ready` checks):
+   - Deploy operator-ts with GDPR/retention features to production
+   - Implement **infra-pnz**: sharemember-app Coolify + domain setup (`id.wurzelwerk.up2go.com`)
+   - Implement **sharemembers-cjc**: JWT claims (`eid_status` + `share_member_id`) via Keycloak user attribute mappers
+   - Implement **SUI-691**: Block restricted actions for UN-IDENTIFIED members in share-ui
+   - Begin **infra-31h**: OnlyOffice community-agnostic callback URL — interrupted mid-task
+   - **User correction**: When I tried to replace `operator.up2go.com` CNAME (GCP) with an A record to Scaleway, the user interrupted: "the operator for up2go is `operator.up2go.up2go.com`"
+
+2. Key Technical Concepts:
+   - **Beads (`bd`)**: Git-backed issue tracker. All issues marked in_progress before work, closed after. `bd sync` + `git commit` + `git push` required to persist.
+   - **Keycloak User Attribute Protocol Mappers**: Map Neo4j-sourced `eid_status` and `share_member_id` to JWT claims via `oidc-usermodel-attribute-mapper`. Configured via `kcadm.sh` on production container.
+   - **PKCE for public OIDC clients**: `prod-sharemember-app` is a public client (no secret). `oidc-client-ts` 3.x uses PKCE automatically. Keycloak attribute `pkce.code.challenge.method=S256` enforces it but wasn't strictly needed.
+   - **Vite build-time env vars**: `VITE_*` baked into static bundle at `npm run build:prod`. `.env.production` committed to sharemember-app repo, not gitignored.
+   - **Traefik multi-router pattern**: One service can have multiple routers (API prefix route, direct subdomain, now platform subdomain). Let's Encrypt certs auto-provisioned per hostname via labels.
+   - **MUI Tooltip + disabled pattern**: Disabled MUI elements suppress pointer events (`pointer-events: none`). Must wrap in `<span>` so Tooltip receives hover events.
+   - **`useEidRestriction` hook**: Centralises identity gate — returns `{ isIdentified, verifyUrl }`. Reads `user.eidStatus` from `ShaReMember.ts` (already reads `eid_status` JWT claim).
+   - **BullMQ best-effort Keycloak sync**: `syncKeycloakShareMemberAttributes` in `ShareholdersService` follows same "log errors, never throw" pattern as `EidService.updateKeycloakEidStatus`.
+   - **Scaleway/Google Cloud DNS**: `up2go.com` zone in `prod-share-up2go` GCP project, zone `prod-up2go`. All Scaleway services point to `51.15.211.196`.
+
+3. Files and Code Sections:
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/.env.production`**
+     - Updated from placeholder sharemembers.net/share.community domains to actual Scaleway infrastructure
+     ```
+     VITE_APP_NAME=shaRe Community
+     VITE_API_URL=https://wurzelwerk.up2go.com/api
+     VITE_SSO_URL=https://sso.wurzelwerk.up2go.com
+     VITE_PUBLIC_URL=https://id.wurzelwerk.up2go.com
+     VITE_KEYCLOAK_REALM=prod-sharemembers
+     VITE_KEYCLOAK_CLIENT_ID=prod-sharemember-app
+     ```
+
+   - **`/home/tomblume/IdeaProjects/u2g-infrastructure-ts/services/sharemember-app/Dockerfile`** (new)
+     ```dockerfile
+     FROM node:22-alpine AS build
+     WORKDIR /app
+     COPY package.json package-lock.json ./
+     RUN npm ci
+     COPY . .
+     RUN npm run build:prod
+     FROM nginx:alpine
+     COPY --from=build /app/dist /usr/share/nginx/html
+     EXPOSE 80
+     ```
+
+   - **`/home/tomblume/IdeaProjects/u2g-infrastructure-ts/services/sharemember-app/nginx.conf`** (new)
+     - Copied from `services/share-ui/nginx.conf` — identical SPA routing config with `/health` endpoint
+
+   - **`/home/tomblume/IdeaProjects/u2g-infrastructure-ts/docker-compose.prod.yml`**
+     - Added `sharemember-app-prod` service with image `ghcr.io/share-community/sharemember-app:latest`
+     - Traefik label: `Host(\`id.wurzelwerk.up2go.com\`)` with Let's Encrypt TLS
+     - Updated header comment to include `id.wurzelwerk.up2go.com → sharemember-app-prod`
+     - `ONLYOFFICE_CALLBACK_BASE_URL` still at `https://operator.wurzelwerk.up2go.com` (infra-31h not yet complete)
+
+   - **`/home/tomblume/IdeaProjects/operator-ts/src/common/interfaces/sharemember-token.interface.ts`**
+     - Added two optional fields to `SharememberToken`:
+     ```typescript
+     /** eID verification status — 'un_identified' | 'identified' (from Keycloak user attribute) */
+     eid_status?: string;
+     /** ShareMember node UUID (from Keycloak user attribute) */
+     share_member_id?: string;
+     ```
+
+   - **`/home/tomblume/IdeaProjects/operator-ts/src/shareholders/shareholders.service.ts`**
+     - Added `ConfigService` import and injection
+     - Modified `create()` to call `syncKeycloakShareMemberAttributes` (best-effort)
+     - Added new private method:
+     ```typescript
+     private async syncKeycloakShareMemberAttributes(
+       keycloakId: string,
+       shareMemberId: string,
+       eidStatus: string = 'un_identified',
+     ): Promise<void> {
+       // fetches client_credentials token, PUTs attributes to Keycloak Admin API
+       // sets share_member_id: [shareMemberId], eid_status: [eidStatus]
+       // errors logged, never thrown
+     }
+     ```
+
+   - **`/home/tomblume/IdeaProjects/operator-ts/src/shareholders/shareholders.service.spec.ts`**
+     - Fixed: added mock ConfigService to test setup:
+     ```typescript
+     const config = { get: jest.fn().mockReturnValue(undefined) } as any;
+     service = new ShareholdersService(repository, config);
+     ```
+
+   - **`/home/tomblume/IdeaProjects/share-ui/src/hooks/useEidRestriction.ts`** (new)
+     ```typescript
+     import { useUser } from "../auth/AuthProvider"
+     const SHAREMEMBER_APP_URL =
+       import.meta.env.VITE_SHAREMEMBER_APP_URL ?? "https://id.wurzelwerk.up2go.com"
+     export function useEidRestriction() {
+       const user = useUser()
+       const isIdentified = user?.eidStatus === "identified"
+       return { isIdentified, verifyUrl: `${SHAREMEMBER_APP_URL}/verify` }
+     }
+     ```
+
+   - **`/home/tomblume/IdeaProjects/share-ui/.env`**
+     - Added: `VITE_SHAREMEMBER_APP_URL=https://id.wurzelwerk.up2go.com`
+
+   - **`/home/tomblume/IdeaProjects/share-ui/src/i18n/locales/en-US.json`**
+     ```json
+     "eid": {
+       "action_blocked": "This action requires a verified identity.",
+       "verify_cta": "Verify with eID →"
+     }
+     ```
+
+   - **`/home/tomblume/IdeaProjects/share-ui/src/i18n/locales/de.json`**
+     ```json
+     "eid": {
+       "action_blocked": "Diese Aktion erfordert eine verifizierte Identität.",
+       "verify_cta": "Mit eID verifizieren →"
+     }
+     ```
+
+   - **`/home/tomblume/IdeaProjects/share-ui/src/components/web/RoundtableSidebarPanel.tsx`**
+     - Extended action interface:
+     ```typescript
+     actions: Array<{
+       label: string
+       href: string
+       disabled?: boolean
+       disabledReason?: string
+     }>
+     ```
+     - Updated render loop: `<Tooltip><span><ListItem>` pattern with `cursor: "not-allowed"` and `color: "text.disabled"` when disabled
+
+   - **`/home/tomblume/IdeaProjects/share-ui/src/pages/web/RoundtableActivityPage.tsx`**
+     - Added `import { useEidRestriction } from "../../hooks/useEidRestriction"`
+     - Added `const { isIdentified, verifyUrl } = useEidRestriction()`
+     - "Pull up a chair" action now has `disabled` and `disabledReason` when `roundtable.type === "PURPOSE" || "STRATEGY"` and `!isIdentified`
+     - Pursuit menu items ("Initiate a Pursuit", "Invite a ShaReholder") wrapped in `<Tooltip><span><MenuItem disabled={!isIdentified}>`
+
+   - **`/home/tomblume/IdeaProjects/share-ui/src/components/CreateShareDialog.tsx`**
+     - Added `useEidRestriction` hook
+     - Submit button wrapped: `<Tooltip><span><Button disabled={fetcher.state != "idle" || !isIdentified}>`
+
+4. Errors and fixes:
+   - **`shareholders.service.spec.ts` — `TypeError: Cannot read properties of undefined (reading 'get')`**:
+     - Cause: Test constructs `new ShareholdersService(repository)` directly without ConfigService. After adding ConfigService injection, the constructor requires it.
+     - Fix: Added mock config to test `beforeEach`: `const config = { get: jest.fn().mockReturnValue(undefined) } as any; service = new ShareholdersService(repository, config);`
+   - **Keycloak `kcadm.sh` JSON parsing errors**: Setting redirect URIs and attributes with complex JSON via `-s` flag caused `Cannot parse the JSON` errors. Fix: pipe JSON via stdin using `echo "$JSON" | docker exec -i ... kcadm.sh ... -f -`
+   - **`kcadm.sh attributes` not persisting via `-s`**: `pkce.code.challenge.method` attribute didn't persist through `-s` updates or `--file` stdin. Workaround: not critical since `oidc-client-ts` 3.x uses PKCE automatically regardless.
+   - **Let's Encrypt NXDOMAIN failure at 18:29**: Traefik attempted cert for `id.wurzelwerk.up2go.com` immediately after container start, before DNS propagated. Expected behaviour — cert succeeded ~60s later once DNS propagated to Let's Encrypt's resolvers.
+   - **`git push` failing on infra after `bd close`**: Beads writes to `.beads/issues.jsonl` without committing. Required manual `git add .beads/issues.jsonl && git commit && git push`.
+   - **infra-31h DNS interruption**: Attempted to delete `operator.up2go.com` CNAME and replace with A record → user interrupted. User clarified the correct new hostname is `operator.up2go.up2go.com`, not `operator.up2go.com`.
+
+5. Problem Solving:
+   - **sharemember-app cert provisioning**: First ACME attempts failed (NXDOMAIN). Resolved by waiting 60s for DNS TTL propagation — cert issued automatically.
+   - **Keycloak `manage-users` grant**: Used `kcadm.sh` to find service account user ID for `sharemember-plugins-client`, find `realm-management` client ID, find `manage-users` role ID, and POST to `users/$SA_ID/role-mappings/clients/$RM_ID` via stdin JSON.
+   - **SUI-691 MUI tooltip on disabled**: Standard MUI pattern of `<Tooltip><span><DisabledElement>` since `pointer-events: none` on disabled elements blocks Tooltip events.
+   - **infra-31h domain clarification**: `operator.up2go.com` CNAME (GCP) should NOT be modified. The new platform-generic operator hostname for the up2go community is `operator.up2go.up2go.com`. No DNS record for this exists yet.
+
+6. All user messages:
+   - (Session started from previous compaction — no initial message visible)
+   - "yes" — continue with next `bd ready` issue (operator-ts deploy)
+   - "yes" — continue with infra-pnz
+   - "yes" — continue with sharemembers-cjc
+   - "yes" — continue with SUI-691
+   - "yes" — continue with next `bd ready` issue
+   - "yes" — after seeing infra-31h and SUI-d32 as next candidates
+   - "continur" (continue)
+   - "the operator for up2go is operator.up2go.up2go.com" — correction during infra-31h implementation
+
+7. Pending Tasks:
+   - **infra-31h** (in_progress, P2): OnlyOffice community-agnostic callback URL — partially done. Still needs:
+     1. Create DNS A record `operator.up2go.up2go.com` → `51.15.211.196`
+     2. Add Traefik router label for `operator.up2go.up2go.com` in `docker-compose.prod.yml`
+     3. Update `ONLYOFFICE_CALLBACK_BASE_URL` from `https://operator.wurzelwerk.up2go.com` to `https://operator.up2go.up2go.com`
+     4. Deploy operator, restart Traefik, verify
+   - **infra-s67** (P2): Odoo multi-community isolation strategy
+   - **infra-aym** (P2): Metabase platform URL + community access model
+   - **infra-xfd** (P2): sharedb multi-community isolation
+   - **infra-1x2** (P2): Re-architect shareholder-existence-authenticator
+   - **infra-e1o** (P2): Custom Odoo Dockerfile for OCA modules
+   - **SUI-d32** (P2): Complete Conversations feature integration (Phase 7+)
+   - **SUI-629** (P2): Odoo Activity Tracking for Roundtable Timeline
+   - **share-platform-5ve** (P3): Peer vouching
+
+8. Current Work:
+   Working on **infra-31h** — OnlyOffice community-agnostic callback URL. The issue was marked `in_progress`. The current `ONLYOFFICE_CALLBACK_BASE_URL` in `docker-compose.prod.yml` line 244 is:
+   ```
+   ONLYOFFICE_CALLBACK_BASE_URL: https://operator.wurzelwerk.up2go.com
+   ```
+   The goal is to replace this with `https://operator.up2go.up2go.com`.
+
+   DNS check showed `operator.up2go.up2go.com` does not yet exist (no records returned for `up2go.up2go.*`). The `up2go.com` DNS zone is in GCP project `prod-share-up2go`, zone name `prod-up2go`. The Scaleway server IP is `51.15.211.196`.
+
+   The existing Traefik labels on `operator-prod` have two routers:
+   - `operator-prod` — `Host(\`wurzelwerk.up2go.com\`) && PathPrefix(\`/api\`)`
+   - `operator-prod-direct` — `Host(\`operator.wurzelwerk.up2go.com\`)`
+
+   A third router `operator-prod-platform` needs to be added for `Host(\`operator.up2go.up2go.com\`)`.
+
+9. Optional Next Step:
+   Resume infra-31h. The user's correction was: "the operator for up2go is operator.up2go.up2go.com"
+
+   Next steps:
+   1. Create DNS A record: `gcloud dns record-sets create operator.up2go.up2go.com. --zone=prod-up2go --project=prod-share-up2go --type=A --ttl=300 --rrdatas=51.15.211.196`
+   2. Add Traefik router to `docker-compose.prod.yml` for `operator.up2go.up2go.com`
+   3. Update `ONLYOFFICE_CALLBACK_BASE_URL: https://operator.up2go.up2go.com`
+   4. Sync compose file to server, deploy operator-prod, restart Traefik
+   5. Verify cert provisioned, update routing comment header, commit, close infra-31h
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/tomblume/.REDACTED.jsonl
+Please continue the conversation from where we left off without asking the user any further questions. Continue with the last task that you were asked to work on.
+
+---
+
+Close a beads issue that's been completed.
+
+If arguments are provided:
+- Added operator.up2go.up2go.com Traefik router and updated ONLYOFFICE_CALLBACK_BASE_URL. DNS A record created. All 6 routes healthy.: Issue ID
+- +: Completion reason (optional)
+
+If the issue ID is missing, ask for it. Optionally ask for a reason describing what was done.
+
+Use the beads MCP `close` tool to close the issue. Show confirmation with the issue details.
+
+After closing, suggest checking for:
+- Dependent issues that might now be unblocked (use `ready` tool)
+- New work discovered during this task (use `create` tool with `discovered-from` link)
+
+---
+
+compare https://id.wurzelwerk.up2go.com/ with share.community
+
+---
+
+share.community in managed in GCP
+
+---
+
+migrate now
+
+---
+
+the sharemember-app has a broken css, design is very different to ths old version
+
+---
+
+hard refresh does not change it. the old app is in up2go-infrastructure/sharemembers/landing-page-app  ... use this to compare
