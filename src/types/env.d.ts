@@ -6,6 +6,7 @@ interface ImportMetaEnv {
   readonly VITE_SSO_URL: string
   readonly VITE_PUBLIC_URL: string
   readonly VITE_KEYCLOAK_REALM: string
+  readonly VITE_KEYCLOAK_CLIENT_ID: string
 }
 
 interface ImportMeta {
