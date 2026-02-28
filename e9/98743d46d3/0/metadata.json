@@ -1,0 +1,39 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "e998743d46d3",
+  "session_id": "bcdf159e-6690-4e1d-b907-0b3c44fc3fda",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-28T15:08:35.166340677Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/App.css",
+    "src/api/api.ts",
+    "src/api/types.ts",
+    "src/components/AppShell.tsx",
+    "src/pages/HubPage.tsx",
+    "src/pages/JoinPage.tsx",
+    "src/pages/ProfilePage.tsx"
+  ],
+  "agent": "Claude Code",
+  "transcript_identifier_at_start": "1c189790-5cfc-4c30-b1da-4f8c0e9b392a",
+  "checkpoint_transcript_start": 3920,
+  "transcript_lines_at_start": 3920,
+  "token_usage": {
+    "input_tokens": 17,
+    "cache_creation_tokens": 104762,
+    "cache_read_tokens": 1661350,
+    "output_tokens": 8290,
+    "api_call_count": 15
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-28T15:08:33.00844348Z",
+    "agent_lines": 691,
+    "human_added": 3,
+    "human_modified": 1,
+    "human_removed": 0,
+    "total_committed": 695,
+    "agent_percentage": 99.42446043165467
+  },
+  "transcript_path": ".claude/projects/-home-tomblume-IdeaProjects-share-platform/bcdf159e-6690-4e1d-b907-0b3c44fc3fda.jsonl"
+}
