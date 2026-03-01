@@ -1,5 +1,7 @@
 // src/api/keycloak-account.ts
 
+import { ApiError } from './api'
+
 const SSO_URL = import.meta.env.VITE_SSO_URL
 const REALM = import.meta.env.VITE_KEYCLOAK_REALM
 const BASE = `${SSO_URL}/realms/${REALM}/account`
@@ -31,15 +33,17 @@ async function kcFetch<T>(
   })
   if (!res.ok) {
     const body = await res.json().catch(() => ({})) as KcApiError
-    throw new Error(body.errorMessage ?? body.error ?? `KC API ${res.status}`)
+    throw new ApiError(res.status, body.errorMessage ?? body.error ?? `KC API ${res.status}`)
   }
   // 204 No Content — return void
   const text = await res.text()
   return text ? (JSON.parse(text) as T) : undefined
 }
 
-export function getAccountInfo(token: string): Promise<KcUserInfo | void> {
-  return kcFetch<KcUserInfo>('', token)
+export async function getAccountInfo(token: string): Promise<KcUserInfo> {
+  const result = await kcFetch<KcUserInfo>('', token)
+  if (!result) throw new Error('Unexpected empty response from GET /account')
+  return result
 }
 
 export function updateAccountInfo(token: string, info: KcUserInfo): Promise<void> {
