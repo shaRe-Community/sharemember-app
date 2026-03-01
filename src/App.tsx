@@ -7,6 +7,7 @@ import { HubPage } from './pages/HubPage'
 import { JoinPage } from './pages/JoinPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { VerifyPage } from './pages/VerifyPage'
+import { SettingsPage } from './pages/SettingsPage'
 
 function App(): JSX.Element {
   return (
@@ -23,6 +24,7 @@ function App(): JSX.Element {
             <Route path="/join" element={<JoinPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/verify" element={<VerifyPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Routes>
       </AuthProvider>
