@@ -229,6 +229,10 @@ export function ProfilePictureEditor({
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
         onClick={() => { if (!imageState) fileInputRef.current?.click() }}
+        tabIndex={!imageState ? 0 : undefined}
+        role={!imageState ? 'button' : undefined}
+        aria-label={!imageState ? t('settings.picture_select') : undefined}
+        onKeyDown={!imageState ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click() } } : undefined}
       >
         <canvas ref={canvasRef} width={EDITOR_SIZE} height={EDITOR_SIZE} style={{ display: 'block' }} />
       </div>

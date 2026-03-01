@@ -79,7 +79,7 @@
     "picture_uploading": "Uploading…",
     "picture_success": "Profile picture updated. Changes appear after your next login.",
     "picture_error": "Upload failed. Please try again.",
-    "picture_size_error": "File must be a PNG and under 5 MB."
+    "picture_size_error": "File too large — please use an image under 5 MB."
   },
   "verify": {
     "title": "Verify your identity",

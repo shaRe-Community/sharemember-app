@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
 import { AppShell } from '../components/AppShell'
@@ -115,6 +115,8 @@ function ProfilePictureSection({ token, currentPicture }: { token: string; curre
   const [isUploading, setIsUploading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(currentPicture)
+  const localPreviewRef = useRef<string | null>(null)
 
   const ssoUrl = import.meta.env.VITE_SSO_URL as string
   const realm = import.meta.env.VITE_KEYCLOAK_REALM as string
@@ -140,6 +142,10 @@ function ProfilePictureSection({ token, currentPicture }: { token: string; curre
       })
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      if (localPreviewRef.current) URL.revokeObjectURL(localPreviewRef.current)
+      const url = URL.createObjectURL(blob)
+      localPreviewRef.current = url
+      setLocalPreviewUrl(url)
       setSuccess(true)
     } catch {
       setError(t('settings.picture_error'))
@@ -152,7 +158,7 @@ function ProfilePictureSection({ token, currentPicture }: { token: string; curre
     <div className="settings-card">
       <h2 className="settings-section-title">{t('settings.picture_title')}</h2>
       <ProfilePictureEditor
-        currentPicture={currentPicture}
+        currentPicture={localPreviewUrl}
         onUpload={handleUpload}
         isUploading={isUploading}
       />

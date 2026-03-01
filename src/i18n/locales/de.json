@@ -79,7 +79,7 @@
     "picture_uploading": "Wird hochgeladen…",
     "picture_success": "Profilbild aktualisiert. Änderungen erscheinen nach der nächsten Anmeldung.",
     "picture_error": "Upload fehlgeschlagen. Bitte erneut versuchen.",
-    "picture_size_error": "Datei muss eine PNG-Datei sein und unter 5 MB groß sein."
+    "picture_size_error": "Datei zu groß — bitte verwende ein Bild unter 5 MB."
   },
   "verify": {
     "title": "Identität bestätigen",
