@@ -43,7 +43,7 @@ function PersonalInfoSection({ token }: { token: string }): JSX.Element {
       .then((info) => setForm(info))
       .catch(() => setError(t('settings.error_generic')))
       .finally(() => setIsLoading(false))
-  }, [token, t])
+  }, [token])
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
