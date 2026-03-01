@@ -9,6 +9,7 @@ import {
   type KcUserInfo,
 } from '../api/keycloak-account'
 import { ApiError } from '../api/api'
+import { ProfilePictureEditor } from '../components/ProfilePictureEditor'
 
 export function SettingsPage(): JSX.Element {
   const { user } = useAuth()
@@ -18,6 +19,7 @@ export function SettingsPage(): JSX.Element {
     <AppShell>
       <div className="settings-container">
         <h1 className="settings-title">{t('settings.title')}</h1>
+        <ProfilePictureSection token={user!.accessToken} currentPicture={user!.picture} />
         <PersonalInfoSection token={user!.accessToken} />
         <PasswordSection token={user!.accessToken} />
       </div>
@@ -104,6 +106,58 @@ function PersonalInfoSection({ token }: { token: string }): JSX.Element {
           {isSaving ? t('settings.saving') : t('settings.save')}
         </button>
       </form>
+    </div>
+  )
+}
+
+function ProfilePictureSection({ token, currentPicture }: { token: string; currentPicture: string | null }): JSX.Element {
+  const { t } = useTranslation()
+  const [isUploading, setIsUploading] = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const ssoUrl = import.meta.env.VITE_SSO_URL as string
+  const realm = import.meta.env.VITE_KEYCLOAK_REALM as string
+
+  const handleUpload = async (blob: Blob): Promise<void> => {
+    if (blob.size > 5 * 1024 * 1024) {
+      setError(t('settings.picture_size_error'))
+      return
+    }
+
+    setIsUploading(true)
+    setSuccess(false)
+    setError(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', blob, 'profile.png')
+
+      const res = await fetch(`${ssoUrl}/realms/${realm}/profile_pictures`, {
+        method: 'POST',
+        body: formData,
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      setSuccess(true)
+    } catch {
+      setError(t('settings.picture_error'))
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  return (
+    <div className="settings-card">
+      <h2 className="settings-section-title">{t('settings.picture_title')}</h2>
+      <ProfilePictureEditor
+        currentPicture={currentPicture}
+        onUpload={handleUpload}
+        isUploading={isUploading}
+      />
+      {error && <p className="form-error" style={{ marginTop: '1rem' }}>{error}</p>}
+      {success && <p className="form-success" style={{ marginTop: '1rem' }}>{t('settings.picture_success')}</p>}
     </div>
   )
 }

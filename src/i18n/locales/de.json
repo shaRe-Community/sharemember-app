@@ -70,7 +70,16 @@
     "changing_password": "Wird geändert…",
     "password_success": "Passwort erfolgreich geändert.",
     "error_generic": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
-    "error_401": "Sitzung abgelaufen. Bitte ab- und neu anmelden."
+    "error_401": "Sitzung abgelaufen. Bitte ab- und neu anmelden.",
+    "picture_title": "Profilbild",
+    "picture_current": "Aktuelles Profilbild",
+    "picture_select": "Bild auswählen",
+    "picture_change": "Bild ändern",
+    "picture_upload": "Bild speichern",
+    "picture_uploading": "Wird hochgeladen…",
+    "picture_success": "Profilbild aktualisiert. Änderungen erscheinen nach der nächsten Anmeldung.",
+    "picture_error": "Upload fehlgeschlagen. Bitte erneut versuchen.",
+    "picture_size_error": "Datei muss eine PNG-Datei sein und unter 5 MB groß sein."
   },
   "verify": {
     "title": "Identität bestätigen",

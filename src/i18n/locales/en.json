@@ -70,7 +70,16 @@
     "changing_password": "Changing…",
     "password_success": "Password changed successfully.",
     "error_generic": "Something went wrong. Please try again.",
-    "error_401": "Session expired. Please sign out and sign back in."
+    "error_401": "Session expired. Please sign out and sign back in.",
+    "picture_title": "Profile Picture",
+    "picture_current": "Current profile picture",
+    "picture_select": "Select image",
+    "picture_change": "Change image",
+    "picture_upload": "Save picture",
+    "picture_uploading": "Uploading…",
+    "picture_success": "Profile picture updated. Changes appear after your next login.",
+    "picture_error": "Upload failed. Please try again.",
+    "picture_size_error": "File must be a PNG and under 5 MB."
   },
   "verify": {
     "title": "Verify your identity",
