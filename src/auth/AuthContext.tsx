@@ -6,7 +6,7 @@ import {
   ReactNode,
 } from 'react'
 import type { User } from 'oidc-client-ts'
-import { userManager } from './auth.config'
+import { userManager, registerUserManager } from './auth.config'
 
 export type EidStatus = 'un_identified' | 'identified'
 
@@ -17,6 +17,7 @@ export interface AuthUser {
   accessToken: string
   eidStatus: EidStatus
   shareMemberId: string | null
+  picture: string | null
 }
 
 interface AuthContextValue {
@@ -24,6 +25,7 @@ interface AuthContextValue {
   isLoading: boolean
   login: () => Promise<void>
   logout: () => Promise<void>
+  register: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -37,6 +39,7 @@ function mapUser(oidcUser: User): AuthUser {
     accessToken: oidcUser.access_token,
     eidStatus: (profile.eid_status as EidStatus) ?? 'un_identified',
     shareMemberId: (profile.share_member_id as string) ?? null,
+    picture: (profile.picture as string) ?? null,
   }
 }
 
@@ -65,10 +68,14 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
   }, [])
 
   const login = () => userManager.signinRedirect()
-  const logout = () => userManager.signoutRedirect()
+  const register = () => registerUserManager.signinRedirect()
+  const logout = async () => {
+    await userManager.removeUser()
+    window.location.href = '/'
+  }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   )

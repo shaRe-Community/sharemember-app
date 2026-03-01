@@ -519,6 +519,13 @@
   border: 3px solid var(--sm-color-primary-red);
 }
 
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
 .avatar-unidentified .avatar {
   filter: grayscale(100%);
   border: 3px dashed rgba(255,255,255,0.4);

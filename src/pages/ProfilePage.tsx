@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
 import { AppShell } from '../components/AppShell'
 
 export function ProfilePage(): JSX.Element {
   const { user } = useAuth()
+  const { t } = useTranslation()
   const isIdentified = user?.eidStatus === 'identified'
   const initials = user?.name
     ? user.name
@@ -21,7 +23,15 @@ export function ProfilePage(): JSX.Element {
           {/* Avatar */}
           <div className={`avatar-wrapper${isIdentified ? '' : ' avatar-unidentified'}`}>
             <div className="avatar">
-              {initials}
+              {user?.picture ? (
+                <img
+                  src={user.picture}
+                  alt={user.name}
+                  className="avatar-img"
+                />
+              ) : (
+                initials
+              )}
             </div>
             <span className={`avatar-badge${isIdentified ? ' avatar-badge-shield' : ' avatar-badge-question'}`}>
               {isIdentified ? '✓' : '?'}
@@ -36,21 +46,18 @@ export function ProfilePage(): JSX.Element {
             <div className="identity-banner identity-banner-verified">
               <span className="identity-icon">✓</span>
               <div>
-                <strong>Identity verified</strong>
-                <p>You are an IDENTIFIED shaRe Member with full platform access.</p>
+                <strong>{t('profile.identity_verified')}</strong>
+                <p>{t('profile.identity_verified_desc')}</p>
               </div>
             </div>
           ) : (
             <div className="identity-banner identity-banner-unverified">
               <span className="identity-icon">?</span>
               <div>
-                <strong>Identity not yet verified</strong>
-                <p>
-                  Identify yourself to unlock full participation and protect your shaRe
-                  presence from impersonation.
-                </p>
+                <strong>{t('profile.identity_unverified')}</strong>
+                <p>{t('profile.identity_unverified_desc')}</p>
                 <Link to="/verify" className="cta-button" style={{ marginTop: '1rem', display: 'inline-block' }}>
-                  Verify with eID
+                  {t('profile.verify_cta')}
                 </Link>
               </div>
             </div>
