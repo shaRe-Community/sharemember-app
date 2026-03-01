@@ -1,0 +1,41 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "1ab08c7a66bf",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 6,
+  "files_touched": [
+    "docs/plans/2026-03-01-settings-page.md",
+    "src/App.css",
+    "src/auth/AuthContext.tsx",
+    "src/auth/auth.config.ts",
+    "src/components/AppShell.tsx",
+    "src/components/LanguageSwitcher.tsx",
+    "src/i18n/config.ts",
+    "src/i18n/locales/de.json",
+    "src/i18n/locales/en.json",
+    "src/main.tsx",
+    "src/pages/CallbackPage.tsx",
+    "src/pages/HubPage.tsx",
+    "src/pages/JoinPage.tsx",
+    "src/pages/LandingPage.tsx",
+    "src/pages/ProfilePage.tsx",
+    "src/pages/VerifyPage.tsx"
+  ],
+  "sessions": [
+    {
+      "metadata": "/1a/b08c7a66bf/0/metadata.json",
+      "transcript": "/1a/b08c7a66bf/0/full.jsonl",
+      "context": "/1a/b08c7a66bf/0/context.md",
+      "content_hash": "/1a/b08c7a66bf/0/content_hash.txt",
+      "prompt": "/1a/b08c7a66bf/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 1801,
+    "cache_creation_tokens": 779052,
+    "cache_read_tokens": 40108633,
+    "output_tokens": 156157,
+    "api_call_count": 381
+  }
+}

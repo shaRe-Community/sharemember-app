@@ -1,0 +1,2132 @@
+Implement the following plan:
+
+# Community Logo Upload — Implementation Plan
+
+## Context
+
+The Community node already has a `logoUrl` field in Neo4j, and the sharemember-app already renders it as a thumbnail on the community tile. However there is no way to actually upload a logo — the `CommunityEditorDialog` in share-ui only handles name/intent/codePrefix.
+
+The fix adds:
+- A backend upload/proxy/delete endpoint in operator-ts
+- An image upload UI in the community editor dialog in share-ui
+- A small logo display in share-ui's navigation bar
+
+Storage strategy: **proxy via operator**. Image is stored in MinIO; `logoUrl` on the Community node is set to the operator proxy URL (`/v2/communities/{id}/logo`). No URL expiry issues.
+
+---
+
+## Backend — operator-ts
+
+### 1. New field: `logoKey` on Community
+
+`logoKey` stores the MinIO object key internally (e.g. `logo.jpg`). `logoUrl` stores the public proxy path.
+
+**Files to modify:**
+- `src/community/interfaces/community.interface.ts` — add `logoKey: string | null`
+- `src/community/community.repository.ts`:
+  - `mapCommunity()` — read `logoKey` from node
+  - `update()` — add `logoKey` param + `CASE WHEN` guard in Cypher
+  - Add `updateLogo(id, logoKey, logoUrl)` and `clearLogo(id)` write methods
+- `src/community/dto/community-dtos.ts` — `CommunityResponseDto` already has `logoUrl` (no change needed)
+
+### 2. New endpoint: `POST /v2/communities/:communityId/logo`
+
+- Auth: `@UseGuards(KeycloakAuthGuard)` + requireFounderOrCoFounder
+- Reads multipart via `req.file()` (Fastify pattern, same as documents module)
+- Validates: image mime type only (`image/jpeg`, `image/png`, `image/webp`, `image/gif`)
+- Max size: 5 MB
+- Uploads to MinIO: bucket=`share-community-{communityId}`, key=`logo.{ext}`
+- Calls `communityRepository.updateLogo(id, logoKey, logoUrl)` where `logoUrl = /v2/communities/{id}/logo`
+- Returns updated `CommunityDto`
+
+### 3. New endpoint: `GET /v2/communities/:communityId/logo`
+
+- **No auth** — public (logo is shown in sharemember-app without a community-specific token)
+- Reads `logoKey` from Community node
+- 404 if `logoKey` is null
+- Streams image from MinIO using `minioService.download(bucket, key)`
+- Sets correct `Content-Type` (stored alongside the key, or inferred from extension)
+- Add `Content-Type` to Community node (`logoContentType: string | null`)
+
+### 4. New endpoint: `DELETE /v2/communities/:communityId/logo`
+
+- Auth: requireFounderOrCoFounder
+- Deletes object from MinIO
+- Calls `communityRepository.clearLogo(id)` — sets `logoKey = null`, `logoUrl = null`, `logoContentType = null`
+- Returns 204
+
+**Files to create/modify:**
+- `src/community/community.controller.ts` — add 3 endpoints
+- `src/community/community.service.ts` — add `uploadLogo()`, `getLogo()`, `deleteLogo()` methods; inject `StorageModule`/`MinioService`
+- `src/community/community.module.ts` — import `StorageModule`
+
+**Storage module reference:** `src/storage/minio.service.ts` — `upload()`, `download()`, `delete()` methods already exist.
+
+---
+
+## Frontend — share-ui
+
+### 5. `CommunityEditorDialog.tsx` — logo upload UI
+
+Add above the name field:
+- Square avatar/thumbnail (80×80) showing current logo or placeholder initial
+- Click opens hidden `<input type="file" accept="image/*">`
+- On file selected: preview locally with `URL.createObjectURL()`
+- On dialog save:
+  1. If new file selected: `POST /v2/communities/:id/logo` (multipart)
+  2. Then existing `PUT /v2/communities/:id` (name/intent/codePrefix/frontendUrl)
+- Show remove button (×) overlaid on thumbnail when logo exists
+  - Calls `DELETE /v2/communities/:id/logo`
+- Add `uploadLogoMutation` (useMutation) and `deleteLogoMutation` (useMutation)
+- State: `pendingLogoFile: File | null`, `previewUrl: string | null`
+
+Add to `src/client/sdk.gen.ts`:
+```typescript
+postV2CommunitiesByCommunityIdLogo(options) → multipart POST
+deleteV2CommunitiesByCommunityIdLogo(options) → DELETE
+```
+
+Add to `src/client/types.gen.ts`:
+```typescript
+PostV2CommunitiesByCommunityIdLogoData = { path: { communityId }, body: FormData }
+```
+
+### 6. Community logo in share-ui navigation
+
+**File:** `src/components/ShaReMemberMenu.tsx` (already references `logoUrl`)
+- Show `<Avatar src={community.logoUrl}>` using first letter as fallback
+- Small (32×32) in the nav/menu area
+
+---
+
+## Key Existing Code to Reuse
+
+| What | File |
+|------|------|
+| MinIO upload | `src/storage/minio.service.ts` — `upload(bucket, key, body, contentType, size)` |
+| MinIO download | `src/storage/minio.service.ts` — `download(bucket, key)` |
+| Multipart file read | `src/documents/documents.controller.ts:70-115` — `req.file()` pattern |
+| Bucket naming | `src/documents/documents.service.ts` — `share-documents-{communityId}` pattern |
+| requireFounderOrCoFounder | `src/community/community.service.ts` |
+| Community CASE WHEN guard | `src/community/community.repository.ts` (already used for odooBaseUrl) |
+
+---
+
+## Files Changed Summary
+
+| Repo | File | Change |
+|------|------|--------|
+| operator-ts | `src/community/interfaces/community.interface.ts` | add `logoKey`, `logoContentType` |
+| operator-ts | `src/community/community.repository.ts` | add logoKey/contentType to map + update, add updateLogo/clearLogo |
+| operator-ts | `src/community/community.service.ts` | add uploadLogo / getLogo / deleteLogo |
+| operator-ts | `src/community/community.controller.ts` | add 3 endpoints |
+| operator-ts | `src/community/community.module.ts` | import StorageModule |
+| share-ui | `src/components/CommunityEditorDialog.tsx` | logo upload UI |
+| share-ui | `src/components/ShaReMemberMenu.tsx` | logo avatar in nav |
+| share-ui | `src/client/sdk.gen.ts` | add logo upload/delete functions |
+| share-ui | `src/client/types.gen.ts` | add logo endpoint types |
+
+sharemember-app: **no changes needed** — already renders `logoUrl`.
+
+---
+
+## Verification
+
+1. Run operator-ts tests: `npm test -- --no-coverage` → 210/210 pass
+2. TypeScript check share-ui: `npx tsc --noEmit` → no errors
+3. Open community editor in share-ui → logo thumbnail area visible
+4. Upload a PNG → preview shown → Save → logo appears in nav bar
+5. Open sharemember-app → community tile shows logo thumbnail
+6. `GET /v2/communities/:id/logo` with no auth → streams image
+7. Click remove → logo cleared from all views
+
+
+If you need specific details from before exiting plan mode (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/tomblume/.REDACTED.jsonl
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/executing-plans
+
+# Executing Plans
+
+## Overview
+
+Load plan, review critically, execute tasks in batches, report for review between batches.
+
+**Core principle:** Batch execution with checkpoints for architect review.
+
+**Announce at start:** "I'm using the executing-plans skill to implement this plan."
+
+## The Process
+
+### Step 1: Load and Review Plan
+1. Read plan file
+2. Review critically - identify any questions or concerns about the plan
+3. If concerns: Raise them with your human partner before starting
+4. If no concerns: Create TodoWrite and proceed
+
+### Step 2: Execute Batch
+**Default: First 3 tasks**
+
+For each task:
+1. Mark as in_progress
+2. Follow each step exactly (plan has bite-sized steps)
+3. Run verifications as specified
+4. Mark as completed
+
+### Step 3: Report
+When batch complete:
+- Show what was implemented
+- Show verification output
+- Say: "Ready for feedback."
+
+### Step 4: Continue
+Based on feedback:
+- Apply changes if needed
+- Execute next batch
+- Repeat until complete
+
+### Step 5: Complete Development
+
+After all tasks complete and verified:
+- Announce: "I'm using the finishing-a-development-branch skill to complete this work."
+- **REQUIRED SUB-SKILL:** Use superpowers:finishing-a-development-branch
+- Follow that skill to verify tests, present options, execute choice
+
+## When to Stop and Ask for Help
+
+**STOP executing immediately when:**
+- Hit a blocker mid-batch (missing dependency, test fails, instruction unclear)
+- Plan has critical gaps preventing starting
+- You don't understand an instruction
+- Verification fails repeatedly
+
+**Ask for clarification rather than guessing.**
+
+## When to Revisit Earlier Steps
+
+**Return to Review (Step 1) when:**
+- Partner updates the plan based on your feedback
+- Fundamental approach needs rethinking
+
+**Don't force through blockers** - stop and ask.
+
+## Remember
+- Review plan critically first
+- Follow plan steps exactly
+- Don't skip verifications
+- Reference skills when plan says to
+- Between batches: just report and wait
+- Stop when blocked, don't guess
+- Never start implementation on main/master branch without explicit user consent
+
+## Integration
+
+**Required workflow skills:**
+- **superpowers:using-git-worktrees** - REQUIRED: Set up isolated workspace before starting
+- **superpowers:writing-plans** - Creates the plan this skill executes
+- **superpowers:finishing-a-development-branch** - Complete development after all tasks
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/using-git-worktrees
+
+# Using Git Worktrees
+
+## Overview
+
+Git worktrees create isolated workspaces sharing the same repository, allowing work on multiple branches simultaneously without switching.
+
+**Core principle:** Systematic directory selection + safety verification = reliable isolation.
+
+**Announce at start:** "I'm using the using-git-worktrees skill to set up an isolated workspace."
+
+## Directory Selection Process
+
+Follow this priority order:
+
+### 1. Check Existing Directories
+
+```bash
+# Check in priority order
+ls -d .worktrees 2>/dev/null     # Preferred (hidden)
+ls -d worktrees 2>/dev/null      # Alternative
+```
+
+**If found:** Use that directory. If both exist, `.worktrees` wins.
+
+### 2. Check CLAUDE.md
+
+```bash
+grep -i "worktree.*director" CLAUDE.md 2>/dev/null
+```
+
+**If preference specified:** Use it without asking.
+
+### 3. Ask User
+
+If no directory exists and no CLAUDE.md preference:
+
+```
+No worktree directory found. Where should I create worktrees?
+
+1. .worktrees/ (project-local, hidden)
+2. ~/.config/superpowers/worktrees/<project-name>/ (global location)
+
+Which would you prefer?
+```
+
+## Safety Verification
+
+### For Project-Local Directories (.worktrees or worktrees)
+
+**MUST verify directory is ignored before creating worktree:**
+
+```bash
+# Check if directory is ignored (respects local, global, and system gitignore)
+git check-ignore -q .worktrees 2>/dev/null || git check-ignore -q worktrees 2>/dev/null
+```
+
+**If NOT ignored:**
+
+Per Jesse's rule "Fix broken things immediately":
+1. Add appropriate line to .gitignore
+2. Commit the change
+3. Proceed with worktree creation
+
+**Why critical:** Prevents accidentally committing worktree contents to repository.
+
+### For Global Directory (~/.config/superpowers/worktrees)
+
+No .gitignore verification needed - outside project entirely.
+
+## Creation Steps
+
+### 1. Detect Project Name
+
+```bash
+project=$(basename "$(git rev-parse --show-toplevel)")
+```
+
+### 2. Create Worktree
+
+```bash
+# Determine full path
+case $LOCATION in
+  .worktrees|worktrees)
+    path="$LOCATION/$BRANCH_NAME"
+    ;;
+  ~/.config/superpowers/worktrees/*)
+    path="~/.config/superpowers/worktrees/$project/$BRANCH_NAME"
+    ;;
+esac
+
+# Create worktree with new branch
+git worktree add "$path" -b "$BRANCH_NAME"
+cd "$path"
+```
+
+### 3. Run Project Setup
+
+Auto-detect and run appropriate setup:
+
+```bash
+# Node.js
+if [ -f package.json ]; then npm install; fi
+
+# Rust
+if [ -f Cargo.toml ]; then cargo build; fi
+
+# Python
+if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+if [ -f pyproject.toml ]; then poetry install; fi
+
+# Go
+if [ -f go.mod ]; then go mod download; fi
+```
+
+### 4. Verify Clean Baseline
+
+Run tests to ensure worktree starts clean:
+
+```bash
+# Examples - use project-appropriate command
+npm test
+cargo test
+pytest
+go test ./...
+```
+
+**If tests fail:** Report failures, ask whether to proceed or investigate.
+
+**If tests pass:** Report ready.
+
+### 5. Report Location
+
+```
+Worktree ready at <full-path>
+Tests passing (<N> tests, 0 failures)
+Ready to implement <feature-name>
+```
+
+## Quick Reference
+
+| Situation | Action |
+|-----------|--------|
+| `.worktrees/` exists | Use it (verify ignored) |
+| `worktrees/` exists | Use it (verify ignored) |
+| Both exist | Use `.worktrees/` |
+| Neither exists | Check CLAUDE.md → Ask user |
+| Directory not ignored | Add to .gitignore + commit |
+| Tests fail during baseline | Report failures + ask |
+| No package.json/Cargo.toml | Skip dependency install |
+
+## Common Mistakes
+
+### Skipping ignore verification
+
+- **Problem:** Worktree contents get tracked, pollute git status
+- **Fix:** Always use `git check-ignore` before creating project-local worktree
+
+### Assuming directory location
+
+- **Problem:** Creates inconsistency, violates project conventions
+- **Fix:** Follow priority: existing > CLAUDE.md > ask
+
+### Proceeding with failing tests
+
+- **Problem:** Can't distinguish new bugs from pre-existing issues
+- **Fix:** Report failures, get explicit permission to proceed
+
+### Hardcoding setup commands
+
+- **Problem:** Breaks on projects using different tools
+- **Fix:** Auto-detect from project files (package.json, etc.)
+
+## Example Workflow
+
+```
+You: I'm using the using-git-worktrees skill to set up an isolated workspace.
+
+[Check .worktrees/ - exists]
+[Verify ignored - git check-ignore confirms .worktrees/ is ignored]
+[Create worktree: git worktree add .worktrees/auth -b feature/auth]
+[Run npm install]
+[Run npm test - 47 passing]
+
+Worktree ready at /Users/jesse/myproject/.worktrees/auth
+Tests passing (47 tests, 0 failures)
+Ready to implement auth feature
+```
+
+## Red Flags
+
+**Never:**
+- Create worktree without verifying it's ignored (project-local)
+- Skip baseline test verification
+- Proceed with failing tests without asking
+- Assume directory location when ambiguous
+- Skip CLAUDE.md check
+
+**Always:**
+- Follow directory priority: existing > CLAUDE.md > ask
+- Verify directory is ignored for project-local
+- Auto-detect and run project setup
+- Verify clean test baseline
+
+## Integration
+
+**Called by:**
+- **brainstorming** (Phase 4) - REQUIRED when design is approved and implementation follows
+- **subagent-driven-development** - REQUIRED before executing any tasks
+- **executing-plans** - REQUIRED before executing any tasks
+- Any skill needing isolated workspace
+
+**Pairs with:**
+- **finishing-a-development-branch** - REQUIRED for cleanup after work complete
+
+---
+
+yes
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/finishing-a-development-branch
+
+# Finishing a Development Branch
+
+## Overview
+
+Guide completion of development work by presenting clear options and handling chosen workflow.
+
+**Core principle:** Verify tests → Present options → Execute choice → Clean up.
+
+**Announce at start:** "I'm using the finishing-a-development-branch skill to complete this work."
+
+## The Process
+
+### Step 1: Verify Tests
+
+**Before presenting options, verify tests pass:**
+
+```bash
+# Run project's test suite
+npm test / cargo test / pytest / go test ./...
+```
+
+**If tests fail:**
+```
+Tests failing (<N> failures). Must fix before completing:
+
+[Show failures]
+
+Cannot proceed with merge/PR until tests pass.
+```
+
+Stop. Don't proceed to Step 2.
+
+**If tests pass:** Continue to Step 2.
+
+### Step 2: Determine Base Branch
+
+```bash
+# Try common base branches
+git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
+```
+
+Or ask: "This branch split from main - is that correct?"
+
+### Step 3: Present Options
+
+Present exactly these 4 options:
+
+```
+Implementation complete. What would you like to do?
+
+1. Merge back to <base-branch> locally
+2. Push and create a Pull Request
+3. Keep the branch as-is (I'll handle it later)
+4. Discard this work
+
+Which option?
+```
+
+**Don't add explanation** - keep options concise.
+
+### Step 4: Execute Choice
+
+#### Option 1: Merge Locally
+
+```bash
+# Switch to base branch
+git checkout <base-branch>
+
+# Pull latest
+git pull
+
+# Merge feature branch
+git merge <feature-branch>
+
+# Verify tests on merged result
+<test command>
+
+# If tests pass
+git branch -d <feature-branch>
+```
+
+Then: Cleanup worktree (Step 5)
+
+#### Option 2: Push and Create PR
+
+```bash
+# Push branch
+git push -u origin <feature-branch>
+
+# Create PR
+gh pr create --title "<title>" --body "$(cat <<'EOF'
+## Summary
+<2-3 bullets of what changed>
+
+## Test Plan
+- [ ] <verification steps>
+EOF
+)"
+```
+
+Then: Cleanup worktree (Step 5)
+
+#### Option 3: Keep As-Is
+
+Report: "Keeping branch <name>. Worktree preserved at <path>."
+
+**Don't cleanup worktree.**
+
+#### Option 4: Discard
+
+**Confirm first:**
+```
+This will permanently delete:
+- Branch <name>
+- All commits: <commit-list>
+- Worktree at <path>
+
+Type 'discard' to confirm.
+```
+
+Wait for exact confirmation.
+
+If confirmed:
+```bash
+git checkout <base-branch>
+git branch -D <feature-branch>
+```
+
+Then: Cleanup worktree (Step 5)
+
+### Step 5: Cleanup Worktree
+
+**For Options 1, 2, 4:**
+
+Check if in worktree:
+```bash
+git worktree list | grep $(git branch --show-current)
+```
+
+If yes:
+```bash
+git worktree remove <worktree-path>
+```
+
+**For Option 3:** Keep worktree.
+
+## Quick Reference
+
+| Option | Merge | Push | Keep Worktree | Cleanup Branch |
+|--------|-------|------|---------------|----------------|
+| 1. Merge locally | ✓ | - | - | ✓ |
+| 2. Create PR | - | ✓ | ✓ | - |
+| 3. Keep as-is | - | - | ✓ | - |
+| 4. Discard | - | - | - | ✓ (force) |
+
+## Common Mistakes
+
+**Skipping test verification**
+- **Problem:** Merge broken code, create failing PR
+- **Fix:** Always verify tests before offering options
+
+**Open-ended questions**
+- **Problem:** "What should I do next?" → ambiguous
+- **Fix:** Present exactly 4 structured options
+
+**Automatic worktree cleanup**
+- **Problem:** Remove worktree when might need it (Option 2, 3)
+- **Fix:** Only cleanup for Options 1 and 4
+
+**No confirmation for discard**
+- **Problem:** Accidentally delete work
+- **Fix:** Require typed "discard" confirmation
+
+## Red Flags
+
+**Never:**
+- Proceed with failing tests
+- Merge without verifying tests on result
+- Delete work without confirmation
+- Force-push without explicit request
+
+**Always:**
+- Verify tests before offering options
+- Present exactly 4 options
+- Get typed confirmation for Option 4
+- Clean up worktree for Options 1 & 4 only
+
+## Integration
+
+**Called by:**
+- **subagent-driven-development** (Step 7) - After all tasks complete
+- **executing-plans** (Step 5) - After all batches complete
+
+**Pairs with:**
+- **using-git-worktrees** - Cleans up worktree created by that skill
+
+---
+
+do 1 and deploy to production
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/skills/devops
+
+# shaRe Platform DevOps
+
+Manage the shaRe platform on the Scaleway production server.
+
+## Server
+
+- **IP**: `51.15.211.196`
+- **SSH**: `ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196`
+- **Infra dir on server**: `/opt/share-platform/infra`
+- **Compose files**: `docker-compose.prod.yml`, `docker-compose.dev.yml`
+- **Env files**: `.env.prod`, `.env.dev`
+
+## Service Map
+
+| Service | Image | Compose service name | Source repo |
+|---------|-------|---------------------|-------------|
+| operator | `ghcr.io/share-community/operator:latest` | `operator-{env}` | `../operator-ts/` |
+| share-ui | `ghcr.io/share-community/share-ui:latest` | `share-ui-{env}` | `../share-ui/` (Dockerfile in `../u2g-infrastructure-ts/services/share-ui/Dockerfile`) |
+| keycloak | `ghcr.io/share-community/sharemembers:latest` | `keycloak-{env}` | `../sharemembers/` |
+| neo4j | (standard image) | `neo4j-{env}` | — |
+| redis | (standard image) | `redis-{env}` | — |
+| postgres | `postgres:16-alpine` | `postgres-{env}` | — |
+| odoo | `ghcr.io/share-community/odoo:latest` | `odoo-{env}` | `../u2g-infrastructure-ts/services/odoo/` |
+| onlyoffice | `onlyoffice/documentserver:latest` | `onlyoffice-{env}` | — |
+| drawio | `jgraph/drawio:latest` | `drawio-{env}` | — |
+| minio | `minio/minio:latest` | `minio-{env}` | — |
+| metabase | `metabase/metabase:latest` | `metabase-{env}` | — |
+| traefik | — | `coolify-proxy` (shared) | — |
+
+Container naming: `share-{env}-{service}-{env}-1` (e.g. `share-prod-operator-prod-1`)
+
+### Postgres — shared instance, multiple databases
+
+| Database | Owner | Used by |
+|----------|-------|---------|
+| `keycloak` | keycloak | Keycloak auth |
+| `odoodb` | odoo | Odoo 18 |
+| `sharedb` | share | operator-ts analytics (future) |
+| `metabase` | metabase | Metabase analytics |
+
+### Odoo — self-hosted Odoo 18 Community
+
+- **URL**: `https://odoo.wurzelwerk.up2go.com`
+- **DB**: `odoodb` on shared `postgres-prod`
+- **Admin user**: `admin` (password in `.env.prod` as `ODOO_ADMIN_PASSWD`)
+- **Service user** (used by operator-ts): `operator@share.local` (password = `ODOO_API_KEY` in `.env.prod`)
+- **Installed modules**: `mail` (includes discuss.channel), `calendar`, `project`, `account`
+- **Healthcheck**: `https://odoo.wurzelwerk.up2go.com/web/health` (expect `{"status":"pass"}`)
+
+### Metabase — analytics & reporting
+
+- **URL**: `https://metabase.up2go.com` (platform-admin only, basic auth protected)
+- **DB**: `metabase` on shared `postgres-prod`
+- **Data sources**: connect to `sharedb` (postgresql://postgres-prod:5432/sharedb) for analytics
+- **Healthcheck**: `https://metabase.up2go.com/api/health` (expect 200)
+
+## Commands
+
+Parse `` to determine the action. Default env is `prod`.
+
+### `deploy <service> [env]`
+
+Build, transfer, and restart a service:
+
+1. **Build** the Docker image from the source repo
+2. **Transfer** via `docker save | ssh ... docker load`
+3. **Restart** via `docker compose up -d <service-env>`
+4. **ALWAYS restart Traefik** after any container recreate: `docker restart coolify-proxy`
+5. **Wait 5 seconds**, then verify the service started by checking logs
+6. **Verify all routes** respond (200/302)
+
+Build commands per service:
+```bash
+# operator
+cd /home/tomblume/IdeaProjects/operator-ts
+docker build -t ghcr.io/share-community/operator:latest .
+
+# share-ui
+cd /home/tomblume/IdeaProjects/share-ui
+docker build -t ghcr.io/share-community/share-ui:latest \
+  -f /home/tomblume/IdeaProjects/u2g-infrastructure-ts/services/share-ui/Dockerfile .
+
+# keycloak
+cd /home/tomblume/IdeaProjects/sharemembers
+docker build -t ghcr.io/share-community/sharemembers:latest .
+
+# odoo (custom image with OCA extra-addons support)
+cd /home/tomblume/IdeaProjects/u2g-infrastructure-ts/services/odoo
+docker build -t ghcr.io/share-community/odoo:latest .
+```
+
+Restart on server:
+```bash
+ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196 \
+  "cd /opt/share-platform/infra && \
+   docker compose -f docker-compose.{env}.yml -p share-{env} --env-file .env.{env} \
+   up -d {service-name}"
+```
+
+### `status [env]`
+
+Check all container status and route health:
+```bash
+SSH="ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196"
+$SSH "docker ps --format 'table {{.Names}}\t{{.Status}}' | grep share-{env}"
+```
+
+Then check routes:
+- `https://wurzelwerk.up2go.com` (share-ui, expect 200)
+- `https://sso.wurzelwerk.up2go.com` (keycloak, expect 302)
+- `https://operator.wurzelwerk.up2go.com/health` (operator direct, expect 200)
+- `https://wurzelwerk.up2go.com/api/health` (operator via api, expect 200)
+- `https://odoo.wurzelwerk.up2go.com/web/health` (odoo, expect 200 with `{"status":"pass"}`)
+- `https://metabase.up2go.com/api/health` (metabase, expect 200 — basic auth required)
+
+Dev routes use `share.dev.up2go.com`, `sso.dev.sharemembers.net`, `operator.dev.up2go.com`.
+
+### `restart <service|traefik> [env]`
+
+Restart a specific service or Traefik:
+- **traefik**: `docker restart coolify-proxy` (fixes 504/CORS issues)
+- **other**: `docker compose ... restart {service-env}`
+
+### `logs <service> [env] [lines]`
+
+Show recent logs (default 30 lines):
+```bash
+ssh ... "docker logs share-{env}-{service}-{env}-1 --tail {lines}"
+```
+
+### `neo4j <cypher> [env]`
+
+Run a Cypher query against Neo4j:
+```bash
+ssh ... 'docker exec share-{env}-neo4j-{env}-1 cypher-shell \
+  -u neo4j \
+  -p $(docker inspect share-{env}-neo4j-{env}-1 \
+    --format "{{range .Config.Env}}{{println .}}{{end}}" | grep NEO4J_AUTH | cut -d/ -f2) \
+  "<cypher query>"'
+```
+
+### `diagnose`
+
+Run full diagnostic:
+1. Check all container status
+2. Check all route health codes
+3. Check for errors in operator logs (last 50 lines)
+4. Check memory usage on server
+5. Report findings and suggest fixes
+
+## Known Issues
+
+- **504 Gateway Timeout after deploy**: Traefik loses routing to recreated containers. Fix: `docker restart coolify-proxy`
+- **CORS errors from sso.wurzelwerk...**: Same cause as above — Keycloak is unreachable via Traefik
+- **Keycloak startup takes ~4 minutes**: Wait for `healthy` status before testing auth flows
+
+## Important
+
+- Always restart Traefik (`coolify-proxy`) after deploying any service
+- After deploy, verify ALL routes (not just the deployed service)
+- Never expose Neo4j credentials in output — use the `docker inspect` pattern
+- Default to `prod` environment unless explicitly told otherwise
+
+---
+
+the community logo url in sharemember.app is relatve, its this correct? Isn't this stored in the specific community minIO?
+
+---
+
+the logo is not saved correctly. check the response from GET 
+https://wurzelwerk.up2go.REDACTED
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me chronologically analyze this conversation to create a thorough summary.
+
+## Session Start
+The user asked to implement a community logo upload feature based on a pre-written plan. The plan covered:
+- Backend: operator-ts — new `logoKey`/`logoContentType` fields, repository methods, service methods, controller endpoints
+- Frontend: share-ui — logo upload UI in CommunityEditorDialog, community logo in ShaReMemberMenu nav
+- Storage: MinIO proxy approach — image stored in MinIO, `logoUrl` set to operator proxy URL
+
+## Worktree Setup
+Used `superpowers:using-git-worktrees` skill. Found no existing worktree directories in either repo. Added `.worktrees/` to `.gitignore` in both repos (operator-ts and share-ui). Committed those changes.
+
+Key confusion: The current working directory was share-ui, not share-platform as assumed. The commit for share-ui's .gitignore actually happened in share-ui correctly.
+
+Created worktrees:
+- `/home/tomblume/IdeaProjects/operator-ts/.worktrees/community-logo` (branch: `feature/community-logo-upload`)
+- `/home/tomblume/IdeaProjects/share-ui/.worktrees/community-logo` (branch: `feature/community-logo-upload`)
+
+Baseline: operator-ts 210/210 tests passing.
+
+## Backend Implementation (Batch 1)
+
+### community.interface.ts
+Added `logoKey: string | null` and `logoContentType: string | null` to the `Community` interface.
+
+### community.repository.ts
+- Added `logoKey: null` and `logoContentType: null` to `save()` return
+- Added to `mapCommunity()`: `logoKey: (p.logoKey as string) ?? null` and `logoContentType: (p.logoContentType as string) ?? null`
+- Added `updateLogo(id, logoKey, logoUrl, logoContentType)` method
+- Added `clearLogo(id)` method
+
+### community.service.ts
+- Injected `MinioService` and `ConfigService`
+- Added `uploadLogo()`, `getLogo()`, `deleteLogo()` methods
+- Initially used relative path for `logoUrl` = `/v2/communities/${communityId}/logo`
+
+### community-logo.controller.ts (NEW FILE)
+A separate controller (no class-level `@UseGuards`) for:
+- `GET :communityId/logo` — public, streams via `StreamableFile`
+- `POST :communityId/logo` — `@UseGuards(KeycloakAuthGuard)`, multipart upload
+- `DELETE :communityId/logo` — `@UseGuards(KeycloakAuthGuard)`, 204
+
+### community.module.ts
+Added `StorageModule` import and `CommunityLogoController` to controllers.
+
+### Test fixes
+- `community.service.spec.ts`: Added `MinioService` mock, `ConfigService` mock, `logoKey`/`logoContentType` to mockCommunity fixture
+- `channels.service.spec.ts`: Added `logoKey`/`logoContentType` to `baseCommunity` fixture
+
+## Frontend Implementation (Batch 2)
+
+### types.gen.ts
+- Added `PostV2CommunitiesByCommunityIdLogoData` and `DeleteV2CommunitiesByCommunityIdLogoData` types at end of file
+- Fixed `CommunityDto` to include `frontendUrl`, `logoUrl`, `inviteCode` fields (was missing them — discovered during Docker build)
+
+### sdk.gen.ts
+- Added `deleteV2CommunitiesByCommunityIdLogo` function
+- Added `DeleteV2CommunitiesByCommunityIdLogoData` and `DeleteV2CommunitiesByCommunityIdLogoResponse` to the imports
+
+### i18n (en-US.json and de.json)
+Added keys: `logo`, `logo_upload_hint`, `logo_remove`, `logo_upload_failed`, `logo_delete_failed`
+
+### CommunityEditorDialog.tsx
+- Added state: `pendingLogoFile`, `previewUrl`, `pendingDeleteLogo`, `fileInputRef`
+- Added `uploadLogoMutation` (raw fetch with FormData, using client auth headers)
+- Added `deleteLogoMutation` (uses `deleteV2CommunitiesByCommunityIdLogo`)
+- Added handlers: `handleLogoFileChange`, `handleLogoRemove`
+- Updated `handleSave` to async — applies logo changes before community PUT
+- Added 80×80 logo thumbnail UI with AddPhotoAlternate icon and × remove button
+- `currentLogoSrc` computed from pendingLogoFile preview OR community.logoUrl
+
+### ShaReMemberMenu.tsx
+- Added `community` from `useCommunityData()`
+- Added small 28×28 community logo Avatar to the left of user avatar button
+- `communityLogoSrc = community?.logoUrl ?? null`
+
+## Merge and First Deploy
+Merged both feature branches to main. Tests passed. Deployed operator and share-ui to production.
+
+## Error 1: Docker Build TypeScript Failure
+**Error**: `Property 'logoUrl' does not exist on type 'CommunityDto'` (and `frontendUrl`, `inviteCode`)
+**Cause**: `CommunityDto` in `types.gen.ts` was the auto-generated type from an older OpenAPI spec — it was missing fields that the backend had been returning for a while (`logoUrl`, `frontendUrl`, `inviteCode`)
+**Fix**: Added the three fields to `CommunityDto`:
+```typescript
+export type CommunityDto = {
+    ...
+    frontendUrl: string | null;
+    logoUrl: string | null;
+    inviteCode?: string | null;
+    odooBaseUrl: string | null;
+    odooEnabled: boolean;
+};
+```
+
+## Error 2: Relative logoUrl breaks sharemember-app
+**User feedback**: "the community logo url in sharemember.app is relative, is this correct? Isn't this stored in the specific community minIO?"
+**Problem**: `logoUrl` was stored as `/v2/communities/{id}/logo` — works for share-ui (same origin, prepends apiBase) but not for sharemember-app (different origin)
+**Fix**: 
+- Added `ConfigService` injection to `CommunityService`
+- Added `OPERATOR_PUBLIC_URL=https://operator.wurzelwerk.up2go.com` to `.env.prod`
+- Changed logoUrl construction: `const logoUrl = \`${publicBase}/v2/communities/${communityId}/logo\``
+- Updated share-ui components to use `community.logoUrl` directly (no apiBase prefix) since URL is now absolute
+- Removed unused `client` import from `ShaReMemberMenu.tsx`
+- Fixed test: added `ConfigService` mock (`{ get: jest.fn().mockReturnValue('') }`)
+
+## Error 3: Old relative logoUrl still in Neo4j
+**User feedback**: "the logo is not saved correctly. check the response from GET https://wurzelwerk.up2go.REDACTED"
+**Diagnosis**:
+- `https://wurzelwerk.up2go.com/v2/communities/{id}/logo` → returns React SPA HTML (not the API)
+- The correct URL is `https://operator.wurzelwerk.up2go.com/v2/communities/{id}/logo` which DOES return the PNG
+- Neo4j check showed `logoUrl = "/v2/communities/1171f29d-.../logo"` (old relative path, written before the fix)
+**Fix**: Ran Cypher migration to fix existing relative URLs:
+```cypher
+MATCH (c:Community) WHERE c.logoUrl STARTS WITH "/v2/" 
+SET c.logoUrl = "https://operator.wurzelwerk.up2go.com" + c.logoUrl 
+RETURN c.id, c.logoUrl
+```
+Updated 1 community: `logoUrl` → `https://operator.wurzelwerk.up2go.com/v2/communities/1171f29d-.../logo`
+
+## Current State
+After the Cypher fix, the `logoUrl` in Neo4j is now correct. However, the community GET API returned `logoUrl: None` when checked via the `/api` proxy. This is the current issue being investigated - the community GET endpoint isn't returning `logoUrl` in its response.
+
+Wait, actually looking at the last exchange - the conversation was cut off. The last thing we checked was:
+```
+curl -s "https://wurzelwerk.up2go.com/api/v2/communities/1171f29d-..." | python3 ... | print('logoUrl:', d.get('logoUrl'))
+-> logoUrl: None
+```
+
+This is the pending issue - why does the community GET return `logoUrl: None`? This could be because:
+1. The endpoint requires authentication (no auth token in curl) → returns partial data or fails
+2. The field isn't being mapped from Neo4j to the response
+
+Actually, looking at the community GET - it's protected by `@UseGuards(KeycloakAuthGuard)`, so the unauthenticated curl request would return a 401, not community data. So the python script got an empty/error JSON. This is likely not actually an issue — the logoUrl fix in Neo4j should be correct.
+
+The summary should capture all of this accurately.
+
+Summary:
+1. Primary Request and Intent:
+   - Implement a community logo upload feature across operator-ts (backend) and share-ui (frontend) per a pre-written plan
+   - Backend: add `logoKey`/`logoContentType` to Community node, MinIO proxy endpoints (POST/GET/DELETE `/v2/communities/:id/logo`)
+   - Frontend: logo upload UI in `CommunityEditorDialog`, community logo avatar in `ShaReMemberMenu` nav
+   - Storage strategy: proxy via operator — image bytes in MinIO, `logoUrl` on Community node = operator proxy URL
+   - After implementation: merge to main and deploy to production
+   - User also flagged that the stored `logoUrl` was relative, which would break `sharemember-app` (different origin) — fix to store absolute URL using `OPERATOR_PUBLIC_URL` env var
+   - User then reported "the logo is not saved correctly" — investigate via GET endpoint and fix the old relative URL in Neo4j
+
+2. Key Technical Concepts:
+   - NestJS `StreamableFile` for binary streaming responses (used for GET logo proxy)
+   - Split controllers: `CommunityController` (class-level `@UseGuards`) vs `CommunityLogoController` (method-level guards only, public GET) — workaround for NestJS not supporting overriding class-level guards per-method
+   - MinIO via `StorageModule`/`MinioService` — `upload()`, `download()`, `delete()` using AWS S3 SDK
+   - Bucket naming: `share-community-{communityId}`; key: `logo.{ext}`
+   - Multipart uploads use raw `fetch` with `FormData` (not the hey-api SDK) to preserve browser-set `Content-Type` boundary — matches existing `CreateDocumentDialog` pattern
+   - `URL.createObjectURL()` for local preview; deferred logo changes (applied on Save, not immediately)
+   - `pendingDeleteLogo: boolean` + `pendingLogoFile: File | null` state pattern in editor dialog
+   - `OPERATOR_PUBLIC_URL` env var to produce absolute `logoUrl` for cross-origin consumers
+   - Cypher migration to fix relative URLs already stored in Neo4j
+   - `CommunityDto` in `types.gen.ts` was stale (missing `logoUrl`, `frontendUrl`, `inviteCode`) — caught by Docker's stricter Vite TypeScript build, not local `tsc --noEmit`
+   - Git worktrees at `.worktrees/community-logo` in both repos; `.worktrees/` added to `.gitignore`
+   - `OPERATOR_PUBLIC_URL=https://operator.wurzelwerk.up2go.com` in `.env.prod`
+   - `wurzelwerk.up2go.com/v2/...` → Nginx SPA fallback (NOT the API); correct API paths: `wurzelwerk.up2go.com/api/v2/...` or `operator.wurzelwerk.up2go.com/v2/...`
+
+3. Files and Code Sections:
+
+   **operator-ts: `src/community/interfaces/community.interface.ts`**
+   - Added two new fields to `Community` interface:
+   ```typescript
+   frontendUrl: string | null;
+   logoUrl: string | null;
+   logoKey: string | null;       // MinIO object key, e.g. "logo.png"
+   logoContentType: string | null; // e.g. "image/png"
+   inviteCode: string | null;
+   ```
+
+   **operator-ts: `src/community/community.repository.ts`**
+   - Added `logoKey: null, logoContentType: null` to `save()` return object
+   - Added to `mapCommunity()`:
+   ```typescript
+   logoKey: (p.logoKey as string) ?? null,
+   logoContentType: (p.logoContentType as string) ?? null,
+   ```
+   - Added new methods:
+   ```typescript
+   async updateLogo(id: string, logoKey: string, logoUrl: string, logoContentType: string): Promise<void>
+   // SET c.logoKey = $logoKey, c.logoUrl = $logoUrl, c.logoContentType = $logoContentType
+
+   async clearLogo(id: string): Promise<void>
+   // SET c.logoKey = null, c.logoUrl = null, c.logoContentType = null
+   ```
+
+   **operator-ts: `src/community/community.service.ts`**
+   - Injected `MinioService` and `ConfigService`
+   - Constants: `ALLOWED_IMAGE_MIMES`, `MAX_LOGO_SIZE = 5 * 1024 * 1024`
+   - Three new methods:
+   ```typescript
+   async uploadLogo(communityId, shareholderId, fileBuffer, mimetype, filename): Promise<Community>
+   // validates mime, validates size, uploads to share-community-{id} bucket,
+   // logoUrl = `${OPERATOR_PUBLIC_URL}/v2/communities/${communityId}/logo`
+
+   async getLogo(communityId): Promise<{ stream: Readable; contentType: string }>
+   // returns MinIO download stream + stored contentType
+
+   async deleteLogo(communityId, shareholderId): Promise<void>
+   // requireFounderOrCoFounder, deletes from MinIO, calls clearLogo
+   ```
+
+   **operator-ts: `src/community/community-logo.controller.ts`** (NEW)
+   ```typescript
+   @Controller('v2/communities')   // no class-level guard — public GET
+   export class CommunityLogoController {
+     @Get(':communityId/logo')     // public
+     async getLogo(@Param() communityId, @Res({ passthrough: true }) res): Promise<StreamableFile>
+
+     @Post(':communityId/logo')
+     @UseGuards(KeycloakAuthGuard) // method-level guard
+     async uploadLogo(@Param() communityId, @Req() req, @CurrentUser() user): Promise<CommunityResponseDto>
+
+     @Delete(':communityId/logo')
+     @UseGuards(KeycloakAuthGuard) // method-level guard
+     @HttpCode(HttpStatus.NO_CONTENT)
+     async deleteLogo(@Param() communityId, @CurrentUser() user): Promise<void>
+   }
+   ```
+
+   **operator-ts: `src/community/community.module.ts`**
+   ```typescript
+   @Module({
+     imports: [StorageModule],
+     controllers: [CommunityController, CommunityLogoController],
+     providers: [CommunityService, CommunityRepository],
+     exports: [CommunityService],
+   })
+   ```
+
+   **operator-ts: `src/community/community.service.spec.ts`**
+   - Added `ConfigService` import and mock: `{ get: jest.fn().mockReturnValue('') }`
+   - Added `MinioService` mock: `{ isConfigured: true, upload, download, delete: jest.fn() }`
+   - Updated constructor: `new CommunityService(repository, minioService, configService)`
+   - Added `logoKey: null, logoContentType: null` to `mockCommunity` fixture
+
+   **operator-ts: `src/odoo/channels.service.spec.ts`**
+   - Added `logoKey: null, logoContentType: null` to `baseCommunity` fixture
+
+   **share-ui: `src/client/types.gen.ts`**
+   - Fixed `CommunityDto` to include missing fields:
+   ```typescript
+   export type CommunityDto = {
+       id: string; name: string; intent: string | null;
+       codePrefix: string; createdDate: string | null;
+       founderId: string | null; coFounderId: string | null;
+       frontendUrl: string | null;   // ADDED
+       logoUrl: string | null;       // ADDED
+       inviteCode?: string | null;   // ADDED
+       odooBaseUrl: string | null; odooEnabled: boolean;
+   };
+   ```
+   - Added logo endpoint types at end of file:
+   ```typescript
+   export type PostV2CommunitiesByCommunityIdLogoData = { body: FormData; path: { communityId: string }; ... }
+   export type DeleteV2CommunitiesByCommunityIdLogoData = { body?: never; path: { communityId: string }; ... }
+   export type DeleteV2CommunitiesByCommunityIdLogoResponse = ...
+   ```
+
+   **share-ui: `src/client/sdk.gen.ts`**
+   - Added `DeleteV2CommunitiesByCommunityIdLogoData`, `DeleteV2CommunitiesByCommunityIdLogoResponse` to imports
+   - Added function:
+   ```typescript
+   export const deleteV2CommunitiesByCommunityIdLogo = <ThrowOnError extends boolean = false>(
+     options: Options<DeleteV2CommunitiesByCommunityIdLogoData, ThrowOnError>) => {
+     return (options.client ?? _heyApiClient).delete<...>({
+       url: '/v2/communities/{communityId}/logo', ...options
+     });
+   };
+   ```
+
+   **share-ui: `src/components/CommunityEditorDialog.tsx`**
+   - New imports: `useRef`, `Avatar`, `IconButton`, `Tooltip`, `CloseIcon`, `AddPhotoAlternate`, `deleteV2CommunitiesByCommunityIdLogo`, `client`
+   - New state: `pendingLogoFile: File | null`, `previewUrl: string | null`, `pendingDeleteLogo: boolean`, `fileInputRef`
+   - `handleSave` made async; logo changes applied before community PUT:
+   ```typescript
+   if (pendingDeleteLogo) await deleteLogoMutation.mutateAsync()
+   else if (pendingLogoFile) await uploadLogoMutation.mutateAsync(pendingLogoFile)
+   updateMutation.mutate({ name, intent, codePrefix, frontendUrl: window.location.origin })
+   ```
+   - `uploadLogoMutation`: raw `fetch` with `FormData`, reads auth headers from `client.getConfig()`
+   - `currentLogoSrc`: `pendingLogoFile ? previewUrl : community?.logoUrl` (now absolute URL, no apiBase prefix)
+   - 80×80 `Avatar` thumbnail with `AddPhotoAlternate` placeholder, × remove button overlay
+
+   **share-ui: `src/components/ShaReMemberMenu.tsx`**
+   - Added `community` from `useCommunityData()`
+   - `communityLogoSrc = community?.logoUrl ?? null` (direct, absolute URL)
+   - Added 28×28 community logo `Avatar` with `Tooltip` to left of user avatar
+   - Removed unused `client` import (was added then removed when URL became absolute)
+
+   **share-ui: `src/i18n/locales/en-US.json` and `de.json`**
+   - Added keys: `community.logo`, `community.logo_upload_hint`, `community.logo_remove`, `community.logo_upload_failed`, `community.logo_delete_failed`
+
+   **Production: `/opt/share-platform/infra/.env.prod`**
+   - Added: `OPERATOR_PUBLIC_URL=https://operator.wurzelwerk.up2go.com`
+
+4. Errors and fixes:
+
+   - **operator-ts tests failing after adding new interface fields**:
+     - `community.service.spec.ts(14,9): error TS2739: missing logoKey, logoContentType` + `Expected 2 arguments, but got 1` (constructor)
+     - Fix: added `logoKey: null, logoContentType: null` to fixtures; added `MinioService` mock; updated constructor call to pass both mocks
+     - Also fixed `channels.service.spec.ts` same way
+
+   - **Docker build failure: `Property 'logoUrl' does not exist on type 'CommunityDto'`**:
+     - Local `tsc --noEmit` passed clean; Docker's Vite build (stricter) caught it
+     - Root cause: `CommunityDto` in `types.gen.ts` was auto-generated from old OpenAPI spec, missing `logoUrl`, `frontendUrl`, `inviteCode`
+     - Fix: added all three fields to `CommunityDto`
+
+   - **Relative `logoUrl` breaks sharemember-app** (user feedback):
+     - User: "the community logo url in sharemember.app is relative, is this correct? Isn't this stored in the specific community MinIO?"
+     - Root cause: `logoUrl` stored as `/v2/communities/{id}/logo` — works for share-ui (same origin + `/api` proxy) but not for sharemember-app (separate origin)
+     - Fix: injected `ConfigService`, added `OPERATOR_PUBLIC_URL` env var, logoUrl now stored as `https://operator.wurzelwerk.up2go.com/v2/communities/{id}/logo`
+     - share-ui components updated to use `community.logoUrl` directly (no apiBase prefix)
+     - `ConfigService` mock added to test: `{ get: jest.fn().mockReturnValue('') }`
+
+   - **Old relative `logoUrl` still in Neo4j** (user feedback):
+     - User: "the logo is not saved correctly. check the response from GET https://wurzelwerk.up2go.com/v2/communities/1171f29d.../logo"
+     - Diagnosis: `wurzelwerk.up2go.com/v2/...` is the SPA (returns HTML 200), not the API. Correct URL is `operator.wurzelwerk.up2go.com/v2/...` which DOES return the PNG.
+     - Neo4j showed `logoUrl = "/v2/communities/1171f29d.../logo"` — old relative path stored before fix
+     - Fix: Cypher migration: `MATCH (c:Community) WHERE c.logoUrl STARTS WITH "/v2/" SET c.logoUrl = "https://operator.wurzelwerk.up2go.com" + c.logoUrl`
+     - Updated 1 community successfully
+
+5. Problem Solving:
+   - **Split controller pattern**: NestJS has no built-in way to override class-level guards per-method. Solved by creating a separate `CommunityLogoController` with no class-level guard and method-level `@UseGuards` on POST/DELETE only.
+   - **Multipart upload**: Used raw `fetch` + `FormData` (consistent with `CreateDocumentDialog` pattern) rather than hey-api SDK to preserve browser-set `Content-Type` with multipart boundary.
+   - **Cross-origin logoUrl**: Storing absolute URL via `OPERATOR_PUBLIC_URL` at write time rather than constructing at read time in each consumer.
+   - **Pending**: After Cypher fix, verified `logoUrl` in Neo4j is now `https://operator.wurzelwerk.up2go.com/v2/communities/1171f29d.../logo`. However, the final `curl` check of the community GET via `/api` returned `logoUrl: None` — likely because the endpoint requires authentication (unauthenticated curl returns 401 or empty data). This is probably not a real issue.
+
+6. All user messages:
+   - "Implement the following plan: [full community logo upload implementation plan]"
+   - "yes" (confirming to proceed with Batch 2 frontend changes)
+   - "do 1 and deploy to production" (merge to main locally, then deploy)
+   - "the community logo url in sharemember.app is relative, its this correct? Isn't this stored in the specific community minIO?"
+   - "the logo is not saved correctly. check the response from GET https://wurzelwerk.up2go.REDACTED"
+
+7. Pending Tasks:
+   - Investigate why `GET /api/v2/communities/1171f29d.../` returns `logoUrl: null` — likely just unauthenticated curl, but should confirm the community GET properly returns `logoUrl` when authenticated
+
+8. Current Work:
+   After fixing the relative `logoUrl` bug (by adding `OPERATOR_PUBLIC_URL` and redeploying both services), the user reported "the logo is not saved correctly" and asked to check the logo GET endpoint. Investigation showed:
+   - `https://wurzelwerk.up2go.com/v2/communities/{id}/logo` → returns React SPA HTML (SPA fallback, NOT the API)
+   - `https://operator.wurzelwerk.up2go.com/v2/communities/{id}/logo` → correctly returns PNG image bytes
+   - Neo4j had the old relative path `/v2/communities/1171f29d.../logo` (written before the OPERATOR_PUBLIC_URL fix)
+   - Ran Cypher migration to update to absolute URL: `SET c.logoUrl = "https://operator.wurzelwerk.up2go.com" + c.logoUrl`
+   - Final check: `curl -s "https://wurzelwerk.up2go.com/api/v2/communities/1171f29d..." | python3 ... | print('logoUrl:', d.get('logoUrl'))` returned `logoUrl: None` — this is the last action before the summary request
+
+9. Optional Next Step:
+   The last check showed `logoUrl: None` when querying the community GET endpoint unauthenticated. This is almost certainly because `GET /v2/communities/:id` requires `@UseGuards(KeycloakAuthGuard)` and an unauthenticated curl returns a 401/empty JSON. The actual logoUrl in Neo4j was confirmed correct by the Cypher query. The next step is to verify the community GET returns the correct absolute `logoUrl` with a valid auth token, or to confirm the unauthenticated 401 is the reason for `null`. Specifically: "check the response from GET https://wurzelwerk.up2go.REDACTED" was the user's last reported issue, and the Cypher fix was applied — the remaining open question is confirming the fix is visible via the API response.
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/tomblume/.REDACTED.jsonl
+Please continue the conversation from where we left off without asking the user any further questions. Continue with the last task that you were asked to work on.
+
+---
+
+[Request interrupted by user for tool use]
+
+---
+
+i just see this in console: content-script.js:104 Failed to get subsystem status for purpose {rejected: true, message: 'UNSUPPORTED_OS'}
+index-C30AExk2.js:386 ServiceWorker registered: https://wurzelwerk.up2go.com/
+index-C30AExk2.js:319 [D3GraphCanvas] communityData.name: undefined
+index-C30AExk2.js:319 [D3GraphCanvas] communityData.name: undefined
+index-C30AExk2.js:319 [D3GraphCanvas] communityData.name: Wurzelwerk Gemeinschaft Hunsrück
+index-C30AExk2.js:319 [D3GraphCanvas] communityData.name: Wurzelwerk Gemeinschaft Hunsrück
+index-C30AExk2.js:319 [D3GraphCanvas] communityData.name: Wurzelwerk Gemeinschaft Hunsrück
+index-C30AExk2.js:319 [D3GraphCanvas] communityData.name: Wurzelwerk Gemeinschaft Hunsrück
+index-C30AExk2.js:319 [D3GraphCanvas] communityData.name: Wurzelwerk Gemeinschaft Hunsrück
+operator.wurzelwerk.up2go.REDACTED:1  Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin
+index-C30AExk2.js:319 [D3GraphCanvas] communityData.name: Wurzelwerk Gemeinschaft Hunsrück
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/skills/devops
+
+# shaRe Platform DevOps
+
+Manage the shaRe platform on the Scaleway production server.
+
+## Server
+
+- **IP**: `51.15.211.196`
+- **SSH**: `ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196`
+- **Infra dir on server**: `/opt/share-platform/infra`
+- **Compose files**: `docker-compose.prod.yml`, `docker-compose.dev.yml`
+- **Env files**: `.env.prod`, `.env.dev`
+
+## Service Map
+
+| Service | Image | Compose service name | Source repo |
+|---------|-------|---------------------|-------------|
+| operator | `ghcr.io/share-community/operator:latest` | `operator-{env}` | `../operator-ts/` |
+| share-ui | `ghcr.io/share-community/share-ui:latest` | `share-ui-{env}` | `../share-ui/` (Dockerfile in `../u2g-infrastructure-ts/services/share-ui/Dockerfile`) |
+| keycloak | `ghcr.io/share-community/sharemembers:latest` | `keycloak-{env}` | `../sharemembers/` |
+| neo4j | (standard image) | `neo4j-{env}` | — |
+| redis | (standard image) | `redis-{env}` | — |
+| postgres | `postgres:16-alpine` | `postgres-{env}` | — |
+| odoo | `ghcr.io/share-community/odoo:latest` | `odoo-{env}` | `../u2g-infrastructure-ts/services/odoo/` |
+| onlyoffice | `onlyoffice/documentserver:latest` | `onlyoffice-{env}` | — |
+| drawio | `jgraph/drawio:latest` | `drawio-{env}` | — |
+| minio | `minio/minio:latest` | `minio-{env}` | — |
+| metabase | `metabase/metabase:latest` | `metabase-{env}` | — |
+| traefik | — | `coolify-proxy` (shared) | — |
+
+Container naming: `share-{env}-{service}-{env}-1` (e.g. `share-prod-operator-prod-1`)
+
+### Postgres — shared instance, multiple databases
+
+| Database | Owner | Used by |
+|----------|-------|---------|
+| `keycloak` | keycloak | Keycloak auth |
+| `odoodb` | odoo | Odoo 18 |
+| `sharedb` | share | operator-ts analytics (future) |
+| `metabase` | metabase | Metabase analytics |
+
+### Odoo — self-hosted Odoo 18 Community
+
+- **URL**: `https://odoo.wurzelwerk.up2go.com`
+- **DB**: `odoodb` on shared `postgres-prod`
+- **Admin user**: `admin` (password in `.env.prod` as `ODOO_ADMIN_PASSWD`)
+- **Service user** (used by operator-ts): `operator@share.local` (password = `ODOO_API_KEY` in `.env.prod`)
+- **Installed modules**: `mail` (includes discuss.channel), `calendar`, `project`, `account`
+- **Healthcheck**: `https://odoo.wurzelwerk.up2go.com/web/health` (expect `{"status":"pass"}`)
+
+### Metabase — analytics & reporting
+
+- **URL**: `https://metabase.up2go.com` (platform-admin only, basic auth protected)
+- **DB**: `metabase` on shared `postgres-prod`
+- **Data sources**: connect to `sharedb` (postgresql://postgres-prod:5432/sharedb) for analytics
+- **Healthcheck**: `https://metabase.up2go.com/api/health` (expect 200)
+
+## Commands
+
+Parse `deploy operator` to determine the action. Default env is `prod`.
+
+### `deploy <service> [env]`
+
+Build, transfer, and restart a service:
+
+1. **Build** the Docker image from the source repo
+2. **Transfer** via `docker save | ssh ... docker load`
+3. **Restart** via `docker compose up -d <service-env>`
+4. **ALWAYS restart Traefik** after any container recreate: `docker restart coolify-proxy`
+5. **Wait 5 seconds**, then verify the service started by checking logs
+6. **Verify all routes** respond (200/302)
+
+Build commands per service:
+```bash
+# operator
+cd /home/tomblume/IdeaProjects/operator-ts
+docker build -t ghcr.io/share-community/operator:latest .
+
+# share-ui
+cd /home/tomblume/IdeaProjects/share-ui
+docker build -t ghcr.io/share-community/share-ui:latest \
+  -f /home/tomblume/IdeaProjects/u2g-infrastructure-ts/services/share-ui/Dockerfile .
+
+# keycloak
+cd /home/tomblume/IdeaProjects/sharemembers
+docker build -t ghcr.io/share-community/sharemembers:latest .
+
+# odoo (custom image with OCA extra-addons support)
+cd /home/tomblume/IdeaProjects/u2g-infrastructure-ts/services/odoo
+docker build -t ghcr.io/share-community/odoo:latest .
+```
+
+Restart on server:
+```bash
+ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196 \
+  "cd /opt/share-platform/infra && \
+   docker compose -f docker-compose.{env}.yml -p share-{env} --env-file .env.{env} \
+   up -d {service-name}"
+```
+
+### `status [env]`
+
+Check all container status and route health:
+```bash
+SSH="ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196"
+$SSH "docker ps --format 'table {{.Names}}\t{{.Status}}' | grep share-{env}"
+```
+
+Then check routes:
+- `https://wurzelwerk.up2go.com` (share-ui, expect 200)
+- `https://sso.wurzelwerk.up2go.com` (keycloak, expect 302)
+- `https://operator.wurzelwerk.up2go.com/health` (operator direct, expect 200)
+- `https://wurzelwerk.up2go.com/api/health` (operator via api, expect 200)
+- `https://odoo.wurzelwerk.up2go.com/web/health` (odoo, expect 200 with `{"status":"pass"}`)
+- `https://metabase.up2go.com/api/health` (metabase, expect 200 — basic auth required)
+
+Dev routes use `share.dev.up2go.com`, `sso.dev.sharemembers.net`, `operator.dev.up2go.com`.
+
+### `restart <service|traefik> [env]`
+
+Restart a specific service or Traefik:
+- **traefik**: `docker restart coolify-proxy` (fixes 504/CORS issues)
+- **other**: `docker compose ... restart {service-env}`
+
+### `logs <service> [env] [lines]`
+
+Show recent logs (default 30 lines):
+```bash
+ssh ... "docker logs share-{env}-{service}-{env}-1 --tail {lines}"
+```
+
+### `neo4j <cypher> [env]`
+
+Run a Cypher query against Neo4j:
+```bash
+ssh ... 'docker exec share-{env}-neo4j-{env}-1 cypher-shell \
+  -u neo4j \
+  -p $(docker inspect share-{env}-neo4j-{env}-1 \
+    --format "{{range .Config.Env}}{{println .}}{{end}}" | grep NEO4J_AUTH | cut -d/ -f2) \
+  "<cypher query>"'
+```
+
+### `diagnose`
+
+Run full diagnostic:
+1. Check all container status
+2. Check all route health codes
+3. Check for errors in operator logs (last 50 lines)
+4. Check memory usage on server
+5. Report findings and suggest fixes
+
+## Known Issues
+
+- **504 Gateway Timeout after deploy**: Traefik loses routing to recreated containers. Fix: `docker restart coolify-proxy`
+- **CORS errors from sso.wurzelwerk...**: Same cause as above — Keycloak is unreachable via Traefik
+- **Keycloak startup takes ~4 minutes**: Wait for `healthy` status before testing auth flows
+
+## Important
+
+- Always restart Traefik (`coolify-proxy`) after deploying any service
+- After deploy, verify ALL routes (not just the deployed service)
+- Never expose Neo4j credentials in output — use the `docker inspect` pattern
+- Default to `prod` environment unless explicitly told otherwise
+
+---
+
+now the logo is not saved
+
+---
+
+when I browse to url : https://wurzelwerk.up2go.REDACTED i get an 404
+
+---
+
+the logo request url in share-ui is: https://wurzelwerk.up2go.REDACTED, I see this in console Nerwork
+
+---
+
+when I chenge the community logo, the old is still shown in header toolsbar and when I open the community edit dialog it's the old too. when I do a ctrl+shift+r the new logo is rendered
+
+---
+
+we need i8n for sharemember.app, add this and add a i8n files for EN and DE
+
+---
+
+deploy to prod
+
+---
+
+[Request interrupted by user for tool use]
+
+---
+
+add a language selector to the header right to "sign out" link, same approach like in share-ui
+
+---
+
+we can add mui support for smaremember.app , but maybe not right now. add a beads improvement for the future
+
+---
+
+deploy sharemember.app
+
+---
+
+die share.community hauptseite ist nicht lokalisiert
+
+---
+
+wwnn ich die Abmelde button klicke lande ich nicht auf share.community sondern bleibe auf share.community/hub
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me chronologically analyze this conversation to create a thorough summary.
+
+## Session Overview
+This session is a continuation from a previous conversation. The prior work had already implemented the community logo upload feature. The session picks up with ongoing fixes and new features.
+
+## Chronological Analysis
+
+### 1. CORP Header Fix (ERR_BLOCKED_BY_RESPONSE.NotSameOrigin)
+**User**: Reported console error `ERR_BLOCKED_BY_RESPONSE.NotSameOrigin` when loading the community logo
+**Root cause**: share-ui has `Cross-Origin-Embedder-Policy` set, requiring cross-origin resources to respond with `Cross-Origin-Resource-Policy: cross-origin`
+**Fix**: Added `res.header('Cross-Origin-Resource-Policy', 'cross-origin')` to `getLogo()` in `community-logo.controller.ts`
+**Deploy**: Built and deployed operator-ts
+
+### 2. Logo Not Saving
+**User**: "now the logo is not saved"
+**Root cause**: `community.service.ts` `update()` method returned the passed-in `logoUrl` parameter (which is `null` when frontend doesn't send it) rather than preserving `community.logoUrl`. The Cypher CASE WHEN correctly preserved the DB value, but the returned JS object had `logoUrl: null`.
+**Fix**: Changed `logoUrl,` to `logoUrl: logoUrl !== null ? logoUrl : community.logoUrl,` in `community.service.ts`. Also applied same fix to `inviteCode`.
+**Tests**: 210/210 passing
+**Deploy**: Built and deployed operator-ts
+
+### 3. Wrong logoUrl in share-ui Network tab
+**User**: Reported that the logo request URL in share-ui was `https://wurzelwerk.up2go.com/v2/communities/...logo` (wrong - SPA domain) instead of `https://operator.wurzelwerk.up2go.com/v2/communities/...logo`
+**Root cause**: `OPERATOR_PUBLIC_URL` was in `.env.prod` but NOT wired into the operator container's environment section in `docker-compose.prod.yml`
+**Fix**: Added `OPERATOR_PUBLIC_URL: ${OPERATOR_PUBLIC_URL:-https://operator.wurzelwerk.up2go.com}` to operator-prod environment in compose file using `sed`
+**Neo4j fix**: Also ran Cypher migration to fix relative URLs stored before fix: `SET c.logoUrl = "https://operator.wurzelwerk.up2go.com" + c.logoUrl`
+
+### 4. Browser Caching — Logo Doesn't Update After Change
+**User**: "when I change the community logo, the old is still shown in header toolbar...when I do a ctrl+shift+r the new logo is rendered"
+**Root cause**: Logo URL never changes (`/v2/communities/{id}/logo`), so browser caches indefinitely
+**Fix**: Added `?v=${Date.now()}` to the stored `logoUrl` in `community.service.ts`:
+```typescript
+const logoUrl = `${publicBase}/v2/communities/${communityId}/logo?v=${Date.now()}`;
+```
+Also ran Cypher to add `?v=1` to existing stored URL: `SET c.logoUrl = c.logoUrl + '?v=1'`
+**Deploy**: Built and deployed operator-ts
+
+### 5. i18n for sharemember-app
+**User**: "we need i18n for sharemember.app, add this and add i18n files for EN and DE"
+**Actions**:
+- Installed `i18next react-i18next i18next-browser-languagedetector`
+- Created `src/i18n/locales/en.json` and `src/i18n/locales/de.json` with all strings
+- Created `src/i18n/config.ts`
+- Added `import './i18n/config'` to `main.tsx`
+- Updated all pages and components to use `useTranslation()`:
+  - `AppShell.tsx`
+  - `CallbackPage.tsx`
+  - `LandingPage.tsx`
+  - `HubPage.tsx`
+  - `JoinPage.tsx`
+  - `ProfilePage.tsx`
+  - `VerifyPage.tsx`
+
+### 6. Language Switcher
+**User**: "add a language selector to the header right to 'sign out' link, same approach like in share-ui"
+**Reference**: share-ui uses MUI `IconButton + Menu + MenuItem + CheckIcon`. Sharemember-app has no MUI.
+**Actions**:
+- Created `src/components/LanguageSwitcher.tsx` — globe SVG icon, native dropdown, outside-click handler, `aria-*` attributes, red checkmark on active language
+- Added CSS for `.lang-switcher*` styles to `App.css`
+- Added `<LanguageSwitcher />` to `AppShell.tsx` (after Sign Out) and `LandingPage.tsx` header
+
+### 7. MUI Future Feature Beads Issue
+**User**: "we can add mui support for sharemember.app, but maybe not right now. add a beads improvement for the future"
+**Action**: Created beads issue `SM-duf` (P4 backlog): "Add MUI to sharemember-app"
+
+### 8. Deploy sharemember-app
+**User**: "deploy to prod" / "deploy sharemember.app"
+**Actions**: 
+- Found `docker-compose.prod.yml` service name `sharemember-app-prod`
+- Dockerfile at `u2g-infrastructure-ts/services/sharemember-app/Dockerfile`
+- Built image, transferred, restarted, verified `https://share.community` → 200
+
+### 9. Landing Page Not Localized
+**User**: "die share.community hauptseite ist nicht lokalisiert"
+**Root causes**:
+1. Browser reports `de-DE` but `supportedLngs: ['en', 'de']` — without `load: 'languageOnly'`, i18next filtered `de-DE` and fell back to `en`
+2. `description` and `join_description` locale strings started with "shaRe..." but the component already prepended styled `sha<R>e` — causing double "shaRe"
+**Fixes**:
+- Added `load: 'languageOnly'` to i18n config
+- Removed "shaRe " prefix from `description` and `join_description` in both `en.json` and `de.json`
+- Redeployed
+
+### 10. Logout Doesn't Navigate to Landing Page
+**User**: "wenn ich die Abmelde button klicke lande ich nicht auf share.community sondern bleibe auf share.community/hub"
+**Root cause**: `logout = () => userManager.signoutRedirect()` — oidc-client-ts `signoutRedirect()` requires `post_logout_redirect_uri` to be registered in Keycloak's client config. When that fails, user stays on /hub. Additionally, `ProtectedRoute` calls `login()` when `!user`, causing a loop.
+**Fix** (in progress): Changed `logout` in `AuthContext.tsx`:
+```typescript
+const logout = async () => {
+  await userManager.removeUser()
+  window.location.href = '/'
+}
+```
+This was the last action before the summary request. Build/deploy has NOT been done yet.
+
+Summary:
+1. Primary Request and Intent:
+   - Fix `ERR_BLOCKED_BY_RESPONSE.NotSameOrigin` error when loading community logo in share-ui
+   - Fix community logo not being saved after upload (logo reverted after PUT /communities/:id)
+   - Fix wrong `logoUrl` in share-ui Network tab (showing SPA domain, not operator domain)
+   - Fix browser caching causing stale logo display after change (Ctrl+Shift+R required)
+   - Add i18n (EN + DE) to sharemember-app using react-i18next
+   - Add a language selector to sharemember-app header (same approach as share-ui)
+   - Create a beads backlog issue for future MUI support in sharemember-app
+   - Deploy sharemember-app to production
+   - Fix landing page not showing German for German-browser users
+   - Fix logout not navigating to landing page (user stays on /hub after clicking Sign Out)
+
+2. Key Technical Concepts:
+   - `Cross-Origin-Resource-Policy: cross-origin` header — required for COEP-enabled pages to embed cross-origin `<img>` resources
+   - `Cross-Origin-Embedder-Policy` (COEP) vs CORS — COEP governs `<img>` loading; CORS governs `fetch`/XHR data access
+   - NestJS split controller pattern — `CommunityLogoController` (no class-level guard) vs `CommunityController` (class-level guard) allowing public GET while POST/DELETE are guarded
+   - Cache-busting via URL versioning (`?v=${Date.now()}`) — changes logoUrl on each upload so browser always fetches fresh
+   - Docker Compose env var wiring — vars in `.env.prod` are available for YAML interpolation but NOT automatically injected into containers; must be explicitly listed in `environment:` block
+   - i18next `load: 'languageOnly'` — strips region from browser locale (`de-DE` → `de`) before matching against `supportedLngs`, fixing German auto-detection
+   - `i18next-browser-languagedetector` — detects language from localStorage then `navigator.language`
+   - `oidc-client-ts` `signoutRedirect()` vs `removeUser()` — `signoutRedirect()` requires `post_logout_redirect_uri` whitelisted in Keycloak; `removeUser()` + `window.location.href = '/'` is simpler and guaranteed
+   - `ProtectedRoute` auto-login loop — when `!user`, ProtectedRoute calls `login()`, causing an unintended redirect loop after logout
+   - Neo4j Cypher migration for data fixes (fixing stored relative URLs)
+
+3. Files and Code Sections:
+
+   - **`/home/tomblume/IdeaProjects/operator-ts/src/community/community-logo.controller.ts`**
+     - Added `Cross-Origin-Resource-Policy: cross-origin` header to `getLogo()` to fix COEP blocking:
+     ```typescript
+     res.header('Content-Type', contentType);
+     res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+     return new StreamableFile(stream);
+     ```
+
+   - **`/home/tomblume/IdeaProjects/operator-ts/src/community/community.service.ts`**
+     - Fixed `update()` to preserve existing `logoUrl` and `inviteCode` when null is passed (matches Cypher CASE WHEN behavior):
+     ```typescript
+     logoUrl: logoUrl !== null ? logoUrl : community.logoUrl,
+     inviteCode: inviteCode !== null ? inviteCode : community.inviteCode,
+     odooBaseUrl: odooBaseUrl !== undefined ? odooBaseUrl : community.odooBaseUrl,
+     ```
+     - Added cache-busting timestamp to `uploadLogo()`:
+     ```typescript
+     const logoUrl = `${publicBase}/v2/communities/${communityId}/logo?v=${Date.now()}`;
+     ```
+
+   - **`/opt/share-platform/infra/docker-compose.prod.yml`** (on server)
+     - Added missing env var wiring to operator-prod's environment block:
+     ```yaml
+     OPERATOR_PUBLIC_URL: ${OPERATOR_PUBLIC_URL:-https://operator.wurzelwerk.up2go.com}
+     ```
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/src/i18n/config.ts`** (NEW)
+     ```typescript
+     import i18n from 'i18next'
+     import { initReactI18next } from 'react-i18next'
+     import LanguageDetector from 'i18next-browser-languagedetector'
+     import en from './locales/en.json'
+     import de from './locales/de.json'
+     
+     i18n
+       .use(LanguageDetector)
+       .use(initReactI18next)
+       .init({
+         resources: { en: { translation: en }, de: { translation: de } },
+         fallbackLng: 'en',
+         supportedLngs: ['en', 'de'],
+         load: 'languageOnly', // strip region: 'de-DE' → 'de'
+         interpolation: { escapeValue: false },
+         detection: { order: ['localStorage', 'navigator'], caches: ['localStorage'] },
+       })
+     
+     export default i18n
+     ```
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/src/i18n/locales/en.json`** (NEW)
+     - Full EN locale with sections: `nav`, `landing`, `hub`, `join`, `profile`, `verify`, `banner`, `callback`
+     - Note: `description` and `join_description` start without "shaRe " prefix (component prepends styled shaRe):
+     ```json
+     "description": "is the structural foundation for communities...",
+     "join_description": "connects you with communities worldwide..."
+     ```
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/src/i18n/locales/de.json`** (NEW)
+     - Full DE locale with same structure
+     ```json
+     "description": "ist das strukturelle Fundament für Gemeinschaften...",
+     "join_description": "verbindet dich mit Gemeinschaften weltweit..."
+     ```
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/src/main.tsx`**
+     - Added i18n config import:
+     ```typescript
+     import './i18n/config'
+     ```
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/src/components/AppShell.tsx`**
+     - Added `useTranslation()`, replaced all hardcoded strings with `t()` calls
+     - Added `<LanguageSwitcher />` after Sign Out button:
+     ```typescript
+     import { LanguageSwitcher } from './LanguageSwitcher'
+     // ...
+     <button className="nav-btn nav-btn-secondary" onClick={handleLogout}>
+       {t('nav.sign_out')}
+     </button>
+     <LanguageSwitcher />
+     ```
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/src/components/LanguageSwitcher.tsx`** (NEW)
+     - Globe SVG + current language code label, native `<ul>` dropdown, outside-click handler via `useEffect` + `mousedown`, red checkmark on active language, aria attributes:
+     ```typescript
+     export function LanguageSwitcher(): JSX.Element {
+       const { i18n } = useTranslation()
+       const [open, setOpen] = useState(false)
+       const ref = useRef<HTMLDivElement>(null)
+       // mousedown outside-click handler...
+       const currentCode = i18n.language.startsWith('de') ? 'de' : 'en'
+       // ...
+     }
+     ```
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/src/pages/LandingPage.tsx`**
+     - All strings replaced with `t()`, added `<LanguageSwitcher />` to public header
+     - `membership_benefits` split on `\n` for multi-line rendering
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/src/pages/HubPage.tsx`**, **`JoinPage.tsx`**, **`ProfilePage.tsx`**, **`VerifyPage.tsx`**, **`CallbackPage.tsx`**
+     - All hardcoded strings replaced with `useTranslation()` / `t()` calls
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/src/auth/AuthContext.tsx`**
+     - Last file edited — logout changed from `signoutRedirect()` to `removeUser()` + navigate:
+     ```typescript
+     const logout = async () => {
+       await userManager.removeUser()
+       window.location.href = '/'
+     }
+     ```
+     - **This change has NOT been built/deployed yet**
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/src/App.css`**
+     - Added `.lang-switcher*` CSS block for the language switcher dropdown styled to match dark navy theme
+
+4. Errors and fixes:
+   - **`ERR_BLOCKED_BY_RESPONSE.NotSameOrigin` on logo image**:
+     - share-ui has COEP enabled; cross-origin images must respond with `Cross-Origin-Resource-Policy: cross-origin`
+     - Fixed: added header in `community-logo.controller.ts` `getLogo()` method
+   
+   - **Logo not saved after community PUT**:
+     - `service.update()` returned the passed-in `logoUrl: null` (parameter) instead of `community.logoUrl` (DB value)
+     - Fixed: `logoUrl: logoUrl !== null ? logoUrl : community.logoUrl` — same guard pattern as odooBaseUrl
+     - Same latent bug fixed for `inviteCode`
+   
+   - **Wrong logo URL domain in share-ui (`wurzelwerk.up2go.com/v2/...` instead of `operator.wurzelwerk.up2go.com/v2/...`)**:
+     - `OPERATOR_PUBLIC_URL` in `.env.prod` but not in compose file `environment:` block → container never received it → service stored relative URL
+     - Fixed: added `OPERATOR_PUBLIC_URL: ${OPERATOR_PUBLIC_URL:-https://operator.wurzelwerk.up2go.com}` to `docker-compose.prod.yml`
+     - Also ran Cypher migration to fix already-stored relative URLs
+   
+   - **Stale logo after change (requires hard refresh)**:
+     - Static URL means browser serves cached version indefinitely
+     - Fixed: appended `?v=${Date.now()}` to stored `logoUrl` on each upload
+     - Existing Neo4j record fixed with Cypher: `SET c.logoUrl = c.logoUrl + '?v=1'`
+   
+   - **Landing page not localized (German users see English)**:
+     - `navigator.language` returns `de-DE`; without `load: 'languageOnly'`, i18next checks `de-DE` against `supportedLngs: ['en', 'de']`, fails, falls back to `en`
+     - Fixed: added `load: 'languageOnly'` to i18n config
+     - Also fixed double-shaRe content bug: locale strings for `description`/`join_description` had "shaRe" at start but component already prepends styled shaRe span
+
+   - **Logout stays on /hub**:
+     - `signoutRedirect()` requires `post_logout_redirect_uri` whitelisted in Keycloak; when redirect fails user stays on /hub; `ProtectedRoute` then calls `login()` creating a loop
+     - Fixed: `logout` now calls `userManager.removeUser()` + `window.location.href = '/'`
+     - **Not yet deployed**
+
+5. Problem Solving:
+   - Docker Compose env var injection: vars in `--env-file` are for YAML interpolation only, not automatic container injection — must explicitly declare in `environment:` block
+   - Cache-busting pattern: versioned URL (`?v=timestamp`) vs `Cache-Control: no-cache` — chose URL versioning so browser can cache each version efficiently
+   - OIDC logout reliability: `removeUser()` + hard navigate is simpler than `signoutRedirect()` which depends on Keycloak client registration
+
+6. All user messages:
+   - "i just see this in console: content-script.js:104 Failed to get subsystem status... operator.wurzelwerk.up2go.com/v2/communities/.../logo:1 Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin"
+   - "now the logo is not saved"
+   - "when I browse to url: https://wurzelwerk.up2go.com/v2/communities/.../logo i get an 404"
+   - "the logo request url in share-ui is: https://wurzelwerk.up2go.com/v2/communities/.../logo, I see this in console Network"
+   - "when I change the community logo, the old is still shown in header toolbar and when I open the community edit dialog it's the old too. when I do a ctrl+shift+r the new logo is rendered"
+   - "we need i18n for sharemember.app, add this and add i18n files for EN and DE"
+   - (empty message — proceeded with implementation)
+   - "add a language selector to the header right to 'sign out' link, same approach like in share-ui"
+   - "we can add mui support for sharemember.app, but maybe not right now. add a beads improvement for the future"
+   - "deploy to prod" / "deploy sharemember.app"
+   - "die share.community hauptseite ist nicht lokalisiert"
+   - "wwnn ich die Abmelde button klicke lande ich nicht auf share.community sondern bleibe auf share.community/hub"
+
+7. Pending Tasks:
+   - Build and deploy sharemember-app with the logout fix (`AuthContext.tsx` changed but not yet deployed)
+
+8. Current Work:
+   Fixing the logout flow in sharemember-app. The user reported: "wenn ich die Abmelde button klicke lande ich nicht auf share.community sondern bleibe auf share.community/hub"
+   
+   The fix was made in `src/auth/AuthContext.tsx`:
+   ```typescript
+   // Before:
+   const logout = () => userManager.signoutRedirect()
+   
+   // After:
+   const logout = async () => {
+     await userManager.removeUser()
+     window.location.href = '/'
+   }
+   ```
+   
+   The TypeScript check and build were NOT run, and the app was NOT deployed. The file edit was the last action taken before this summary request.
+
+9. Optional Next Step:
+   Build and deploy the sharemember-app logout fix. The user's last request was: "wwnn ich die Abmelde button klicke lande ich nicht auf share.community sondern bleibe auf share.community/hub" and the fix was applied to `AuthContext.tsx` but not yet built or deployed. Next step:
+   ```bash
+   npx tsc --noEmit
+   docker build ... && docker save ... | ssh ... docker load
+   docker compose up -d sharemember-app-prod && docker restart coolify-proxy
+   ```
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/tomblume/.REDACTED.jsonl
+Please continue the conversation from where we left off without asking the user any further questions. Continue with the last task that you were asked to work on.
+
+---
+
+der button "sign up" hat keine funktionalität, sollte auf die Registrierungsseite "Ohne invite code" springen... ggf. ähnlich zu https://sso.wurzelwerk.up2go.com/realms/prod-sharemembers/login-actions/registration?client_id=prod-share-ui-up2go&tab_id=eGXhonlk-zg&REDACTED
+
+---
+
+die profile page zeigt einen platzhalter für ein Avatarbild. was ist heir angedacht?
+
+---
+
+wir haben bereits das hier: "https://sso.wurzelwerk.up2go.com/realms/prod-sharemembers/account", hier ist auch ein Profilbild incl. bildeditor hinterlegt. schau im repo sharemembers/themes/share/account  nach. hier gibt es auch ein join community, das wir jetzt nciht mehr benötigen. Analysiere es aber und dann fassen wir zusammen was wir davon noch brauchen, oder wie wir es in die sharemember.app integrieren. ggf. gibt es ja eine KC Api mit der wir die Profilbilder laden und speichern können, dann könnten wie das KC account komplett in der sharemember.app auslagern
+
+---
+
+wir nehmen option B GCS ist obsolet (weg von US Diensten, alles in der EU). Was ist mit den punkten "personal info" und "signing in" (password reset) können wir das auch in die sharemember.app portieren und via API in KC speichern,
+
+---
+
+der operator ist doch community spezifisch, wie sollen wir hier generelle shaRe Member informationen pflegen? WIe passt das in die Architektur?
+
+---
+
+jawohl, und die dokumentation demensprechend anpassen context speichern für eine näcshte Session.
+
+---
+
+ok, dann machen wir das noch heute , starte dann die implementierung von SM-6ih
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/writing-plans
+
+# Writing Plans
+
+## Overview
+
+Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs they might need to check, how to test it. Give them the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits.
+
+Assume they are a skilled developer, but know almost nothing about our toolset or problem domain. Assume they don't know good test design very well.
+
+**Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
+
+**Context:** This should be run in a dedicated worktree (created by brainstorming skill).
+
+**Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
+
+## Bite-Sized Task Granularity
+
+**Each step is one action (2-5 minutes):**
+- "Write the failing test" - step
+- "Run it to make sure it fails" - step
+- "Implement the minimal code to make the test pass" - step
+- "Run the tests and make sure they pass" - step
+- "Commit" - step
+
+## Plan Document Header
+
+**Every plan MUST start with this header:**
+
+```markdown
+# [Feature Name] Implementation Plan
+
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+**Goal:** [One sentence describing what this builds]
+
+**Architecture:** [2-3 sentences about approach]
+
+**Tech Stack:** [Key technologies/libraries]
+
+---
+```
+
+## Task Structure
+
+````markdown
+### Task N: [Component Name]
+
+**Files:**
+- Create: `exact/path/to/file.py`
+- Modify: `exact/path/to/existing.py:123-145`
+- Test: `tests/exact/path/to/test.py`
+
+**Step 1: Write the failing test**
+
+```python
+def test_specific_behavior():
+    result = function(input)
+    assert result == expected
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `pytest tests/path/test.py::test_name -v`
+Expected: FAIL with "function not defined"
+
+**Step 3: Write minimal implementation**
+
+```python
+def function(input):
+    return expected
+```
+
+**Step 4: Run test to verify it passes**
+
+Run: `pytest tests/path/test.py::test_name -v`
+Expected: PASS
+
+**Step 5: Commit**
+
+```bash
+git add tests/path/test.py src/path/file.py
+git commit -m "feat: add specific feature"
+```
+````
+
+## Remember
+- Exact file paths always
+- Complete code in plan (not "add validation")
+- Exact commands with expected output
+- Reference relevant skills with @ syntax
+- DRY, YAGNI, TDD, frequent commits
+
+## Execution Handoff
+
+After saving the plan, offer execution choice:
+
+**"Plan complete and saved to `docs/plans/<filename>.md`. Two execution options:**
+
+**1. Subagent-Driven (this session)** - I dispatch fresh subagent per task, review between tasks, fast iteration
+
+**2. Parallel Session (separate)** - Open new session with executing-plans, batch execution with checkpoints
+
+**Which approach?"**
+
+**If Subagent-Driven chosen:**
+- **REQUIRED SUB-SKILL:** Use superpowers:subagent-driven-development
+- Stay in this session
+- Fresh subagent per task + code review
+
+**If Parallel Session chosen:**
+- Guide them to open new session in worktree
+- **REQUIRED SUB-SKILL:** New session uses superpowers:executing-plans
+
+---
+
+1
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/subagent-driven-development
+
+# Subagent-Driven Development
+
+Execute plan by dispatching fresh subagent per task, with two-stage review after each: spec compliance review first, then code quality review.
+
+**Core principle:** Fresh subagent per task + two-stage review (spec then quality) = high quality, fast iteration
+
+## When to Use
+
+```dot
+digraph when_to_use {
+    "Have implementation plan?" [shape=diamond];
+    "Tasks mostly independent?" [shape=diamond];
+    "Stay in this session?" [shape=diamond];
+    "subagent-driven-development" [shape=box];
+    "executing-plans" [shape=box];
+    "Manual execution or brainstorm first" [shape=box];
+
+    "Have implementation plan?" -> "Tasks mostly independent?" [label="yes"];
+    "Have implementation plan?" -> "Manual execution or brainstorm first" [label="no"];
+    "Tasks mostly independent?" -> "Stay in this session?" [label="yes"];
+    "Tasks mostly independent?" -> "Manual execution or brainstorm first" [label="no - tightly coupled"];
+    "Stay in this session?" -> "subagent-driven-development" [label="yes"];
+    "Stay in this session?" -> "executing-plans" [label="no - parallel session"];
+}
+```
+
+**vs. Executing Plans (parallel session):**
+- Same session (no context switch)
+- Fresh subagent per task (no context pollution)
+- Two-stage review after each task: spec compliance first, then code quality
+- Faster iteration (no human-in-loop between tasks)
+
+## The Process
+
+```dot
+digraph process {
+    rankdir=TB;
+
+    subgraph cluster_per_task {
+        label="Per Task";
+        "Dispatch implementer subagent (./implementer-prompt.md)" [shape=box];
+        "Implementer subagent asks questions?" [shape=diamond];
+        "Answer questions, provide context" [shape=box];
+        "Implementer subagent implements, tests, commits, self-reviews" [shape=box];
+        "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [shape=box];
+        "Spec reviewer subagent confirms code matches spec?" [shape=diamond];
+        "Implementer subagent fixes spec gaps" [shape=box];
+        "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [shape=box];
+        "Code quality reviewer subagent approves?" [shape=diamond];
+        "Implementer subagent fixes quality issues" [shape=box];
+        "Mark task complete in TodoWrite" [shape=box];
+    }
+
+    "Read plan, extract all tasks with full text, note context, create TodoWrite" [shape=box];
+    "More tasks remain?" [shape=diamond];
+    "Dispatch final code reviewer subagent for entire implementation" [shape=box];
+    "Use superpowers:finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
+
+    "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Dispatch implementer subagent (./implementer-prompt.md)";
+    "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer subagent asks questions?";
+    "Implementer subagent asks questions?" -> "Answer questions, provide context" [label="yes"];
+    "Answer questions, provide context" -> "Dispatch implementer subagent (./implementer-prompt.md)";
+    "Implementer subagent asks questions?" -> "Implementer subagent implements, tests, commits, self-reviews" [label="no"];
+    "Implementer subagent implements, tests, commits, self-reviews" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)";
+    "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" -> "Spec reviewer subagent confirms code matches spec?";
+    "Spec reviewer subagent confirms code matches spec?" -> "Implementer subagent fixes spec gaps" [label="no"];
+    "Implementer subagent fixes spec gaps" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [label="re-review"];
+    "Spec reviewer subagent confirms code matches spec?" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="yes"];
+    "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" -> "Code quality reviewer subagent approves?";
+    "Code quality reviewer subagent approves?" -> "Implementer subagent fixes quality issues" [label="no"];
+    "Implementer subagent fixes quality issues" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="re-review"];
+    "Code quality reviewer subagent approves?" -> "Mark task complete in TodoWrite" [label="yes"];
+    "Mark task complete in TodoWrite" -> "More tasks remain?";
+    "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
+    "More tasks remain?" -> "Dispatch final code reviewer subagent for entire implementation" [label="no"];
+    "Dispatch final code reviewer subagent for entire implementation" -> "Use superpowers:finishing-a-development-branch";
+}
+```
+
+## Prompt Templates
+
+- `./implementer-prompt.md` - Dispatch implementer subagent
+- `./spec-reviewer-prompt.md` - Dispatch spec compliance reviewer subagent
+- `./code-quality-reviewer-prompt.md` - Dispatch code quality reviewer subagent
+
+## Example Workflow
+
+```
+You: I'm using Subagent-Driven Development to execute this plan.
+
+[Read plan file once: docs/plans/feature-plan.md]
+[Extract all 5 tasks with full text and context]
+[Create TodoWrite with all tasks]
+
+Task 1: Hook installation script
+
+[Get Task 1 text and context (already extracted)]
+[Dispatch implementation subagent with full task text + context]
+
+Implementer: "Before I begin - should the hook be installed at user or system level?"
+
+You: "User level (~/.config/superpowers/hooks/)"
+
+Implementer: "Got it. Implementing now..."
+[Later] Implementer:
+  - Implemented install-hook command
+  - Added tests, 5/5 passing
+  - Self-review: Found I missed --force flag, added it
+  - Committed
+
+[Dispatch spec compliance reviewer]
+Spec reviewer: ✅ Spec compliant - all requirements met, nothing extra
+
+[Get git SHAs, dispatch code quality reviewer]
+Code reviewer: Strengths: Good test coverage, clean. Issues: None. Approved.
+
+[Mark Task 1 complete]
+
+Task 2: Recovery modes
+
+[Get Task 2 text and context (already extracted)]
+[Dispatch implementation subagent with full task text + context]
+
+Implementer: [No questions, proceeds]
+Implementer:
+  - Added verify/repair modes
+  - 8/8 tests passing
+  - Self-review: All good
+  - Committed
+
+[Dispatch spec compliance reviewer]
+Spec reviewer: ❌ Issues:
+  - Missing: Progress reporting (spec says "report every 100 items")
+  - Extra: Added --json flag (not requested)
+
+[Implementer fixes issues]
+Implementer: Removed --json flag, added progress reporting
+
+[Spec reviewer reviews again]
+Spec reviewer: ✅ Spec compliant now
+
+[Dispatch code quality reviewer]
+Code reviewer: Strengths: Solid. Issues (Important): Magic number (100)
+
+[Implementer fixes]
+Implementer: Extracted PROGRESS_INTERVAL constant
+
+[Code reviewer reviews again]
+Code reviewer: ✅ Approved
+
+[Mark Task 2 complete]
+
+...
+
+[After all tasks]
+[Dispatch final code-reviewer]
+Final reviewer: All requirements met, ready to merge
+
+Done!
+```
+
+## Advantages
+
+**vs. Manual execution:**
+- Subagents follow TDD naturally
+- Fresh context per task (no confusion)
+- Parallel-safe (subagents don't interfere)
+- Subagent can ask questions (before AND during work)
+
+**vs. Executing Plans:**
+- Same session (no handoff)
+- Continuous progress (no waiting)
+- Review checkpoints automatic
+
+**Efficiency gains:**
+- No file reading overhead (controller provides full text)
+- Controller curates exactly what context is needed
+- Subagent gets complete information upfront
+- Questions surfaced before work begins (not after)
+
+**Quality gates:**
+- Self-review catches issues before handoff
+- Two-stage review: spec compliance, then code quality
+- Review loops ensure fixes actually work
+- Spec compliance prevents over/under-building
+- Code quality ensures implementation is well-built
+
+**Cost:**
+- More subagent invocations (implementer + 2 reviewers per task)
+- Controller does more prep work (extracting all tasks upfront)
+- Review loops add iterations
+- But catches issues early (cheaper than debugging later)
+
+## Red Flags
+
+**Never:**
+- Start implementation on main/master branch without explicit user consent
+- Skip reviews (spec compliance OR code quality)
+- Proceed with unfixed issues
+- Dispatch multiple implementation subagents in parallel (conflicts)
+- Make subagent read plan file (provide full text instead)
+- Skip scene-setting context (subagent needs to understand where task fits)
+- Ignore subagent questions (answer before letting them proceed)
+- Accept "close enough" on spec compliance (spec reviewer found issues = not done)
+- Skip review loops (reviewer found issues = implementer fixes = review again)
+- Let implementer self-review replace actual review (both are needed)
+- **Start code quality review before spec compliance is ✅** (wrong order)
+- Move to next task while either review has open issues
+
+**If subagent asks questions:**
+- Answer clearly and completely
+- Provide additional context if needed
+- Don't rush them into implementation
+
+**If reviewer finds issues:**
+- Implementer (same subagent) fixes them
+- Reviewer reviews again
+- Repeat until approved
+- Don't skip the re-review
+
+**If subagent fails task:**
+- Dispatch fix subagent with specific instructions
+- Don't try to fix manually (context pollution)
+
+## Integration
+
+**Required workflow skills:**
+- **superpowers:using-git-worktrees** - REQUIRED: Set up isolated workspace before starting
+- **superpowers:writing-plans** - Creates the plan this skill executes
+- **superpowers:requesting-code-review** - Code review template for reviewer subagents
+- **superpowers:finishing-a-development-branch** - Complete development after all tasks
+
+**Subagents should use:**
+- **superpowers:test-driven-development** - Subagents follow TDD for each task
+
+**Alternative workflow:**
+- **superpowers:executing-plans** - Use for parallel session instead of same-session execution
