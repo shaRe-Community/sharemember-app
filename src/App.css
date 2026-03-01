@@ -614,6 +614,75 @@
   }
 }
 
+/* ── Language Switcher ─────────────────────────────────────────────── */
+
+.lang-switcher {
+  position: relative;
+}
+
+.lang-switcher-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.25rem 0.4rem;
+  border-radius: 0.375rem;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.lang-switcher-btn:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.lang-switcher-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  background-color: #1e2a4a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0;
+  min-width: 130px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 200;
+}
+
+.lang-switcher-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.lang-switcher-item:hover {
+  background-color: rgba(255, 255, 255, 0.07);
+  color: white;
+}
+
+.lang-switcher-item-active {
+  color: white;
+  font-weight: 500;
+}
+
+.lang-switcher-check {
+  width: 1rem;
+  font-size: 0.75rem;
+  color: #FF3B2F;
+  flex-shrink: 0;
+}
+
 /* ── Verify page ───────────────────────────────────────────────────── */
 
 .verify-container {
@@ -752,4 +821,49 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Settings Page */
+.settings-container {
+  max-width: 640px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.settings-title {
+  font-size: 1.75rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.settings-card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.settings-section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: #18203a;
+}
+
+.settings-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 480px) {
+  .settings-row {
+    grid-template-columns: 1fr;
+  }
 }
