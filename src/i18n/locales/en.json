@@ -28,7 +28,11 @@
     "load_error": "Could not load your communities. Please try again.",
     "empty": "You are not a member of any community yet.",
     "member_count": "{{count}} members",
-    "enter": "Enter →"
+    "enter": "Enter →",
+    "discover_title": "Discover Communities",
+    "join_free": "Join",
+    "join_with_code": "Join with Code",
+    "joining": "Joining…"
   },
   "join": {
     "title": "Join a Community",

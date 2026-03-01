@@ -28,7 +28,11 @@
     "load_error": "Deine Gemeinschaften konnten nicht geladen werden. Bitte versuche es erneut.",
     "empty": "Du bist noch kein Mitglied einer Gemeinschaft.",
     "member_count": "{{count}} Mitglieder",
-    "enter": "Betreten →"
+    "enter": "Betreten →",
+    "discover_title": "Gemeinschaften entdecken",
+    "join_free": "Beitreten",
+    "join_with_code": "Mit Code beitreten",
+    "joining": "Trete bei…"
   },
   "join": {
     "title": "Gemeinschaft beitreten",

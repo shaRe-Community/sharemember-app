@@ -14,6 +14,16 @@ export interface CommunityTeaser {
   purposeRoundtable: PurposeRoundtableTeaser | null
 }
 
+export interface PublicCommunityTeaser {
+  id: string
+  name: string
+  intent: string | null
+  logoUrl: string | null
+  memberCount: number
+  isMember: boolean
+  hasInviteCode: boolean
+}
+
 export interface JoinCommunityResponse {
   communityId: string
   communityName: string

@@ -306,6 +306,19 @@
   gap: 1.5rem;
 }
 
+.hub-discover {
+  margin-top: 3rem;
+}
+
+.hub-discover-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .community-card {
   background-color: #18203a;
   border: 1px solid rgba(255,255,255,0.08);
