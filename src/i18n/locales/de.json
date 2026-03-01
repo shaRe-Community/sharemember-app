@@ -1,0 +1,104 @@
+{
+  "nav": {
+    "my_communities": "Meine Gemeinschaften",
+    "communities": "Gemeinschaften",
+    "profile": "Profil",
+    "verify_identity": "Identität bestätigen",
+    "sign_in": "Anmelden",
+    "sign_up": "Registrieren",
+    "sign_out": "Abmelden",
+    "loading": "Laden…",
+    "settings": "Einstellungen"
+  },
+  "landing": {
+    "quote": "Unser Ziel sollte die minimale Standardisierung menschlichen Verhaltens sein.",
+    "quote_author": "Douglas McGregor",
+    "tagline": "Menschen verbinden – Verantwortung teilen – Gemeinschaft stärken.",
+    "description": "ist das strukturelle Fundament für Gemeinschaften, die als Gesellschaften auf Basis gemeinsamer Verantwortung statt Hierarchie funktionieren. Wir stellen die rechtlichen, räumlichen und digitalen Ordnungen bereit, die authentische Gemeinschaft möglich machen.",
+    "membership_intro": "Deine shaRe-Mitgliedschaft ermöglicht:",
+    "membership_benefits": "Zugang zu allen drei Organisationsordnungen\nDas Recht, unbegrenzt Gemeinschaften und verbundene Gesellschaften zu gründen\nDie Möglichkeit, an beliebig vielen Kreisen teilzunehmen.",
+    "join_heading": "Kehre zurück zur natürlichen Ordnung",
+    "join_description": "verbindet dich mit Gemeinschaften weltweit, die einen anderen Weg der menschlichen Zusammenarbeit zeigen. Von Hotels ohne Hierarchien bis zu Unternehmen ohne klassisches Eigentum – erlebe Gemeinschaften, die mit der menschlichen Natur arbeiten, nicht gegen sie.",
+    "hero_img_alt": "Moderner Konferenzraum mit rundem Tisch und roten Stühlen"
+  },
+  "hub": {
+    "title": "Deine Gemeinschaften",
+    "join": "Gemeinschaft beitreten",
+    "loading": "Laden…",
+    "load_error": "Deine Gemeinschaften konnten nicht geladen werden. Bitte versuche es erneut.",
+    "empty": "Du bist noch kein Mitglied einer Gemeinschaft.",
+    "member_count": "{{count}} Mitglieder",
+    "enter": "Betreten →"
+  },
+  "join": {
+    "title": "Gemeinschaft beitreten",
+    "subtitle": "Gib den Einladungscode ein, den du erhalten hast, um einer Gemeinschaft beizutreten.",
+    "label": "Einladungscode",
+    "placeholder": "Deinen Einladungscode eingeben",
+    "submit": "Gemeinschaft beitreten",
+    "submitting": "Trete bei…",
+    "success": "Du bist {{communityName}} beigetreten!",
+    "error_invalid": "Ungültiger Einladungscode. Bitte überprüfe ihn und versuche es erneut.",
+    "error_generic": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
+  },
+  "profile": {
+    "identity_verified": "Identität bestätigt",
+    "identity_verified_desc": "Du bist ein IDENTIFIZIERTES shaRe-Mitglied mit vollem Plattformzugang.",
+    "identity_unverified": "Identität noch nicht bestätigt",
+    "identity_unverified_desc": "Identifiziere dich, um vollständig teilzunehmen und dein shaRe-Profil vor Nachahmung zu schützen.",
+    "verify_cta": "Mit eID bestätigen"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "personal_info_title": "Persönliche Daten",
+    "first_name": "Vorname",
+    "last_name": "Nachname",
+    "email": "E-Mail-Adresse",
+    "save": "Änderungen speichern",
+    "saving": "Speichern…",
+    "save_success": "Änderungen gespeichert.",
+    "password_title": "Passwort ändern",
+    "current_password": "Aktuelles Passwort",
+    "new_password": "Neues Passwort",
+    "confirm_password": "Neues Passwort bestätigen",
+    "password_mismatch": "Passwörter stimmen nicht überein.",
+    "change_password": "Passwort ändern",
+    "changing_password": "Wird geändert…",
+    "password_success": "Passwort erfolgreich geändert.",
+    "error_generic": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+    "error_401": "Sitzung abgelaufen. Bitte ab- und neu anmelden."
+  },
+  "verify": {
+    "title": "Identität bestätigen",
+    "subtitle": "Werde ein IDENTIFIZIERTES shaRe-Mitglied – eine Person, ein Konto, garantiert.",
+    "step1_title": "Deutscher Personalausweis mit eID-Funktion",
+    "step1_detail": "Dein Ausweis muss die Online-eID-Funktion aktiviert haben (die meisten Ausweise ab 2010).",
+    "step2_title": "AusweisApp auf deinem Smartphone",
+    "step2_detail": "Lade die offizielle AusweisApp2 herunter, um deinen Ausweis per NFC auszulesen.",
+    "step3_title": "Deine 6-stellige eID-PIN",
+    "step3_detail": "Diese PIN hast du festgelegt, als du die Online-eID-Funktion bei deiner Behörde aktiviert hast.",
+    "start": "eID-Verifizierung starten",
+    "starting": "Starte…",
+    "privacy": "Wir speichern nur einen kryptografischen Hash deines Ausweises – kein Name, keine Adresse, keine biometrischen Daten.",
+    "processing": "Verifizierung wird abgeschlossen…",
+    "success_title": "Identität bestätigt!",
+    "success_desc": "Du bist jetzt ein IDENTIFIZIERTES shaRe-Mitglied. Weiterleitung zu deinem Profil…",
+    "failed_title": "Verifizierung fehlgeschlagen",
+    "try_again": "Erneut versuchen",
+    "already_verified_title": "Bereits bestätigt",
+    "already_verified_desc": "Deine Identität ist bestätigt. Du hast vollen Plattformzugang.",
+    "back_to_profile": "Zurück zum Profil",
+    "error_cancelled": "Verifizierung wurde abgebrochen. Du kannst es erneut versuchen.",
+    "error_invalid_state": "Ungültiger Sitzungsstatus. Bitte starte erneut.",
+    "error_duplicate": "Diese eID ist bereits mit einem anderen shaRe-Mitgliedskonto verknüpft. Falls du glaubst, dass dies ein Fehler ist, kontaktiere bitte den Support.",
+    "error_failed": "Verifizierung fehlgeschlagen. Bitte versuche es erneut.",
+    "error_start": "Die eID-Verifizierung konnte nicht gestartet werden. Bitte versuche es erneut."
+  },
+  "banner": {
+    "unidentified": "Deine Identität ist noch nicht bestätigt.",
+    "verify_cta": "Mit eID bestätigen →"
+  },
+  "callback": {
+    "signing_in": "Anmeldung läuft…"
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "nav": {
+    "my_communities": "My Communities",
+    "communities": "Communities",
+    "profile": "Profile",
+    "verify_identity": "Verify Identity",
+    "sign_in": "Sign In",
+    "sign_up": "Sign Up",
+    "sign_out": "Sign Out",
+    "loading": "Loading…",
+    "settings": "Settings"
+  },
+  "landing": {
+    "quote": "Our goal should be minimum standardization of human behavior.",
+    "quote_author": "Douglas McGregor",
+    "tagline": "Connect People - Share Responsibility - Strengthen Community.",
+    "description": "is the structural foundation for communities that function as societies based on shared responsibility, not hierarchy. We provide the legal, spatial, and digital orders that make authentic community possible.",
+    "membership_intro": "Your shaRe membership enables:",
+    "membership_benefits": "Access to all three organizational orders\nThe right to create unlimited communities and connected societies\nPossibility to participate in any number of circles.",
+    "join_heading": "Join the return to our natural order",
+    "join_description": "connects you with communities worldwide that demonstrate another way of organizing human relationships. From hotels without hierarchies to businesses without traditional ownership - experience communities that work with human nature instead of against it.",
+    "hero_img_alt": "Modern conference room with circular roundtable and red chairs"
+  },
+  "hub": {
+    "title": "Your Communities",
+    "join": "Join a community",
+    "loading": "Loading…",
+    "load_error": "Could not load your communities. Please try again.",
+    "empty": "You are not a member of any community yet.",
+    "member_count": "{{count}} members",
+    "enter": "Enter →"
+  },
+  "join": {
+    "title": "Join a Community",
+    "subtitle": "Enter the invite code you received to join a community.",
+    "label": "Invite Code",
+    "placeholder": "Enter your invite code",
+    "submit": "Join Community",
+    "submitting": "Joining…",
+    "success": "You have joined {{communityName}}!",
+    "error_invalid": "Invalid invite code. Please check and try again.",
+    "error_generic": "Something went wrong. Please try again."
+  },
+  "profile": {
+    "identity_verified": "Identity verified",
+    "identity_verified_desc": "You are an IDENTIFIED shaRe Member with full platform access.",
+    "identity_unverified": "Identity not yet verified",
+    "identity_unverified_desc": "Identify yourself to unlock full participation and protect your shaRe presence from impersonation.",
+    "verify_cta": "Verify with eID"
+  },
+  "settings": {
+    "title": "Settings",
+    "personal_info_title": "Personal Information",
+    "first_name": "First name",
+    "last_name": "Last name",
+    "email": "Email address",
+    "save": "Save changes",
+    "saving": "Saving…",
+    "save_success": "Changes saved.",
+    "password_title": "Change Password",
+    "current_password": "Current password",
+    "new_password": "New password",
+    "confirm_password": "Confirm new password",
+    "password_mismatch": "Passwords do not match.",
+    "change_password": "Change password",
+    "changing_password": "Changing…",
+    "password_success": "Password changed successfully.",
+    "error_generic": "Something went wrong. Please try again.",
+    "error_401": "Session expired. Please sign out and sign back in."
+  },
+  "verify": {
+    "title": "Verify your identity",
+    "subtitle": "Become an IDENTIFIED shaRe Member — one person, one account, guaranteed.",
+    "step1_title": "German Personalausweis with eID function",
+    "step1_detail": "Your ID card must have the online eID function enabled (most cards issued after 2010).",
+    "step2_title": "AusweisApp on your phone",
+    "step2_detail": "Download the official AusweisApp2 app to read your ID card via NFC.",
+    "step3_title": "Your 6-digit eID PIN",
+    "step3_detail": "You set this PIN when you activated the online eID function at your local authority.",
+    "start": "Start eID verification",
+    "starting": "Starting…",
+    "privacy": "We store only a cryptographic hash of your ID — no name, address, or biometric data is retained.",
+    "processing": "Completing verification…",
+    "success_title": "Identity verified!",
+    "success_desc": "You are now an IDENTIFIED shaRe Member. Redirecting to your profile…",
+    "failed_title": "Verification failed",
+    "try_again": "Try again",
+    "already_verified_title": "Already verified",
+    "already_verified_desc": "Your identity is confirmed. You have full platform access.",
+    "back_to_profile": "Back to Profile",
+    "error_cancelled": "Verification was cancelled. You can try again.",
+    "error_invalid_state": "Invalid session state. Please start over.",
+    "error_duplicate": "This eID is already linked to another shaRe Member account. If you believe this is an error, please contact support.",
+    "error_failed": "Verification failed. Please try again.",
+    "error_start": "Could not start eID verification. Please try again."
+  },
+  "banner": {
+    "unidentified": "Your identity is not yet verified.",
+    "verify_cta": "Verify with eID →"
+  },
+  "callback": {
+    "signing_in": "Signing in…"
+  }
+}
