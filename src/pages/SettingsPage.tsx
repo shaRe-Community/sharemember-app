@@ -112,6 +112,7 @@ function PersonalInfoSection({ token }: { token: string }): JSX.Element {
 
 function ProfilePictureSection({ token, currentPicture }: { token: string; currentPicture: string | null }): JSX.Element {
   const { t } = useTranslation()
+  const { refreshUser } = useAuth()
   const [isUploading, setIsUploading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -146,6 +147,7 @@ function ProfilePictureSection({ token, currentPicture }: { token: string; curre
       const url = URL.createObjectURL(blob)
       localPreviewRef.current = url
       setLocalPreviewUrl(url)
+      await refreshUser()
       setSuccess(true)
     } catch {
       setError(t('settings.picture_error'))

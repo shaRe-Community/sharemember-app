@@ -26,6 +26,7 @@ interface AuthContextValue {
   login: () => Promise<void>
   logout: () => Promise<void>
   register: () => Promise<void>
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -73,9 +74,10 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
     await userManager.removeUser()
     window.location.href = '/'
   }
+  const refreshUser = () => userManager.signinSilent().then(() => undefined)
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, register }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, register, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )
