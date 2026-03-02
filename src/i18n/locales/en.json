@@ -117,7 +117,16 @@
     "error_invalid_state": "Invalid session state. Please start over.",
     "error_duplicate": "This eID is already linked to another shaRe Member account. If you believe this is an error, please contact support.",
     "error_failed": "Verification failed. Please try again.",
-    "error_start": "Could not start eID verification. Please try again."
+    "error_start": "Could not start eID verification. Please try again.",
+    "or_alternatively": "or alternatively",
+    "vouch_request_intro": "Know someone who can confirm your identity?",
+    "vouch_request_placeholder": "Email address of an IDENTIFIED member",
+    "vouch_request_cta": "Send request",
+    "vouch_request_sending": "Sending…",
+    "vouch_request_sent": "Request sent! They'll see it next time they open the app.",
+    "vouch_error_not_found": "No IDENTIFIED member found with that email address.",
+    "vouch_error_duplicate": "You already have a pending request to this person.",
+    "vouch_error_generic": "Something went wrong. Please try again."
   },
   "banner": {
     "unidentified": "Your identity is not yet verified.",

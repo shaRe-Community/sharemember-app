@@ -117,7 +117,16 @@
     "error_invalid_state": "Ungültiger Sitzungsstatus. Bitte starte erneut.",
     "error_duplicate": "Diese eID ist bereits mit einem anderen shaRe-Mitgliedskonto verknüpft. Falls du glaubst, dass dies ein Fehler ist, kontaktiere bitte den Support.",
     "error_failed": "Verifizierung fehlgeschlagen. Bitte versuche es erneut.",
-    "error_start": "Die eID-Verifizierung konnte nicht gestartet werden. Bitte versuche es erneut."
+    "error_start": "Die eID-Verifizierung konnte nicht gestartet werden. Bitte versuche es erneut.",
+    "or_alternatively": "oder alternativ",
+    "vouch_request_intro": "Jemanden kennen, der deine Identität bestätigen kann?",
+    "vouch_request_placeholder": "E-Mail-Adresse des IDENTIFIZIERTEN Mitglieds",
+    "vouch_request_cta": "Anfrage senden",
+    "vouch_request_sending": "Wird gesendet…",
+    "vouch_request_sent": "Anfrage gesendet! Die Person wird beim nächsten Öffnen der App benachrichtigt.",
+    "vouch_error_not_found": "Kein IDENTIFIZIERTES Mitglied mit dieser E-Mail-Adresse gefunden.",
+    "vouch_error_duplicate": "Du hast bereits eine offene Anfrage an diese Person.",
+    "vouch_error_generic": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
   },
   "banner": {
     "unidentified": "Deine Identität ist noch nicht bestätigt.",

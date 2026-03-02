@@ -44,3 +44,17 @@ export function declineVouch(requestId: string, accessToken: string): Promise<vo
     { method: 'POST' },
   )
 }
+
+export function createVouchRequest(
+  targetEmail: string,
+  accessToken: string,
+): Promise<VouchRequest> {
+  return apiFetch<VouchRequest>(
+    '/v2/sharemember/vouch-requests',
+    accessToken,
+    {
+      method: 'POST',
+      body: JSON.stringify({ targetEmail }),
+    },
+  )
+}

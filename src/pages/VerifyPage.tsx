@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
 import { AppShell } from '../components/AppShell'
 import { apiFetch, ApiError } from '../api/api'
+import { createVouchRequest } from '../api/vouch'
 
 type Phase =
   | { kind: 'idle' }
@@ -158,6 +159,12 @@ export function VerifyPage(): JSX.Element {
               </button>
 
               <p className="verify-privacy">{t('verify.privacy')}</p>
+
+              <div className="verify-vouch-divider">
+                <span>{t('verify.or_alternatively')}</span>
+              </div>
+
+              <VouchRequestForm />
             </>
           )}
         </div>
@@ -182,6 +189,72 @@ function VerifyStep({
         <strong>{title}</strong>
         <p>{detail}</p>
       </div>
+    </div>
+  )
+}
+
+function VouchRequestForm(): JSX.Element {
+  const { user } = useAuth()
+  const { t } = useTranslation()
+  const [email, setEmail] = useState('')
+  const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error_not_found' | 'error_duplicate' | 'error'>('idle')
+
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+    e.preventDefault()
+    if (!user || !email.trim()) return
+    setState('sending')
+    try {
+      await createVouchRequest(email.trim(), user.accessToken)
+      setState('sent')
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 404) setState('error_not_found')
+        else if (err.status === 409) setState('error_duplicate')
+        else setState('error')
+      } else {
+        setState('error')
+      }
+    }
+  }
+
+  if (state === 'sent') {
+    return (
+      <div className="vouch-request-form">
+        <p className="vouch-request-sent">✓ {t('verify.vouch_request_sent')}</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="vouch-request-form">
+      <p className="vouch-request-label">{t('verify.vouch_request_intro')}</p>
+      <form onSubmit={(e) => void handleSubmit(e)} className="vouch-request-row">
+        <input
+          type="email"
+          className="vouch-request-input"
+          placeholder={t('verify.vouch_request_placeholder')}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          disabled={state === 'sending'}
+          required
+        />
+        <button
+          type="submit"
+          className="nav-btn nav-btn-secondary vouch-request-btn"
+          disabled={state === 'sending' || !email.trim()}
+        >
+          {state === 'sending' ? t('verify.vouch_request_sending') : t('verify.vouch_request_cta')}
+        </button>
+      </form>
+      {state === 'error_not_found' && (
+        <p className="vouch-request-error">{t('verify.vouch_error_not_found')}</p>
+      )}
+      {state === 'error_duplicate' && (
+        <p className="vouch-request-error">{t('verify.vouch_error_duplicate')}</p>
+      )}
+      {state === 'error' && (
+        <p className="vouch-request-error">{t('verify.vouch_error_generic')}</p>
+      )}
     </div>
   )
 }
