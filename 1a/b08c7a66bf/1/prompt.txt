@@ -1,0 +1,187 @@
+Implement the following plan:
+
+# QR Code In-Person Identity Verification — Implementation Plan
+
+## Context
+
+Peer vouching exists but requires the requestee to know the voucher's email upfront. The new flow enables **in-person verification**: the requestee shows a QR code on their phone, the voucher scans it, and the sharemember-app opens with a one-tap confirm.
+
+**Key design insight**: An "open" VouchRequest (no specific target voucher) is created when the requestee presses the button. The QR code encodes a deep link (`${VITE_PUBLIC_URL}/vouch/{requestId}`). When the voucher scans and opens the link, the existing VouchPage loads — the backend auto-claims the request for the scanning user on `GET`, then the normal confirm flow proceeds. **Zero changes needed to VouchPage UI or confirm endpoint.**
+
+---
+
+## Backend — operator-ts
+
+### 1. New repository methods (`src/sharemember/vouch.repository.ts`)
+
+**`createOpenRequest(requesterKeycloakId, requestId)`** — VouchRequest with only `[:FROM]`, no `[:TO]`:
+```cypher
+MATCH (sm:ShareMember {keycloakId: $requesterKeycloakId})
+CREATE (req:VouchRequest {id: $requestId, requestedAt: datetime(), status: 'pending', type: 'open'})
+CREATE (req)-[:FROM]->(sm)
+RETURN req, sm AS requestee
+```
+
+**`cancelOpenRequests(requesterKeycloakId)`** — cancel stale open requests (idempotent QR regeneration):
+```cypher
+MATCH (sm:ShareMember {keycloakId: $requesterKeycloakId})<-[:FROM]-(req:VouchRequest {status: 'pending', type: 'open'})
+WHERE NOT (req)-[:TO]->()
+SET req.status = 'cancelled'
+```
+
+**`getOpenRequest(requestId)`** — fetch unclaimed open request (no voucher filter):
+```cypher
+MATCH (req:VouchRequest {id: $requestId})-[:FROM]->(requestee:ShareMember)
+WHERE NOT (req)-[:TO]->()
+RETURN req, requestee
+```
+
+**`claimOpenRequest(requestId, voucherKeycloakId)`** — atomically assign voucher:
+```cypher
+MATCH (req:VouchRequest {id: $requestId, status: 'pending'})-[:FROM]->(requestee:ShareMember)
+WHERE NOT (req)-[:TO]->()
+MATCH (voucher:ShareMember {keycloakId: $voucherKeycloakId})
+WHERE voucher <> requestee
+CREATE (req)-[:TO]->(voucher)
+RETURN req, requestee
+```
+(`WHERE voucher <> requestee` prevents self-vouch)
+
+**`getRequestStatus(requestId, requesterKeycloakId)`** — for polling from requestee's QR screen:
+```cypher
+MATCH (sm:ShareMember {keycloakId: $requesterKeycloakId})<-[:FROM]-(req:VouchRequest {id: $requestId})
+RETURN req.status AS status
+```
+
+### 2. Service changes (`src/sharemember/vouch.service.ts`)
+
+**New: `createOpenRequest(keycloakId, eidStatus)`**
+- Reject if already identified (400)
+- Cancel existing open requests
+- Create new open request, return DTO
+
+**New: `getRequestStatus(requestId, keycloakId)`**
+- Return `{ status }` for polling
+
+**Modified: `getRequest(requestId, voucherKeycloakId, voucherEidStatus)`**
+- Try targeted lookup first (existing path)
+- If not found → try open request lookup → validate voucher is IDENTIFIED (403 if not) → auto-claim → return DTO
+- If claim fails (self-vouch) → throw 400
+
+### 3. Controller changes (`src/sharemember/vouch.controller.ts`)
+
+**New endpoint: `POST /v2/sharemember/vouch-requests/open`** (201)
+- No body needed. Returns `VouchRequestDto`
+- **Route ordering**: declare before `:requestId` params to avoid NestJS treating "open" as a requestId
+
+**New endpoint: `GET /v2/sharemember/vouch-requests/:requestId/status`** (200)
+- Returns `{ status: string }` — for requestee polling
+- Only works for the requestee (FROM relationship)
+
+**Modified: `GET /v2/sharemember/vouch-requests/:requestId`**
+- Pass `user.eid_status` to service for open-request validation
+
+### 4. Tests (`src/sharemember/vouch.service.spec.ts`)
+
+Add ~6 tests:
+- createOpenRequest: happy path, already-identified rejection, cancels existing
+- getRequest open fallback: auto-claims for IDENTIFIED voucher
+- getRequest open fallback: rejects UN-IDENTIFIED voucher (403)
+- getRequest open fallback: rejects self-vouch (400)
+
+---
+
+## Frontend — sharemember-app
+
+### 5. Install QR library
+
+```bash
+npm install qrcode.react
+```
+
+### 6. New API function (`src/api/vouch.ts`)
+
+```typescript
+export function createOpenVouchRequest(accessToken: string): Promise<VouchRequest> {
+  return apiFetch<VouchRequest>('/v2/sharemember/vouch-requests/open', accessToken, { method: 'POST' })
+}
+```
+
+### 7. Modified VerifyPage (`src/pages/VerifyPage.tsx`)
+
+Replace the vouch section (below the divider) with a two-mode choice:
+
+**QR mode** (primary):
+- Button "QR-Code anzeigen" → calls `createOpenVouchRequest` → shows QR code
+- QR encodes: `${VITE_PUBLIC_URL}/vouch/${requestId}`
+- White rounded card with QR code SVG (dark navy foreground)
+- Instruction text: "Bitte ein IDENTIFIZIERTES Mitglied, diesen Code mit dem Handy zu scannen."
+- Polls `GET /vouch-requests/:id/status` every 3s → on `confirmed`, calls `refreshUser()` + navigates to `/profile`
+
+**Email mode** (secondary):
+- Existing `VouchRequestForm` — unchanged
+- Reached via "Stattdessen per E-Mail anfragen" link
+
+### 8. VouchPage error states (`src/pages/VouchPage.tsx`)
+
+Add two new `PageState` variants:
+- `not_identified` (403) — "Nur IDENTIFIZIERTE Mitglieder können für andere bürgen."
+- `self_vouch` (400) — "Du kannst nicht für dich selbst bürgen."
+
+### 9. i18n keys (both `en.json` + `de.json`)
+
+Under `verify.*`:
+- `vouch_qr_cta` / `vouch_email_cta` / `vouch_qr_title` / `vouch_qr_instructions` / `vouch_qr_hint` / `vouch_qr_confirmed` / `vouch_back`
+
+Under `vouch.*`:
+- `not_identified` / `self_vouch`
+
+### 10. CSS (`src/App.css`)
+
+- `.vouch-qr-container` — white rounded card, centered, housing the QR SVG
+- `.vouch-qr-section` — flex column layout for the QR screen
+- `.vouch-back-link` — subtle red underlined back button
+
+---
+
+## Files Changed Summary
+
+| Repo | File | Change |
+|------|------|--------|
+| operator-ts | `src/sharemember/vouch.repository.ts` | +5 methods (createOpen, cancelOpen, getOpen, claim, status) |
+| operator-ts | `src/sharemember/vouch.service.ts` | +2 methods, modify getRequest with open fallback |
+| operator-ts | `src/sharemember/vouch.controller.ts` | +2 endpoints (POST /open, GET /:id/status), modify GET /:id |
+| operator-ts | `src/sharemember/vouch.service.spec.ts` | +6 tests |
+| sharemember-app | `package.json` | add `qrcode.react` |
+| sharemember-app | `src/api/vouch.ts` | add createOpenVouchRequest |
+| sharemember-app | `src/pages/VerifyPage.tsx` | QR mode + email mode choice |
+| sharemember-app | `src/pages/VouchPage.tsx` | +2 error states (403, 400) |
+| sharemember-app | `src/i18n/locales/en.json` | +9 keys |
+| sharemember-app | `src/i18n/locales/de.json` | +9 keys |
+| sharemember-app | `src/App.css` | QR container + section styles |
+
+---
+
+## Security
+
+- **Self-vouch**: Cypher `WHERE voucher <> requestee` — impossible to bypass
+- **IDENTIFIED-only**: Service checks `eid_status` before claiming
+- **Max 3 vouches**: Unchanged, checked on confirm
+- **UUID request IDs**: Unguessable — scanning QR is the only discovery path
+- **One open request per user**: `cancelOpenRequests` ensures freshness
+
+## Verification
+
+1. `npm test -- --no-coverage` in operator-ts → all pass
+2. `npx tsc --noEmit` in sharemember-app → clean
+3. Login as UN-IDENTIFIED user → `/verify` → "QR-Code anzeigen" → QR appears
+4. Scan QR with IDENTIFIED user's phone → `/vouch/:id` opens → requestee info shown
+5. Confirm → success badge → requestee's QR screen auto-updates to "Identität bestätigt"
+6. Deploy both services to prod
+
+
+If you need specific details from before exiting plan mode (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/tomblume/.REDACTED.jsonl
+
+---
+
+ist alles auf PROD deployed?
