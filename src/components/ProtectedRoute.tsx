@@ -11,7 +11,7 @@ export function ProtectedRoute(): JSX.Element | null {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      void login()
+      void login(window.location.pathname + window.location.search)
     }
   }, [isLoading, user, login])
 

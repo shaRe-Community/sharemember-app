@@ -23,7 +23,7 @@ export interface AuthUser {
 interface AuthContextValue {
   user: AuthUser | null
   isLoading: boolean
-  login: () => Promise<void>
+  login: (redirectTo?: string) => Promise<void>
   logout: () => Promise<void>
   register: () => Promise<void>
   refreshUser: () => Promise<void>
@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
     }
   }, [])
 
-  const login = () => userManager.signinRedirect()
+  const login = (redirectTo?: string) => userManager.signinRedirect({ state: redirectTo })
   const register = () => registerUserManager.signinRedirect()
   const logout = async () => {
     await userManager.removeUser()
