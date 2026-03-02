@@ -1090,6 +1090,22 @@
   letter-spacing: -0.02em;
 }
 
+.vouch-member-identified {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #4ade80;
+  margin: 0.5rem 0 1.5rem;
+  letter-spacing: 0.02em;
+}
+
+.vouch-identified-check {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
 .vouch-request-text {
   font-size: 0.95rem;
   color: rgba(255, 255, 255, 0.65);

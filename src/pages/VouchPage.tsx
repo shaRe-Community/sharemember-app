@@ -118,13 +118,12 @@ export function VouchPage(): JSX.Element {
         )}
 
         {state.kind === 'confirmed' && (
-          <div className="vouch-card vouch-success-card">
-            <div className="vouch-seal">
-              <span className="vouch-seal-check">✓</span>
-            </div>
-            <h1 className="vouch-success-title">{t('vouch.confirmed_title')}</h1>
-            <p className="vouch-success-text">
-              {t('vouch.confirmed_body', { name: state.name })}
+          <div className="vouch-card">
+            <VoucheeAvatar name={state.name} pictureUrl={null} />
+            <h1 className="vouch-name">{state.name}</h1>
+            <p className="vouch-member-identified">
+              <span className="vouch-identified-check">✓</span>
+              {t('vouch.member_identified')}
             </p>
             <button className="cta-button" onClick={() => navigate('/hub')}>
               {t('vouch.back_to_hub')}

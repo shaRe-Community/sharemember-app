@@ -147,6 +147,7 @@
     "decline_cta": "Ablehnen",
     "confirmed_title": "Bestätigt!",
     "confirmed_body": "{{name}} ist jetzt ein IDENTIFIZIERTES shaRe-Mitglied.",
+    "member_identified": "shaRe Member Identified",
     "declined_message": "Bürgschaftsantrag abgelehnt.",
     "banner_single": "{{name}} bittet dich, die Identität zu bestätigen.",
     "banner_multiple": "{{count}} Personen bitten dich um Identitätsbestätigung.",

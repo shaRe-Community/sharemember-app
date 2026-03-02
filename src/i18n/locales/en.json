@@ -147,6 +147,7 @@
     "decline_cta": "Decline",
     "confirmed_title": "Confirmed!",
     "confirmed_body": "{{name}} is now an IDENTIFIED shaRe Member.",
+    "member_identified": "shaRe Member Identified",
     "declined_message": "Vouch request declined.",
     "banner_single": "{{name}} is asking you to confirm their identity.",
     "banner_multiple": "{{count}} people are asking you to confirm their identity.",
