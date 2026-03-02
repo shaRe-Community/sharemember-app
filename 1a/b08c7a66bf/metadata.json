@@ -5,9 +5,7 @@
   "branch": "main",
   "checkpoints_count": 1,
   "files_touched": [
-    "src/auth/AuthContext.tsx",
-    "src/components/ProtectedRoute.tsx",
-    "src/pages/CallbackPage.tsx"
+    "src/auth/auth.config.ts"
   ],
   "sessions": [
     {
@@ -19,10 +17,10 @@
     }
   ],
   "token_usage": {
-    "input_tokens": 127,
-    "cache_creation_tokens": 309690,
-    "cache_read_tokens": 8821773,
-    "output_tokens": 39251,
-    "api_call_count": 92
+    "input_tokens": 10,
+    "cache_creation_tokens": 3821,
+    "cache_read_tokens": 1001815,
+    "output_tokens": 2252,
+    "api_call_count": 8
   }
 }

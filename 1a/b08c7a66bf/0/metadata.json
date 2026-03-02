@@ -3,32 +3,30 @@
   "checkpoint_id": "1ab08c7a66bf",
   "session_id": "ea500d01-1d6a-485c-b815-71862dc72400",
   "strategy": "manual-commit",
-  "created_at": "2026-03-02T16:44:11.119592792Z",
+  "created_at": "2026-03-02T16:52:05.186833079Z",
   "branch": "main",
   "checkpoints_count": 1,
   "files_touched": [
-    "src/auth/AuthContext.tsx",
-    "src/components/ProtectedRoute.tsx",
-    "src/pages/CallbackPage.tsx"
+    "src/auth/auth.config.ts"
   ],
   "agent": "Claude Code",
-  "transcript_identifier_at_start": "f99383e6-0858-4bc9-a02f-9d023be4f0b0",
-  "checkpoint_transcript_start": 7015,
-  "transcript_lines_at_start": 7015,
+  "transcript_identifier_at_start": "aec1be14-3639-4718-85d5-2c64edeb1d65",
+  "checkpoint_transcript_start": 7537,
+  "transcript_lines_at_start": 7537,
   "token_usage": {
-    "input_tokens": 127,
-    "cache_creation_tokens": 309690,
-    "cache_read_tokens": 8821773,
-    "output_tokens": 39251,
-    "api_call_count": 92
+    "input_tokens": 10,
+    "cache_creation_tokens": 3821,
+    "cache_read_tokens": 1001815,
+    "output_tokens": 2252,
+    "api_call_count": 8
   },
   "initial_attribution": {
-    "calculated_at": "2026-03-02T16:44:07.186540017Z",
+    "calculated_at": "2026-03-02T16:52:01.337347232Z",
     "agent_lines": 0,
-    "human_added": 923,
-    "human_modified": 5,
+    "human_added": 1,
+    "human_modified": 1,
     "human_removed": 0,
-    "total_committed": 926,
+    "total_committed": 1,
     "agent_percentage": 0
   },
   "transcript_path": ".claude/projects/-home-tomblume-IdeaProjects-share-platform/ea500d01-1d6a-485c-b815-71862dc72400.jsonl"

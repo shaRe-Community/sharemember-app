@@ -666,3 +666,7 @@ waere dazu nicht eine mobile sharemember.app ideal?
 
 pwa ist prima.
 
+### Prompt 94
+
+koennen wir die login daten nach erfolgreichem login dauerhaft speichen, so dass ich nicht fuer jede session eine anmeldung benoetige?
+
