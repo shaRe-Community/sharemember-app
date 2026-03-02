@@ -4146,3 +4146,466 @@ Done!
 ---
 
 continue
+
+---
+
+do we need to update the dokumentation with the latest changes of today_
+
+---
+
+check operator-ts reamde.md and u2g-infrastructure-ts readme.md and claude.md in both
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me analyze the conversation chronologically to create a thorough summary.
+
+1. The session started continuing from a previous conversation about share-ui and sharemember-app improvements. The prior context showed that the share-ui ShaReMemberMenu.tsx had just been updated to show JWT picture + eid_status badge.
+
+2. User pointed out there are additional avatar locations needing updates: the shareholder profile page at `/web/shareholders/{id}` and the shareholder view at `/shareholder`.
+
+3. Investigation found that `ShareAvatar.tsx` already had full eid_status badge support but used `useProfilePictureUrl` hook which built wrong URLs. The root fix was `KEYCLOAK_STATIC_CONTENT_URL` env var in operator-ts pointing to MinIO.
+
+4. User asked about Account Settings inconsistency (links to KC console), SharememberID attribute (what it is), and 2FA porting to sharemember-app. User said to create a todo list and not implement yet.
+
+5. User then said "ok, we start with?" - recommended SM-05x (account settings redirect).
+
+6. User said "yes, go ahead with all issues in sequence you decide" — implementing all three with subagent-driven development.
+
+7. SM-05x implemented: replace KC console links with VITE_SHAREMEMBER_APP_URL/settings in ShaReMemberMenu.tsx and ShareAvatarWithName.tsx. Also fixed vite-env.d.ts to declare all 5 VITE_ vars. Deployed share-ui.
+
+8. SM-ck1 implemented: backfilled share_member_id and eid_status KC attributes for Tom Blume and Manfred Schon. ShareMember nodes created in Neo4j. KC user cache cleared.
+
+9. SM-mn0 implemented: 2FA section in SettingsPage.tsx. Four quality issues found and fixed: stale closure, wrong error key, broken tab_id URL (fixed to account/#/security/signingin), success state clearing. Deployed sharemember-app.
+
+10. User asked to update documentation. Updated MEMORY.md significantly. Then user asked to check operator-ts and u2g-infrastructure-ts README.md and CLAUDE.md files.
+
+11. Read all four files. Found gaps:
+- operator-ts/README.md: eid_status casing wrong (uppercase vs lowercase), missing KEYCLOAK_STATIC_CONTENT_URL and MinIO env vars, missing picture JWT claim
+- operator-ts/CLAUDE.md: missing sharemember/, eid/, storage/ modules; missing MinIO and KEYCLOAK_STATIC_CONTENT_URL env vars
+- u2g-infrastructure-ts/README.md: comprehensive, no significant gaps
+- u2g-infrastructure-ts/CLAUDE.md: outdated (old server specs, missing services)
+
+12. Was in the middle of updating u2g-infrastructure-ts/CLAUDE.md when the summary request came.
+
+Current state: Just finished updating operator-ts/README.md and operator-ts/CLAUDE.md. Still need to update u2g-infrastructure-ts/CLAUDE.md container names table and commit all doc changes.
+
+Summary:
+1. Primary Request and Intent:
+   - Fix remaining avatar/picture URL issues in share-ui: shareholder profile page (`/web/shareholders/{id}`) and shareholder view were using wrong GCS-based picture URLs and missing eid_status badges
+   - Create a todo list (not implement yet) for: (1) Account Settings inconsistency in share-ui pointing to KC console instead of sharemember-app, (2) understanding SharememberID attribute, (3) porting 2FA to sharemember-app
+   - Implement all three todo issues (SM-05x, SM-ck1, SM-mn0) in sequence using subagent-driven development
+   - Update MEMORY.md with today's changes
+   - Check and update operator-ts README.md, operator-ts CLAUDE.md, u2g-infrastructure-ts README.md, u2g-infrastructure-ts CLAUDE.md
+
+2. Key Technical Concepts:
+   - `KEYCLOAK_STATIC_CONTENT_URL` env var in operator-ts: controls `staticContentUrl` returned by `/v1/config/oidc`, used by `useProfilePictureUrl` hook to build profile picture URLs. Set to `https://minio-api.up2go.com/share-profile-pictures` in prod so hook builds correct URL `{base}/{shareholderId}/profile.png`
+   - `useProfilePictureUrl` hook in share-ui: builds `${staticContentUrl}/{shareholderId}/profile.png` — was pointing to Keycloak realm URL (legacy GCS path), now correctly points to MinIO
+   - MinIO S3 API (`minio-api.up2go.com`, port 9000) vs Console (`minio.up2go.com`, port 9001) — the S3 bucket `share-profile-pictures` is publicly accessible
+   - KC 24+ User Profile SPI: attributes must be declared or writes are silently dropped
+   - `share_member_id` is a system key — links Keycloak user to Neo4j ShareMember node, set by operator-ts on shareholder creation, not user-editable
+   - KC Account REST API `GET /account/credentials` returns TOTP credentials (type=`otp`), `DELETE /account/credentials/{id}` removes them
+   - 2FA enable URL: must use `${ssoUrl}/realms/{realm}/account/#/security/signingin`, NOT `login-actions/required-action?execution=CONFIGURE_TOTP&tab_id=` (tab_id is server-generated CSRF state, cannot be constructed client-side)
+   - `signinSilent()` for immediate JWT refresh after profile picture upload
+   - Subagent-Driven Development: fresh subagent per task + spec compliance review + code quality review
+   - `vite-env.d.ts` `ImportMetaEnv` interface: Vite env vars typed as `string | undefined` unless declared; all 5 VITE_ vars now properly typed in share-ui
+   - Keycloak Infinispan user cache: must call `POST /admin/realms/{realm}/clear-user-cache` after direct attribute changes
+
+3. Files and Code Sections:
+   - `/home/tomblume/IdeaProjects/share-ui/src/components/ShaReMemberMenu.tsx`
+     - Replaced `useProfilePictureUrl(user?.shareholderId)` with `user.pictureUrl` (JWT claim) — done previously
+     - SM-05x: removed `accountConsoleUrl` from `useAuth()` destructure; `handleAccountClick` now opens `import.meta.env.VITE_SHAREMEMBER_APP_URL + "/settings"` in new tab
+     ```typescript
+     const profileUrl = user?.pictureUrl
+     const isIdentified = user?.eidStatus === "identified"
+     // handleAccountClick:
+     window.open(import.meta.env.VITE_SHAREMEMBER_APP_URL + "/settings", "_blank")
+     ```
+   - `/home/tomblume/IdeaProjects/share-ui/src/components/ShareAvatarWithName.tsx`
+     - SM-05x: removed `accountConsoleUrl`; `handleEditClick` now opens `VITE_SHAREMEMBER_APP_URL + "/settings"`
+     ```typescript
+     window.open(import.meta.env.VITE_SHAREMEMBER_APP_URL + "/settings", "_blank")
+     ```
+   - `/home/tomblume/IdeaProjects/share-ui/src/vite-env.d.ts`
+     - Added full `ImportMetaEnv` interface declaring all 5 VITE_ vars
+     ```typescript
+     interface ImportMetaEnv {
+       readonly VITE_SHAREMEMBER_APP_URL: string
+       readonly VITE_ADMIN_SHAREHOLDER_ID: string
+       readonly VITE_JITSI_DOMAIN: string
+       readonly VITE_ONLYOFFICE_URL: string
+       readonly VITE_DRAWIO_URL: string
+     }
+     interface ImportMeta {
+       readonly env: ImportMetaEnv
+     }
+     ```
+   - `/home/tomblume/IdeaProjects/u2g-infrastructure-ts/docker-compose.prod.yml`
+     - Added `KEYCLOAK_STATIC_CONTENT_URL: https://minio-api.up2go.com/share-profile-pictures` under operator-prod environment section (after KEYCLOAK_CLIENT_ID line)
+   - `/home/tomblume/IdeaProjects/sharemember-app/src/pages/SettingsPage.tsx`
+     - Added `TwoFactorSection` component as 4th card (after PasswordSection)
+     - Fetches `GET {VITE_SSO_URL}/realms/{VITE_KEYCLOAK_REALM}/account/credentials`, filters `type === "otp"`
+     - Enable: opens `${ssoUrl}/realms/${realm}/account/#/security/signingin` in new tab
+     - Disable: `window.confirm` then `DELETE /account/credentials/{id}`, re-fetches inline
+     - Fetch logic inlined directly in `useEffect` and `handleDisable` (not shared helper — avoids stale closure)
+     - Uses `two_factor_disable_error` key for DELETE failure, `two_factor_load_error` for fetch failure
+   - `/home/tomblume/IdeaProjects/sharemember-app/src/i18n/locales/en.json` and `de.json`
+     - Added 11 i18n keys under `settings`: `two_factor_title`, `two_factor_enabled`, `two_factor_disabled`, `two_factor_enable`, `two_factor_disable`, `two_factor_disabling`, `two_factor_disabled_success`, `two_factor_confirm_disable`, `two_factor_setup_note`, `two_factor_load_error`, `two_factor_disable_error`
+   - `/home/tomblume/IdeaProjects/sharemember-app/src/App.css`
+     - Added CSS: `.two-factor-status`, `.two-factor-dot`, `.two-factor-dot.enabled` (#22c55e), `.two-factor-dot.disabled` (#9ca3af)
+   - `/home/tomblume/.claude/projects/-home-tomblume-IdeaProjects-share-platform/memory/MEMORY.md`
+     - Major rewrite: removed "Active Work" epic (complete), updated identity layer table to include 2FA, updated sharemember-app capabilities, updated share-ui patterns, added comprehensive KC learnings section, updated beads issues tables
+   - `/home/tomblume/IdeaProjects/operator-ts/README.md`
+     - Fixed `eid_status` claim values from `IDENTIFIED`/`UN_IDENTIFIED` to `identified`/`un_identified` (lowercase)
+     - Added `picture` JWT claim row
+     - Added `KEYCLOAK_STATIC_CONTENT_URL` to configuration table
+     - Added MinIO env vars: `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_PUBLIC_URL`, `MINIO_USE_SSL`
+   - `/home/tomblume/IdeaProjects/operator-ts/CLAUDE.md`
+     - Added `sharemember/`, `eid/`, `storage/` to project structure tree
+     - Added `KEYCLOAK_STATIC_CONTENT_URL` and MinIO env vars to environment example
+
+4. Errors and fixes:
+   - **`staticContentUrl` returned Keycloak realm URL (legacy GCS path)**: The `/v1/config/oidc` endpoint was returning `https://sso.wurzelwerk.up2go.com/realms/prod-sharemembers` as `staticContentUrl`, causing `useProfilePictureUrl` to build invalid picture URLs. Fixed by setting `KEYCLOAK_STATIC_CONTENT_URL=https://minio-api.up2go.com/share-profile-pictures` in `docker-compose.prod.yml` for operator-prod. Confirmed MinIO bucket is publicly accessible (200 image/png).
+   - **SM-05x code quality: `VITE_SHAREMEMBER_APP_URL` not declared in `vite-env.d.ts`**: Typed as `string | undefined`, concatenation would produce `"undefined/settings"` if missing. Fixed by adding full `ImportMetaEnv` interface for all 5 VITE_ vars.
+   - **SM-mn0 code quality issue 1 — stale closure**: `loadCredentials` was a shared helper called from both `useEffect` and `handleDisable` event handler, creating stale closure risk and unmount race. Fixed by inlining fetch logic directly in both places.
+   - **SM-mn0 code quality issue 2 — wrong error key**: DELETE failure showed `two_factor_load_error` ("Could not load security settings") — misleading. Fixed by adding `two_factor_disable_error` key to both locale files.
+   - **SM-mn0 code quality issue 3 — broken 2FA enable URL**: `login-actions/required-action?execution=CONFIGURE_TOTP&tab_id=` — `tab_id` is server-generated CSRF state, cannot be constructed client-side. Fixed by using `${ssoUrl}/realms/${realm}/account/#/security/signingin` (KC Account Console security page).
+   - **SM-mn0 code quality issue 4 — success state not cleared**: `setSuccess(true)` followed by credential re-fetch could show simultaneous success + error banners. Fixed by clearing success before re-fetch completes.
+   - **KC user cache not cleared after backfill**: After writing `share_member_id` and `eid_status` to KC via kcadm, Infinispan cache had stale values. Fixed by calling `kcadm create realms/prod-sharemembers/clear-user-cache`.
+
+5. Problem Solving:
+   - **Avatar picture URL chain**: `useProfilePictureUrl` → `staticContentUrl/{shareholderId}/profile.png`. The root was `staticContentUrl` returning KC realm URL (legacy). Single env var change in operator-ts compose fixed all shareholder avatar displays in share-ui without any code changes.
+   - **share_member_id empty for existing users**: Root cause — KC User Profile SPI silently dropped attribute writes before `share_member_id` was declared in User Profile config. No ShareMember nodes existed in Neo4j for either user. Backfilled manually: created ShareMember nodes via Cypher, wrote KC attributes via kcadm, cleared KC cache.
+   - **2FA enable flow**: Standard `login-actions/required-action` pattern doesn't work without a valid `tab_id` (server CSRF token). Used KC Account Console URL instead which is the correct public entry point.
+
+6. All user messages:
+   - "es gibt noch ein Avatar in z.b. https://wurzelwerk.up2go.com/web/shareholders/29ce29c8-bf39-4495-8353-e67f4cdba382 (rechte seite) und in der shareHolder View https://wurzelwerk.up2go.com/shareholder"
+   - "one more issue, we have a inconsitency when navigating to Account Settings (upper right, avatar menu). Here we navigate to keycloark and not to sharemember.app settings. Neben den Attributen eID verification Status gibt es noch eine SharememberID, aktuell leer für user tom.blume, was wird hier gespeichert, ist das kein System key? UNd wir haben in Kezcloak account setgings noch die 2FA Einstellungen, bitte überlegen wie wir das nach sharemembner.app portieren. Bitte für all die Punkte eine Todo liste erstellen und noch nicht implementieren"
+   - "ok, we start with?"
+   - "yes, go ahead with all issues in sequence you decide"
+   - (empty — approving spec compliance review for SM-05x)
+   - (empty — approving code quality re-review for SM-05x)
+   - (empty — approving SM-mn0 spec review)
+   - "[Request interrupted by user]continue"
+   - (empty — approving SM-mn0 code quality re-review)
+   - "do we need to update the dokumentation with the latest changes of today_"
+   - "check operator-ts reamde.md and u2g-infrastructure-ts readme.md and claude.md in both"
+
+7. Pending Tasks:
+   - Complete u2g-infrastructure-ts/CLAUDE.md updates (container names table missing sharemember-app and minio; architecture section has old server specs)
+   - Commit documentation changes in operator-ts and u2g-infrastructure-ts repos
+   - Push all committed changes to remote (SESSION CLOSE PROTOCOL not yet run)
+   - Remaining open beads: share-ui `38y` (UN-IDENTIFIED visual indicators), `691` (block restricted actions), `sharemembers-w79` (KC Account Theme cleanup), `SM-duf` (Add MUI to sharemember-app)
+
+8. Current Work:
+   Was updating documentation files based on today's changes. Completed:
+   - operator-ts/README.md: fixed eid_status casing, added picture JWT claim, added KEYCLOAK_STATIC_CONTENT_URL and MinIO vars to config table
+   - operator-ts/CLAUDE.md: added sharemember/, eid/, storage/ to project structure; added KEYCLOAK_STATIC_CONTENT_URL and MinIO env vars
+   
+   Still in progress when summary was requested:
+   - u2g-infrastructure-ts/CLAUDE.md: needs container names table updated (add sharemember-app, minio rows) and architecture section corrected (old server specs "DEV1-L or PLAY2-PICO" instead of actual "GP1-XS, 4 vCPU, 16GB")
+   - No commits made yet for the documentation changes
+
+9. Optional Next Step:
+   Complete the u2g-infrastructure-ts/CLAUDE.md updates — the user explicitly asked to "check operator-ts reamde.md and u2g-infrastructure-ts readme.md and claude.md in both" and we were mid-way through this when the summary was requested. Specifically, update the container names table to add sharemember-app and minio rows, and fix the outdated architecture section. Then commit all documentation changes across operator-ts and u2g-infrastructure-ts and run the session close protocol (git push).
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/tomblume/.REDACTED.jsonl
+Please continue the conversation from where we left off without asking the user any further questions. Continue with the last task that you were asked to work on.
+
+---
+
+commit all
+
+---
+
+commit all
+
+---
+
+are there uncimmited changes in share-platform or sharemembers?
+
+---
+
+ok, commit plan files and .gitattributes
+
+---
+
+2 navigation issues : 1. when I navigate share-ui from  Account Setting to https://share.community/settings we end at https://share.community. 2. when I select Community X Enter - I land at <community Irl>/login  , but like to land at / or shareholderPage
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/skills/devops
+
+# shaRe Platform DevOps
+
+Manage the shaRe platform on the Scaleway production server.
+
+## Server
+
+- **IP**: `51.15.211.196`
+- **SSH**: `ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196`
+- **Infra dir on server**: `/opt/share-platform/infra`
+- **Compose files**: `docker-compose.prod.yml`, `docker-compose.dev.yml`
+- **Env files**: `.env.prod`, `.env.dev`
+
+## Service Map
+
+| Service | Image | Compose service name | Source repo |
+|---------|-------|---------------------|-------------|
+| operator | `ghcr.io/share-community/operator:latest` | `operator-{env}` | `../operator-ts/` |
+| share-ui | `ghcr.io/share-community/share-ui:latest` | `share-ui-{env}` | `../share-ui/` (Dockerfile in `../u2g-infrastructure-ts/services/share-ui/Dockerfile`) |
+| keycloak | `ghcr.io/share-community/sharemembers:latest` | `keycloak-{env}` | `../sharemembers/` |
+| neo4j | (standard image) | `neo4j-{env}` | — |
+| redis | (standard image) | `redis-{env}` | — |
+| postgres | `postgres:16-alpine` | `postgres-{env}` | — |
+| odoo | `ghcr.io/share-community/odoo:latest` | `odoo-{env}` | `../u2g-infrastructure-ts/services/odoo/` |
+| onlyoffice | `onlyoffice/documentserver:latest` | `onlyoffice-{env}` | — |
+| drawio | `jgraph/drawio:latest` | `drawio-{env}` | — |
+| minio | `minio/minio:latest` | `minio-{env}` | — |
+| metabase | `metabase/metabase:latest` | `metabase-{env}` | — |
+| traefik | — | `coolify-proxy` (shared) | — |
+
+Container naming: `share-{env}-{service}-{env}-1` (e.g. `share-prod-operator-prod-1`)
+
+### Postgres — shared instance, multiple databases
+
+| Database | Owner | Used by |
+|----------|-------|---------|
+| `keycloak` | keycloak | Keycloak auth |
+| `odoodb` | odoo | Odoo 18 |
+| `sharedb` | share | operator-ts analytics (future) |
+| `metabase` | metabase | Metabase analytics |
+
+### Odoo — self-hosted Odoo 18 Community
+
+- **URL**: `https://odoo.wurzelwerk.up2go.com`
+- **DB**: `odoodb` on shared `postgres-prod`
+- **Admin user**: `admin` (password in `.env.prod` as `ODOO_ADMIN_PASSWD`)
+- **Service user** (used by operator-ts): `operator@share.local` (password = `ODOO_API_KEY` in `.env.prod`)
+- **Installed modules**: `mail` (includes discuss.channel), `calendar`, `project`, `account`
+- **Healthcheck**: `https://odoo.wurzelwerk.up2go.com/web/health` (expect `{"status":"pass"}`)
+
+### Metabase — analytics & reporting
+
+- **URL**: `https://metabase.up2go.com` (platform-admin only, basic auth protected)
+- **DB**: `metabase` on shared `postgres-prod`
+- **Data sources**: connect to `sharedb` (postgresql://postgres-prod:5432/sharedb) for analytics
+- **Healthcheck**: `https://metabase.up2go.com/api/health` (expect 200)
+
+## Commands
+
+Parse `deploy sharemember-app prod` to determine the action. Default env is `prod`.
+
+### `deploy <service> [env]`
+
+Build, transfer, and restart a service:
+
+1. **Build** the Docker image from the source repo
+2. **Transfer** via `docker save | ssh ... docker load`
+3. **Restart** via `docker compose up -d <service-env>`
+4. **ALWAYS restart Traefik** after any container recreate: `docker restart coolify-proxy`
+5. **Wait 5 seconds**, then verify the service started by checking logs
+6. **Verify all routes** respond (200/302)
+
+Build commands per service:
+```bash
+# operator
+cd /home/tomblume/IdeaProjects/operator-ts
+docker build -t ghcr.io/share-community/operator:latest .
+
+# share-ui
+cd /home/tomblume/IdeaProjects/share-ui
+docker build -t ghcr.io/share-community/share-ui:latest \
+  -f /home/tomblume/IdeaProjects/u2g-infrastructure-ts/services/share-ui/Dockerfile .
+
+# keycloak
+cd /home/tomblume/IdeaProjects/sharemembers
+docker build -t ghcr.io/share-community/sharemembers:latest .
+
+# odoo (custom image with OCA extra-addons support)
+cd /home/tomblume/IdeaProjects/u2g-infrastructure-ts/services/odoo
+docker build -t ghcr.io/share-community/odoo:latest .
+```
+
+Restart on server:
+```bash
+ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196 \
+  "cd /opt/share-platform/infra && \
+   docker compose -f docker-compose.{env}.yml -p share-{env} --env-file .env.{env} \
+   up -d {service-name}"
+```
+
+### `status [env]`
+
+Check all container status and route health:
+```bash
+SSH="ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196"
+$SSH "docker ps --format 'table {{.Names}}\t{{.Status}}' | grep share-{env}"
+```
+
+Then check routes:
+- `https://wurzelwerk.up2go.com` (share-ui, expect 200)
+- `https://sso.wurzelwerk.up2go.com` (keycloak, expect 302)
+- `https://operator.wurzelwerk.up2go.com/health` (operator direct, expect 200)
+- `https://wurzelwerk.up2go.com/api/health` (operator via api, expect 200)
+- `https://odoo.wurzelwerk.up2go.com/web/health` (odoo, expect 200 with `{"status":"pass"}`)
+- `https://metabase.up2go.com/api/health` (metabase, expect 200 — basic auth required)
+
+Dev routes use `share.dev.up2go.com`, `sso.dev.sharemembers.net`, `operator.dev.up2go.com`.
+
+### `restart <service|traefik> [env]`
+
+Restart a specific service or Traefik:
+- **traefik**: `docker restart coolify-proxy` (fixes 504/CORS issues)
+- **other**: `docker compose ... restart {service-env}`
+
+### `logs <service> [env] [lines]`
+
+Show recent logs (default 30 lines):
+```bash
+ssh ... "docker logs share-{env}-{service}-{env}-1 --tail {lines}"
+```
+
+### `neo4j <cypher> [env]`
+
+Run a Cypher query against Neo4j:
+```bash
+ssh ... 'docker exec share-{env}-neo4j-{env}-1 cypher-shell \
+  -u neo4j \
+  -p $(docker inspect share-{env}-neo4j-{env}-1 \
+    --format "{{range .Config.Env}}{{println .}}{{end}}" | grep NEO4J_AUTH | cut -d/ -f2) \
+  "<cypher query>"'
+```
+
+### `diagnose`
+
+Run full diagnostic:
+1. Check all container status
+2. Check all route health codes
+3. Check for errors in operator logs (last 50 lines)
+4. Check memory usage on server
+5. Report findings and suggest fixes
+
+## Known Issues
+
+- **504 Gateway Timeout after deploy**: Traefik loses routing to recreated containers. Fix: `docker restart coolify-proxy`
+- **CORS errors from sso.wurzelwerk...**: Same cause as above — Keycloak is unreachable via Traefik
+- **Keycloak startup takes ~4 minutes**: Wait for `healthy` status before testing auth flows
+
+## Important
+
+- Always restart Traefik (`coolify-proxy`) after deploying any service
+- After deploy, verify ALL routes (not just the deployed service)
+- Never expose Neo4j credentials in output — use the `docker inspect` pattern
+- Default to `prod` environment unless explicitly told otherwise
+
+---
+
+bd list
+
+---
+
+List beads issues with optional filtering.
+
+## Basic Filters
+
+- **--status, -s**: Filter by status (open, in_progress, blocked, closed)
+- **--priority, -p**: Filter by priority (0-4: 0=critical, 1=high, 2=medium, 3=low, 4=backlog)
+- **--type, -t**: Filter by type (bug, feature, task, epic, chore)
+- **--assignee, -a**: Filter by assignee
+- **--label, -l**: Filter by labels (comma-separated, must have ALL labels)
+- **--label-any**: Filter by labels (OR semantics, must have AT LEAST ONE)
+- **--title**: Filter by title text (case-insensitive substring match)
+- **--limit, -n**: Limit number of results
+
+## Advanced Filters
+
+### Pattern Matching
+- **--title-contains**: Search for text in title (case-insensitive)
+- **--desc-contains**: Search for text in description (case-insensitive)
+- **--notes-contains**: Search for text in notes (case-insensitive)
+
+### Date Ranges
+- **--created-after**: Issues created after date (YYYY-MM-DD or ISO 8601)
+- **--created-before**: Issues created before date
+- **--updated-after**: Issues updated after date
+- **--updated-before**: Issues updated before date
+- **--closed-after**: Issues closed after date
+- **--closed-before**: Issues closed before date
+
+### Priority Range
+- **--priority-min**: Minimum priority (inclusive)
+- **--priority-max**: Maximum priority (inclusive)
+
+### Empty/Null Checks
+- **--empty-description**: Find issues with no description
+- **--no-assignee**: Find unassigned issues
+- **--no-labels**: Find issues with no labels
+
+## Examples
+
+### Basic Usage
+- `bd list --status open --priority 1`: High priority open issues
+- `bd list --type bug --assignee alice`: Alice's assigned bugs
+- `bd list --label backend,needs-review`: Backend issues needing review
+- `bd list --title "auth"`: Issues with "auth" in the title
+
+### Advanced Usage
+- `bd list --title-contains "auth" --status open`: Search open issues for auth-related work
+- `bd list --priority-min 0 --priority-max 1`: Critical and high priority issues only
+- `bd list --created-after 2025-01-01 --status open`: Recent open issues
+- `bd list --empty-description --status open`: Open issues missing descriptions
+- `bd list --no-assignee --priority 1`: High priority unassigned work
+- `bd list --desc-contains "TODO" --notes-contains "review"`: Find items needing attention
+
+## Output Formats
+
+- Default: Human-readable table
+- `--json`: JSON format for scripting
+- `--format digraph`: Graph format for golang.org/x/tools/cmd/digraph
+- `--format dot`: Graphviz DOT format
+
+---
+
+show more details for share-platform-5ve
+
+---
+
+Display detailed information about a beads issue.
+
+If an issue ID is provided as , use it. Otherwise, ask the user for the issue ID.
+
+Use the beads MCP `show` tool to retrieve issue details and present them clearly, including:
+- Issue ID, title, and description
+- Status, priority, and type
+- Creation and update timestamps
+- Dependencies (what this issue blocks or is blocked by)
+- Related issues
+
+If the issue has dependencies, offer to show the full dependency tree.
+
+---
+
+let's brainstorm abour 1 - my first question whould be, how do I find a shaRe Member (btw. that the correct spelling) I can ask for identify me as a person? Any idea? how does other platforms do this?
+
+---
+
+lass uns ueber    Q2 und Q3 reden, aber auf deutsch
+
+---
+
+ich folge deiner argumentation und stimme zu, lass uns max. 3 aktive buergschaften festlegen.
+
+---
+
+das alles finden nur in sharemember.app statt richtig?
+
+---
+
+waere dazu nicht eine mobile sharemember.app ideal?
+
+---
+
+pwa ist prima.

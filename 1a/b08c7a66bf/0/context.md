@@ -545,3 +545,124 @@ digraph when_to_use {
 
 continue
 
+### Prompt 75
+
+do we need to update the dokumentation with the latest changes of today_
+
+### Prompt 76
+
+check operator-ts reamde.md and u2g-infrastructure-ts readme.md and claude.md in both
+
+### Prompt 77
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me analyze the conversation chronologically to create a thorough summary.
+
+1. The session started continuing from a previous conversation about share-ui and sharemember-app improvements. The prior context showed that the share-ui ShaReMemberMenu.tsx had just been updated to show JWT picture + eid_status badge.
+
+2. User pointed out ...
+
+### Prompt 78
+
+commit all
+
+### Prompt 79
+
+commit all
+
+### Prompt 80
+
+are there uncimmited changes in share-platform or sharemembers?
+
+### Prompt 81
+
+ok, commit plan files and .gitattributes
+
+### Prompt 82
+
+2 navigation issues : 1. when I navigate share-ui from  Account Setting to https://share.community/settings we end at https://share.community. 2. when I select Community X Enter - I land at <community Irl>/login  , but like to land at / or shareholderPage
+
+### Prompt 83
+
+Base directory for this skill: /home/tomblume/.claude/skills/devops
+
+# shaRe Platform DevOps
+
+Manage the shaRe platform on the Scaleway production server.
+
+## Server
+
+- **IP**: `51.15.211.196`
+- **SSH**: `ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196`
+- **Infra dir on server**: `/opt/share-platform/infra`
+- **Compose files**: `docker-compose.prod.yml`, `docker-compose.dev.yml`
+- **Env files**: `.env.prod`, `.env.dev`
+
+## Service Map
+
+| Service | Image | Compose service name | Source repo |
+|...
+
+### Prompt 84
+
+bd list
+
+### Prompt 85
+
+List beads issues with optional filtering.
+
+## Basic Filters
+
+- **--status, -s**: Filter by status (open, in_progress, blocked, closed)
+- **--priority, -p**: Filter by priority (0-4: 0=critical, 1=high, 2=medium, 3=low, 4=backlog)
+- **--type, -t**: Filter by type (bug, feature, task, epic, chore)
+- **--assignee, -a**: Filter by assignee
+- **--label, -l**: Filter by labels (comma-separated, must have ALL labels)
+- **--label-any**: Filter by labels (OR semantics, must have AT LEAST ONE)
+- **--titl...
+
+### Prompt 86
+
+show more details for share-platform-5ve
+
+### Prompt 87
+
+Display detailed information about a beads issue.
+
+If an issue ID is provided as , use it. Otherwise, ask the user for the issue ID.
+
+Use the beads MCP `show` tool to retrieve issue details and present them clearly, including:
+- Issue ID, title, and description
+- Status, priority, and type
+- Creation and update timestamps
+- Dependencies (what this issue blocks or is blocked by)
+- Related issues
+
+If the issue has dependencies, offer to show the full dependency tree.
+
+### Prompt 88
+
+let's brainstorm abour 1 - my first question whould be, how do I find a shaRe Member (btw. that the correct spelling) I can ask for identify me as a person? Any idea? how does other platforms do this?
+
+### Prompt 89
+
+lass uns ueber    Q2 und Q3 reden, aber auf deutsch
+
+### Prompt 90
+
+ich folge deiner argumentation und stimme zu, lass uns max. 3 aktive buergschaften festlegen.
+
+### Prompt 91
+
+das alles finden nur in sharemember.app statt richtig?
+
+### Prompt 92
+
+waere dazu nicht eine mobile sharemember.app ideal?
+
+### Prompt 93
+
+pwa ist prima.
+

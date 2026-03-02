@@ -3,25 +3,11 @@
   "checkpoint_id": "1ab08c7a66bf",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 0,
+  "checkpoints_count": 1,
   "files_touched": [
-    "docs/plans/2026-03-01-settings-page.md",
-    "src/App.css",
     "src/auth/AuthContext.tsx",
-    "src/auth/auth.config.ts",
-    "src/components/AppShell.tsx",
-    "src/components/LanguageSwitcher.tsx",
-    "src/i18n/config.ts",
-    "src/i18n/locales/de.json",
-    "src/i18n/locales/en.json",
-    "src/main.tsx",
-    "src/pages/CallbackPage.tsx",
-    "src/pages/HubPage.tsx",
-    "src/pages/JoinPage.tsx",
-    "src/pages/LandingPage.tsx",
-    "src/pages/ProfilePage.tsx",
-    "src/pages/SettingsPage.tsx",
-    "src/pages/VerifyPage.tsx"
+    "src/components/ProtectedRoute.tsx",
+    "src/pages/CallbackPage.tsx"
   ],
   "sessions": [
     {
@@ -33,10 +19,10 @@
     }
   ],
   "token_usage": {
-    "input_tokens": 122,
-    "cache_creation_tokens": 267674,
-    "cache_read_tokens": 7409373,
-    "output_tokens": 34979,
-    "api_call_count": 78
+    "input_tokens": 127,
+    "cache_creation_tokens": 309690,
+    "cache_read_tokens": 8821773,
+    "output_tokens": 39251,
+    "api_call_count": 92
   }
 }
