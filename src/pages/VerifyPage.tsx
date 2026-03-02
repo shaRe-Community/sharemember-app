@@ -234,9 +234,11 @@ function QrVouchMode({ onBack }: { onBack: () => void }): JSX.Element {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
+    void handleShowQr()
     return () => {
       if (pollRef.current) clearInterval(pollRef.current)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleShowQr = async (): Promise<void> => {
