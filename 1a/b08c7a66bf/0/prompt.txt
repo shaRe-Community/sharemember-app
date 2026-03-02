@@ -3393,3 +3393,756 @@ hast du die Erfolgsmeldung angepasst?
 ---
 
 ich möchte noch das avatar icon incl. un-identified status oben rechts in der Toolbar sehen
+
+---
+
+jetzt müssen wir das alles in shareßui implementieren, Hier ist das profile/avatar icon noch ihne IDENTISIED status und auch noch das alte mit der url von GCS?
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me chronologically analyze this conversation to create a thorough summary.
+
+1. The conversation continued from a prior session where the profile picture migration plan (GCS → MinIO) was being executed using subagent-driven development.
+
+2. Task 6 (ProfilePictureSection in SettingsPage) had just been completed with commit 820b9ad. The spec compliance review came back ✅ COMPLIANT.
+
+3. Code quality review for Task 6 found:
+   - Critical: Misleading `picture_size_error` i18n copy ("must be PNG")
+   - Important: Stale `currentPicture` thumbnail after upload
+   - Important: Non-null assertions on `user`
+   - Important: Canvas click target inaccessible to keyboard/screen reader
+
+4. Fixes were implemented in commit 079214c:
+   - Fix 1: Updated i18n error copy to remove "must be PNG" claim
+   - Fix 2: Added `localPreviewUrl` state + `localPreviewRef` to SettingsPage for live preview
+   - Fix 3: Added keyboard accessibility (tabIndex, role, aria-label, onKeyDown) to canvas wrapper
+
+5. Code quality re-review: ✅ APPROVED
+
+6. Task 6 complete. Moved to Task 7 (Deploy sharemember-app):
+   - Checked server: runs as Docker container `share-prod-sharemember-app-prod-1`
+   - Image: `ghcr.io/share-community/sharemember-app:latest`
+   - Dockerfile at u2g-infrastructure-ts/services/sharemember-app/Dockerfile
+   - Build: `npm run build:prod` (uses .env.production)
+   - Built image, transferred, deployed, verified `share.community` → 200
+
+7. Task 8: Closed beads issue `share-platform-wia`, committed, pushed.
+
+8. **CORS error** reported by user:
+   - `POST /realms/prod-sharemembers/profile_pictures` blocked by CORS
+   - `ProfilePictureUpload.kt` had no CORS handling
+   - Fix: Added `@OPTIONS` preflight handler + `corsBuilder()` helper that echoes Origin header
+   - First attempt: Used `HttpHeaders.ORIGIN` constant → compilation error (doesn't exist in Jakarta WS RS)
+   - Fix: Used string literal `"Origin"` instead
+   - Built, deployed Keycloak
+
+9. **500 error after CORS fix**:
+   - Keycloak logs showed: `MediaType not set on path /realms/prod-sharemembers/profile_pictures, with response status 200`
+   - `DefaultSecurityHeadersProvider` in Keycloak Quarkus requires Content-Type on every response
+   - Fix: Added `.type(MediaType.TEXT_PLAIN)` to OPTIONS and error responses; changed POST success to `Response.noContent()` (204)
+   - Built, deployed Keycloak again
+
+10. **Upload succeeds (204) but picture not visible**:
+    - File IS in MinIO: `29ce29c8-bf39-4495-8353-e67f4cdba382/profile.png` (34KiB)
+    - KC user attributes showed `{}` empty (misleading - `--fields attributes` kcadm bug)
+    - Full user object showed empty attributes → `setSingleAttribute("picture", url)` not persisting
+    - Root cause: Keycloak 24+ User Profile SPI silently drops undeclared attributes
+    - Fix: Added `picture`, `eid_status`, `share_member_id` to User Profile via kcadm
+    - Manually patched Postgres attribute to correct value
+    - Deleted KC session to force fresh JWT
+
+11. **Picture still not visible (stale KC session)**:
+    - `userManager.removeUser()` (sharemember-app logout) doesn't sign out of KC
+    - KC session cookie reused on "re-login" → stale cached user model
+    - Fix: Deleted KC session via kcadm, cleared user cache
+    - Still not working...
+
+12. **Wrong MinIO URL**:
+    - `curl -sI https://minio.up2go.com/...` → `Content-Type: text/html`, `Server: MinIO Console`
+    - `https://minio.up2go.com` routes to MinIO Console (port 9001), NOT S3 API (port 9000)
+    - S3 API is at `https://minio-api.up2go.com` (port 9000)
+    - `MINIO_PUBLIC_URL` in docker-compose.prod.yml for Keycloak service was `https://minio.up2go.com`
+    - Fix 1: Updated compose file `MINIO_PUBLIC_URL: https://minio-api.up2go.com`
+    - Fix 2: Updated Postgres attribute URL from minio.up2go.com to minio-api.up2go.com
+    - But user uploaded again → overwrote with wrong URL because **running Keycloak had old env var**
+    - Fix: Redeployed Keycloak with new compose file, fixed Postgres again
+
+13. **Frontend still using wrong URL (KC cache)**:
+    - Keycloak Infinispan user cache had stale value despite Postgres being correct
+    - Fix: `POST /admin/realms/prod-sharemembers/clear-user-cache`
+    - Deleted session again
+
+14. **Incognito session still old URL**:
+    - Postgres AGAIN showed old URL with new UUID → user uploaded again from running Keycloak with old env
+    - Confirmed: running container still had old `MINIO_PUBLIC_URL`
+    - Fix: Full redeploy of Keycloak + fix Postgres + verify `MINIO_PUBLIC_URL=https://minio-api.up2go.com` in running container
+
+15. **`signinSilent` for immediate picture update after upload**:
+    - User asked about not requiring logout/login for picture to appear
+    - Three options discussed: signinSilent, local state override, router state
+    - User chose Option A (signinSilent)
+    - Implementation:
+      - Added `refreshUser: () => Promise<void>` to `AuthContextValue` interface
+      - Implemented: `const refreshUser = () => userManager.signinSilent().then(() => undefined)`
+      - Exposed in context provider
+      - In `ProfilePictureSection`: added `const { refreshUser } = useAuth()` and `await refreshUser()` after successful upload
+    - Updated i18n: removed "Changes appear after your next login" from `picture_success`
+    - Deployed
+
+16. **Avatar with eid_status badge in AppShell toolbar**:
+    - User wanted small avatar + badge in top-right toolbar of sharemember-app
+    - Existing CSS: `.avatar-wrapper`, `.avatar-badge`, `.avatar-badge-shield`, `.avatar-badge-question`, `.avatar-unidentified`
+    - Added new CSS: `.nav-avatar-link`, `.nav-avatar-wrapper`, `.nav-avatar` (32px variant)
+    - Updated AppShell.tsx: compute `isIdentified` + `initials`, replace Profile text link with avatar component
+    - The badge shows `?` (grey) for un-identified, `✓` (red) for identified
+    - Deployed
+
+17. **share-ui work**:
+    - User wants same improvements in share-ui
+    - Exploration found:
+      - `ShaReMemberMenu.tsx` uses raw `<Avatar src={profileUrl}>` (no badge)
+      - `useProfilePictureUrl` hook builds URL from `staticContentUrl + shareholderId` (not JWT `picture` claim)
+      - `ShaReMember.ts` already has `pictureUrl` (from JWT `picture` claim) and `eidStatus`
+      - `ShareAvatar` component already has EID badge support
+      - No GCS references in code, but `staticContentUrl` may point to GCS
+    - Read `ShaReMemberMenu.tsx` (full) and `useProfilePictureUrl.ts` (full)
+    - Next step: implement badge + correct picture URL in ShaReMemberMenu
+
+Current work: Reading share-ui files to understand what needs to change in ShaReMemberMenu.tsx
+
+Summary:
+1. Primary Request and Intent:
+   - Execute the profile picture migration plan (GCS → MinIO) for sharemember-app and deploy
+   - Fix CORS, 500 errors, wrong MinIO URL, KC User Profile attribute restrictions, and stale cache issues that prevented the feature from working
+   - Implement `signinSilent` so the profile picture updates immediately after upload without logout/login
+   - Add a small avatar with eID status badge to the AppShell toolbar (top-right)
+   - Implement the same avatar + correct picture URL in share-ui's `ShaReMemberMenu`
+
+2. Key Technical Concepts:
+   - **Keycloak 24+ User Profile SPI**: Custom attributes must be declared in User Profile config or `setSingleAttribute()` silently drops them. Fixed by adding `picture`, `eid_status`, `share_member_id` via kcadm.
+   - **Keycloak Infinispan user cache**: Direct Postgres updates don't invalidate KC's in-memory cache. Must call `POST /admin/realms/{realm}/clear-user-cache` after direct DB changes.
+   - **MinIO S3 API vs Console**: Port 9000 = S3 API (`minio-api.up2go.com`); Port 9001 = Console (`minio.up2go.com`). `MINIO_PUBLIC_URL` must point to the API, not the console.
+   - **Keycloak `DefaultSecurityHeadersProvider`**: Requires `Content-Type` on every response; `Response.ok().build()` with no body/type causes a 500. Fix: `Response.noContent()` (204) for success, or `.type(MediaType.TEXT_PLAIN)` on all responses.
+   - **JAX-RS CORS for KC plugins**: `RealmResourceProvider` endpoints get no automatic CORS treatment. Must add `@OPTIONS` preflight handler + echo `Origin` header on all responses (including errors). `HttpHeaders.ORIGIN` doesn't exist in Jakarta WS RS — use string literal `"Origin"`.
+   - **`signinSilent()` in oidc-client-ts**: Makes hidden iframe request to Keycloak with `prompt=none`. On success fires `userLoaded` event already handled by `AuthProvider`, so state updates automatically. Used to refresh JWT after picture upload.
+   - **Docker env vars**: Editing compose file doesn't affect running containers. Must `docker compose up -d` to recreate container with new env.
+   - **`userManager.removeUser()` vs KC sign-out**: `removeUser()` only removes local OIDC user from browser storage; Keycloak SSO session remains active. Re-login reuses the KC session → potential stale cached data.
+   - **share-ui `useProfilePictureUrl` hook**: Builds URL from `staticContentUrl + shareholderId` (not JWT `picture` claim). `staticContentUrl` comes from operator-ts `/v1/config/oidc`. May be wrong if pointing to old GCS URL.
+
+3. Files and Code Sections:
+
+   - **`/home/tomblume/IdeaProjects/sharemembers/plugins/src/main/kotlin/com/up2go/sharemembers/profile/ProfilePictureUpload.kt`**
+     - Added CORS handling, Content-Type on all responses, proper error returns
+     ```kotlin
+     @OPTIONS
+     fun preflight(@HeaderParam("Origin") origin: String?): Response =
+         corsBuilder(Response.ok().type(MediaType.TEXT_PLAIN), origin).build()
+     
+     @POST
+     @Consumes(MediaType.MULTIPART_FORM_DATA)
+     fun uploadProfilePicture(
+         @FormParam("file") file: InputStream,
+         @HeaderParam("Origin") origin: String?,
+     ): Response {
+         val authResult = AppAuthManager.BearerTokenAuthenticator(session).authenticate()
+             ?: return corsBuilder(
+                 Response.status(Response.Status.UNAUTHORIZED).entity("Unauthorized").type(MediaType.TEXT_PLAIN),
+                 origin,
+             ).build()
+         // ... validation and upload ...
+         return corsBuilder(Response.noContent(), origin).build()
+     }
+     
+     private fun corsBuilder(builder: Response.ResponseBuilder, origin: String?): Response.ResponseBuilder {
+         if (origin != null) {
+             builder
+                 .header("Access-Control-Allow-Origin", origin)
+                 .header("Access-Control-Allow-Methods", "POST, OPTIONS")
+                 .header("Access-Control-Allow-Headers", "Authorization, Content-Type")
+                 .header("Access-Control-Max-Age", "3600")
+         }
+         return builder
+     }
+     ```
+
+   - **`/home/tomblume/IdeaProjects/u2g-infrastructure-ts/docker-compose.prod.yml`**
+     - Fixed `MINIO_PUBLIC_URL` in Keycloak service (line 160) from `https://minio.up2go.com` to `https://minio-api.up2go.com`
+     ```yaml
+     MINIO_PROFILE_BUCKET: share-profile-pictures
+     MINIO_PUBLIC_URL: https://minio-api.up2go.com
+     ```
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/src/auth/AuthContext.tsx`**
+     - Added `refreshUser` to `AuthContextValue` interface and implementation
+     ```typescript
+     interface AuthContextValue {
+       user: AuthUser | null
+       isLoading: boolean
+       login: () => Promise<void>
+       logout: () => Promise<void>
+       register: () => Promise<void>
+       refreshUser: () => Promise<void>
+     }
+     // ...
+     const refreshUser = () => userManager.signinSilent().then(() => undefined)
+     // exposed in context provider value
+     ```
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/src/pages/SettingsPage.tsx`**
+     - `ProfilePictureSection` calls `refreshUser()` after successful upload + uses `localPreviewUrl` for immediate canvas preview
+     ```typescript
+     const { refreshUser } = useAuth()
+     // ...
+     if (!res.ok) throw new Error(`HTTP ${res.status}`)
+     if (localPreviewRef.current) URL.revokeObjectURL(localPreviewRef.current)
+     const url = URL.createObjectURL(blob)
+     localPreviewRef.current = url
+     setLocalPreviewUrl(url)
+     await refreshUser()
+     setSuccess(true)
+     ```
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/src/components/AppShell.tsx`**
+     - Replaced Profile text link with small avatar + eid_status badge
+     ```tsx
+     const isIdentified = user?.eidStatus === 'identified'
+     const initials = user?.name
+       ? user.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+       : '?'
+     // ...
+     <Link to="/profile" className="nav-avatar-link">
+       <div className={`nav-avatar-wrapper${isIdentified ? '' : ' avatar-unidentified'}`}>
+         <div className="nav-avatar">
+           {user?.picture
+             ? <img src={user.picture} alt="" className="avatar-img" />
+             : initials}
+         </div>
+         <span className={`avatar-badge${isIdentified ? ' avatar-badge-shield' : ' avatar-badge-question'}`}>
+           {isIdentified ? '✓' : '?'}
+         </span>
+       </div>
+     </Link>
+     ```
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/src/App.css`**
+     - Added `.nav-avatar-link`, `.nav-avatar-wrapper`, `.nav-avatar` (32px), `.avatar-unidentified .nav-avatar`
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/src/i18n/locales/en.json` + `de.json`**
+     - `picture_success`: removed "Changes appear after your next login." suffix (now just "Profile picture updated." / "Profilbild aktualisiert.")
+
+   - **`/home/tomblume/IdeaProjects/share-ui/src/components/ShaReMemberMenu.tsx`** (READ, not yet modified)
+     - Line 42: `const profileUrl = useProfilePictureUrl(user?.shareholderId || "")` — builds URL from staticContentUrl, not JWT
+     - Lines 114-127: Raw `<Avatar src={profileUrl}>` with no eid_status badge
+     - `user` comes from `useAuth()` which returns a `ShaReMember` object
+
+   - **`/home/tomblume/IdeaProjects/share-ui/src/hooks/useProfilePictureUrl.ts`** (READ, not yet modified)
+     ```typescript
+     export function useProfilePictureUrl(shareholderId?: string) {
+       const { staticContentUrl } = useAuth()
+       return useMemo(() => {
+         if (!staticContentUrl || !shareholderId) return ""
+         return `${staticContentUrl.replace(/\/+$/, "")}/${shareholderId}/profile.png`
+       }, [staticContentUrl, shareholderId])
+     }
+     ```
+
+4. Errors and fixes:
+   - **`HttpHeaders.ORIGIN` unresolved reference**: Jakarta WS RS `HttpHeaders` class has no `ORIGIN` constant. Fixed by using string literal `"Origin"` instead.
+   - **500 from `DefaultSecurityHeadersProvider`**: Keycloak's security headers filter requires `Content-Type` on every response. `Response.ok().build()` with no body caused crash. Fixed by: `Response.noContent()` for POST success, `.type(MediaType.TEXT_PLAIN)` for OPTIONS and error responses.
+   - **`setSingleAttribute` silently dropped**: Keycloak 24+ User Profile SPI blocks undeclared attributes. Fixed by adding `picture`, `eid_status`, `share_member_id` to User Profile config via kcadm.
+   - **`--fields attributes` kcadm display bug**: Returns `{}` even when attributes exist. Workaround: use `kcadm get users/{id}` without `--fields` filter.
+   - **Wrong MinIO URL (`minio.up2go.com` = Console, not API)**: `MINIO_PUBLIC_URL` pointed to MinIO Console (port 9001, serves HTML). Fixed to `https://minio-api.up2go.com` (port 9000, S3 API). Also fixed existing Postgres attribute via SQL `UPDATE`.
+   - **Postgres fix overwritten by re-upload**: Running Keycloak container still had old env var. Each new upload overwrote Postgres with wrong URL. Fixed by redeploying Keycloak with updated compose file.
+   - **Stale KC Infinispan cache**: Direct Postgres updates not reflected until cache cleared. Fixed with `POST /admin/realms/{realm}/clear-user-cache`.
+   - **`userManager.removeUser()` doesn't end KC session**: Re-login silently reuses KC session. Fixed by deleting KC session via `kcadm delete sessions/{id}`.
+
+5. Problem Solving:
+   - All profile picture upload issues fully resolved: CORS ✅, 500 ✅, User Profile ✅, MinIO URL ✅, cache ✅
+   - `signinSilent` implemented for immediate JWT refresh after upload — no logout/login needed
+   - AppShell avatar with eid_status badge deployed
+   - share-ui `ShaReMemberMenu` needs: (a) eid_status badge added, (b) picture URL switched from `useProfilePictureUrl(shareholderId)` to JWT `picture` claim via `user.pictureUrl`
+
+6. All user messages:
+   - "share-platform-wia" (selecting beads issue)
+   - "1" (chose Subagent-Driven Development)
+   - (empty — approving progress between subagent dispatches)
+   - "cannot save profile picture: [CORS error from sso.wurzelwerk.up2go.com]"
+   - "[500 Internal Server Error + CORS blocked POST]"
+   - "profile picture is not visible after saving. Status Code: 204 No Content"
+   - "still the same issue"
+   - "i see a request: GET https://minio.up2go.com/... 200 OK, but picture is not shown"
+   - "the frontend still uses wrong url!"
+   - "I tried in an incognito session but still the old url"
+   - "noch eine kleinigkeit, wie schaffen wir es das Bild direkt nach dem upload und save zu aktualisieren, aktuell muss ich mich nochmal ausloggen und einloggen. nichts implementieren erstmal nachdenken"
+   - "dann option A"
+   - "[rejected build/deploy command]"
+   - "ich möchte noch das avatar icon incl. un-identified status oben rechts in der Toolbar sehen"
+   - "hast du die Erfolgsmeldung angepasst?"
+   - "jetzt müssen wir das alles in share-ui implementieren, Hier ist das profile/avatar icon noch ohne IDENTIFIED status und auch noch das alte mit der url von GCS?"
+
+7. Pending Tasks:
+   - **share-ui `ShaReMemberMenu`**: Replace raw `<Avatar src={profileUrl}>` with version that:
+     1. Uses `user.pictureUrl` (JWT `picture` claim from `ShaReMember`) instead of `useProfilePictureUrl(shareholderId)`
+     2. Shows eid_status badge (✓/? with appropriate styling) like AppShell does
+   - **Build and deploy share-ui** after the changes
+   - **Pending i18n success message deploy**: The last rejected build command means the updated success message (`picture_success` fix) and `signinSilent` are committed but the latest build was rejected — need to confirm if deploy should proceed
+
+8. Current Work:
+   The assistant was in the middle of implementing share-ui changes. The user said:
+   > "jetzt müssen wir das alles in share-ui implementieren, Hier ist das profile/avatar icon noch ohne IDENTIFIED status und auch noch das alte mit der url von GCS?"
+
+   The exploration agent found:
+   - `ShaReMemberMenu.tsx` uses `useProfilePictureUrl(user?.shareholderId)` (legacy hook, not JWT `picture` claim) and raw `<Avatar>` with no badge
+   - `ShaReMember.ts` already has `pictureUrl` (from JWT `picture`) and `eidStatus`
+   - `ShareAvatar` component in share-ui already has full EID badge rendering
+   - `useProfilePictureUrl` builds: `${staticContentUrl}/${shareholderId}/profile.png`
+
+   Files just read (not yet modified):
+   - `/home/tomblume/IdeaProjects/share-ui/src/components/ShaReMemberMenu.tsx` (full, 231 lines)
+   - `/home/tomblume/IdeaProjects/share-ui/src/hooks/useProfilePictureUrl.ts` (full, 10 lines)
+
+9. Optional Next Step:
+   Read `ShaReMember.ts` and `ShareAvatar.tsx` to understand the exact API, then modify `ShaReMemberMenu.tsx` to:
+   1. Replace `useProfilePictureUrl(user?.shareholderId)` with `user.pictureUrl` (JWT claim)
+   2. Wrap the `IconButton` content with a `Box` that has `position: relative` and add an eid_status badge overlay (either reuse `ShareAvatar` component or replicate the badge pattern from AppShell)
+
+   The user's explicit request: "jetzt müssen wir das alles in share-ui implementieren, Hier ist das profile/avatar icon noch ohne IDENTIFIED status und auch noch das alte mit der url von GCS?"
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/tomblume/.REDACTED.jsonl
+Please continue the conversation from where we left off without asking the user any further questions. Continue with the last task that you were asked to work on.
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/skills/devops
+
+# shaRe Platform DevOps
+
+Manage the shaRe platform on the Scaleway production server.
+
+## Server
+
+- **IP**: `51.15.211.196`
+- **SSH**: `ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196`
+- **Infra dir on server**: `/opt/share-platform/infra`
+- **Compose files**: `docker-compose.prod.yml`, `docker-compose.dev.yml`
+- **Env files**: `.env.prod`, `.env.dev`
+
+## Service Map
+
+| Service | Image | Compose service name | Source repo |
+|---------|-------|---------------------|-------------|
+| operator | `ghcr.io/share-community/operator:latest` | `operator-{env}` | `../operator-ts/` |
+| share-ui | `ghcr.io/share-community/share-ui:latest` | `share-ui-{env}` | `../share-ui/` (Dockerfile in `../u2g-infrastructure-ts/services/share-ui/Dockerfile`) |
+| keycloak | `ghcr.io/share-community/sharemembers:latest` | `keycloak-{env}` | `../sharemembers/` |
+| neo4j | (standard image) | `neo4j-{env}` | — |
+| redis | (standard image) | `redis-{env}` | — |
+| postgres | `postgres:16-alpine` | `postgres-{env}` | — |
+| odoo | `ghcr.io/share-community/odoo:latest` | `odoo-{env}` | `../u2g-infrastructure-ts/services/odoo/` |
+| onlyoffice | `onlyoffice/documentserver:latest` | `onlyoffice-{env}` | — |
+| drawio | `jgraph/drawio:latest` | `drawio-{env}` | — |
+| minio | `minio/minio:latest` | `minio-{env}` | — |
+| metabase | `metabase/metabase:latest` | `metabase-{env}` | — |
+| traefik | — | `coolify-proxy` (shared) | — |
+
+Container naming: `share-{env}-{service}-{env}-1` (e.g. `share-prod-operator-prod-1`)
+
+### Postgres — shared instance, multiple databases
+
+| Database | Owner | Used by |
+|----------|-------|---------|
+| `keycloak` | keycloak | Keycloak auth |
+| `odoodb` | odoo | Odoo 18 |
+| `sharedb` | share | operator-ts analytics (future) |
+| `metabase` | metabase | Metabase analytics |
+
+### Odoo — self-hosted Odoo 18 Community
+
+- **URL**: `https://odoo.wurzelwerk.up2go.com`
+- **DB**: `odoodb` on shared `postgres-prod`
+- **Admin user**: `admin` (password in `.env.prod` as `ODOO_ADMIN_PASSWD`)
+- **Service user** (used by operator-ts): `operator@share.local` (password = `ODOO_API_KEY` in `.env.prod`)
+- **Installed modules**: `mail` (includes discuss.channel), `calendar`, `project`, `account`
+- **Healthcheck**: `https://odoo.wurzelwerk.up2go.com/web/health` (expect `{"status":"pass"}`)
+
+### Metabase — analytics & reporting
+
+- **URL**: `https://metabase.up2go.com` (platform-admin only, basic auth protected)
+- **DB**: `metabase` on shared `postgres-prod`
+- **Data sources**: connect to `sharedb` (postgresql://postgres-prod:5432/sharedb) for analytics
+- **Healthcheck**: `https://metabase.up2go.com/api/health` (expect 200)
+
+## Commands
+
+Parse `deploy share-ui prod` to determine the action. Default env is `prod`.
+
+### `deploy <service> [env]`
+
+Build, transfer, and restart a service:
+
+1. **Build** the Docker image from the source repo
+2. **Transfer** via `docker save | ssh ... docker load`
+3. **Restart** via `docker compose up -d <service-env>`
+4. **ALWAYS restart Traefik** after any container recreate: `docker restart coolify-proxy`
+5. **Wait 5 seconds**, then verify the service started by checking logs
+6. **Verify all routes** respond (200/302)
+
+Build commands per service:
+```bash
+# operator
+cd /home/tomblume/IdeaProjects/operator-ts
+docker build -t ghcr.io/share-community/operator:latest .
+
+# share-ui
+cd /home/tomblume/IdeaProjects/share-ui
+docker build -t ghcr.io/share-community/share-ui:latest \
+  -f /home/tomblume/IdeaProjects/u2g-infrastructure-ts/services/share-ui/Dockerfile .
+
+# keycloak
+cd /home/tomblume/IdeaProjects/sharemembers
+docker build -t ghcr.io/share-community/sharemembers:latest .
+
+# odoo (custom image with OCA extra-addons support)
+cd /home/tomblume/IdeaProjects/u2g-infrastructure-ts/services/odoo
+docker build -t ghcr.io/share-community/odoo:latest .
+```
+
+Restart on server:
+```bash
+ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196 \
+  "cd /opt/share-platform/infra && \
+   docker compose -f docker-compose.{env}.yml -p share-{env} --env-file .env.{env} \
+   up -d {service-name}"
+```
+
+### `status [env]`
+
+Check all container status and route health:
+```bash
+SSH="ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196"
+$SSH "docker ps --format 'table {{.Names}}\t{{.Status}}' | grep share-{env}"
+```
+
+Then check routes:
+- `https://wurzelwerk.up2go.com` (share-ui, expect 200)
+- `https://sso.wurzelwerk.up2go.com` (keycloak, expect 302)
+- `https://operator.wurzelwerk.up2go.com/health` (operator direct, expect 200)
+- `https://wurzelwerk.up2go.com/api/health` (operator via api, expect 200)
+- `https://odoo.wurzelwerk.up2go.com/web/health` (odoo, expect 200 with `{"status":"pass"}`)
+- `https://metabase.up2go.com/api/health` (metabase, expect 200 — basic auth required)
+
+Dev routes use `share.dev.up2go.com`, `sso.dev.sharemembers.net`, `operator.dev.up2go.com`.
+
+### `restart <service|traefik> [env]`
+
+Restart a specific service or Traefik:
+- **traefik**: `docker restart coolify-proxy` (fixes 504/CORS issues)
+- **other**: `docker compose ... restart {service-env}`
+
+### `logs <service> [env] [lines]`
+
+Show recent logs (default 30 lines):
+```bash
+ssh ... "docker logs share-{env}-{service}-{env}-1 --tail {lines}"
+```
+
+### `neo4j <cypher> [env]`
+
+Run a Cypher query against Neo4j:
+```bash
+ssh ... 'docker exec share-{env}-neo4j-{env}-1 cypher-shell \
+  -u neo4j \
+  -p $(docker inspect share-{env}-neo4j-{env}-1 \
+    --format "{{range .Config.Env}}{{println .}}{{end}}" | grep NEO4J_AUTH | cut -d/ -f2) \
+  "<cypher query>"'
+```
+
+### `diagnose`
+
+Run full diagnostic:
+1. Check all container status
+2. Check all route health codes
+3. Check for errors in operator logs (last 50 lines)
+4. Check memory usage on server
+5. Report findings and suggest fixes
+
+## Known Issues
+
+- **504 Gateway Timeout after deploy**: Traefik loses routing to recreated containers. Fix: `docker restart coolify-proxy`
+- **CORS errors from sso.wurzelwerk...**: Same cause as above — Keycloak is unreachable via Traefik
+- **Keycloak startup takes ~4 minutes**: Wait for `healthy` status before testing auth flows
+
+## Important
+
+- Always restart Traefik (`coolify-proxy`) after deploying any service
+- After deploy, verify ALL routes (not just the deployed service)
+- Never expose Neo4j credentials in output — use the `docker inspect` pattern
+- Default to `prod` environment unless explicitly told otherwise
+
+---
+
+es gibt noch ein Avatar in z.b. https://wurzelwerk.up2go.com/web/shareholders/29ce29c8-bf39-4495-8353-e67f4cdba382 )rechte seite) und in der shareHolder View https://wurzelwerk.up2go.com/shareholder
+
+---
+
+one more issue, we have a inconsitency when navigating to Account Settings (upper right, avatar menu). Here we navigate to keycloark and not to sharemember.app settings. Neben den Attributen eID verification Status gibt es noch eine SharememberID, aktuell leer für user tom.blume, was wird hier gespeichert, ist das kein System key?  UNd wir haben in Kezcloak account setgings noch die 2FA Einstellungen, bitte überlegen wie wir das nach sharemembner.app portieren. Bitte für all die Punkte eine Todo liste erstellen und noch nicht implementieren
+
+---
+
+ok, we start with?
+
+---
+
+yes, go ahead with all issue in sequence you decide
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/subagent-driven-development
+
+# Subagent-Driven Development
+
+Execute plan by dispatching fresh subagent per task, with two-stage review after each: spec compliance review first, then code quality review.
+
+**Core principle:** Fresh subagent per task + two-stage review (spec then quality) = high quality, fast iteration
+
+## When to Use
+
+```dot
+digraph when_to_use {
+    "Have implementation plan?" [shape=diamond];
+    "Tasks mostly independent?" [shape=diamond];
+    "Stay in this session?" [shape=diamond];
+    "subagent-driven-development" [shape=box];
+    "executing-plans" [shape=box];
+    "Manual execution or brainstorm first" [shape=box];
+
+    "Have implementation plan?" -> "Tasks mostly independent?" [label="yes"];
+    "Have implementation plan?" -> "Manual execution or brainstorm first" [label="no"];
+    "Tasks mostly independent?" -> "Stay in this session?" [label="yes"];
+    "Tasks mostly independent?" -> "Manual execution or brainstorm first" [label="no - tightly coupled"];
+    "Stay in this session?" -> "subagent-driven-development" [label="yes"];
+    "Stay in this session?" -> "executing-plans" [label="no - parallel session"];
+}
+```
+
+**vs. Executing Plans (parallel session):**
+- Same session (no context switch)
+- Fresh subagent per task (no context pollution)
+- Two-stage review after each task: spec compliance first, then code quality
+- Faster iteration (no human-in-loop between tasks)
+
+## The Process
+
+```dot
+digraph process {
+    rankdir=TB;
+
+    subgraph cluster_per_task {
+        label="Per Task";
+        "Dispatch implementer subagent (./implementer-prompt.md)" [shape=box];
+        "Implementer subagent asks questions?" [shape=diamond];
+        "Answer questions, provide context" [shape=box];
+        "Implementer subagent implements, tests, commits, self-reviews" [shape=box];
+        "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [shape=box];
+        "Spec reviewer subagent confirms code matches spec?" [shape=diamond];
+        "Implementer subagent fixes spec gaps" [shape=box];
+        "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [shape=box];
+        "Code quality reviewer subagent approves?" [shape=diamond];
+        "Implementer subagent fixes quality issues" [shape=box];
+        "Mark task complete in TodoWrite" [shape=box];
+    }
+
+    "Read plan, extract all tasks with full text, note context, create TodoWrite" [shape=box];
+    "More tasks remain?" [shape=diamond];
+    "Dispatch final code reviewer subagent for entire implementation" [shape=box];
+    "Use superpowers:finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
+
+    "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Dispatch implementer subagent (./implementer-prompt.md)";
+    "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer subagent asks questions?";
+    "Implementer subagent asks questions?" -> "Answer questions, provide context" [label="yes"];
+    "Answer questions, provide context" -> "Dispatch implementer subagent (./implementer-prompt.md)";
+    "Implementer subagent asks questions?" -> "Implementer subagent implements, tests, commits, self-reviews" [label="no"];
+    "Implementer subagent implements, tests, commits, self-reviews" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)";
+    "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" -> "Spec reviewer subagent confirms code matches spec?";
+    "Spec reviewer subagent confirms code matches spec?" -> "Implementer subagent fixes spec gaps" [label="no"];
+    "Implementer subagent fixes spec gaps" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [label="re-review"];
+    "Spec reviewer subagent confirms code matches spec?" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="yes"];
+    "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" -> "Code quality reviewer subagent approves?";
+    "Code quality reviewer subagent approves?" -> "Implementer subagent fixes quality issues" [label="no"];
+    "Implementer subagent fixes quality issues" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="re-review"];
+    "Code quality reviewer subagent approves?" -> "Mark task complete in TodoWrite" [label="yes"];
+    "Mark task complete in TodoWrite" -> "More tasks remain?";
+    "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
+    "More tasks remain?" -> "Dispatch final code reviewer subagent for entire implementation" [label="no"];
+    "Dispatch final code reviewer subagent for entire implementation" -> "Use superpowers:finishing-a-development-branch";
+}
+```
+
+## Prompt Templates
+
+- `./implementer-prompt.md` - Dispatch implementer subagent
+- `./spec-reviewer-prompt.md` - Dispatch spec compliance reviewer subagent
+- `./code-quality-reviewer-prompt.md` - Dispatch code quality reviewer subagent
+
+## Example Workflow
+
+```
+You: I'm using Subagent-Driven Development to execute this plan.
+
+[Read plan file once: docs/plans/feature-plan.md]
+[Extract all 5 tasks with full text and context]
+[Create TodoWrite with all tasks]
+
+Task 1: Hook installation script
+
+[Get Task 1 text and context (already extracted)]
+[Dispatch implementation subagent with full task text + context]
+
+Implementer: "Before I begin - should the hook be installed at user or system level?"
+
+You: "User level (~/.config/superpowers/hooks/)"
+
+Implementer: "Got it. Implementing now..."
+[Later] Implementer:
+  - Implemented install-hook command
+  - Added tests, 5/5 passing
+  - Self-review: Found I missed --force flag, added it
+  - Committed
+
+[Dispatch spec compliance reviewer]
+Spec reviewer: ✅ Spec compliant - all requirements met, nothing extra
+
+[Get git SHAs, dispatch code quality reviewer]
+Code reviewer: Strengths: Good test coverage, clean. Issues: None. Approved.
+
+[Mark Task 1 complete]
+
+Task 2: Recovery modes
+
+[Get Task 2 text and context (already extracted)]
+[Dispatch implementation subagent with full task text + context]
+
+Implementer: [No questions, proceeds]
+Implementer:
+  - Added verify/repair modes
+  - 8/8 tests passing
+  - Self-review: All good
+  - Committed
+
+[Dispatch spec compliance reviewer]
+Spec reviewer: ❌ Issues:
+  - Missing: Progress reporting (spec says "report every 100 items")
+  - Extra: Added --json flag (not requested)
+
+[Implementer fixes issues]
+Implementer: Removed --json flag, added progress reporting
+
+[Spec reviewer reviews again]
+Spec reviewer: ✅ Spec compliant now
+
+[Dispatch code quality reviewer]
+Code reviewer: Strengths: Solid. Issues (Important): Magic number (100)
+
+[Implementer fixes]
+Implementer: Extracted PROGRESS_INTERVAL constant
+
+[Code reviewer reviews again]
+Code reviewer: ✅ Approved
+
+[Mark Task 2 complete]
+
+...
+
+[After all tasks]
+[Dispatch final code-reviewer]
+Final reviewer: All requirements met, ready to merge
+
+Done!
+```
+
+## Advantages
+
+**vs. Manual execution:**
+- Subagents follow TDD naturally
+- Fresh context per task (no confusion)
+- Parallel-safe (subagents don't interfere)
+- Subagent can ask questions (before AND during work)
+
+**vs. Executing Plans:**
+- Same session (no handoff)
+- Continuous progress (no waiting)
+- Review checkpoints automatic
+
+**Efficiency gains:**
+- No file reading overhead (controller provides full text)
+- Controller curates exactly what context is needed
+- Subagent gets complete information upfront
+- Questions surfaced before work begins (not after)
+
+**Quality gates:**
+- Self-review catches issues before handoff
+- Two-stage review: spec compliance, then code quality
+- Review loops ensure fixes actually work
+- Spec compliance prevents over/under-building
+- Code quality ensures implementation is well-built
+
+**Cost:**
+- More subagent invocations (implementer + 2 reviewers per task)
+- Controller does more prep work (extracting all tasks upfront)
+- Review loops add iterations
+- But catches issues early (cheaper than debugging later)
+
+## Red Flags
+
+**Never:**
+- Start implementation on main/master branch without explicit user consent
+- Skip reviews (spec compliance OR code quality)
+- Proceed with unfixed issues
+- Dispatch multiple implementation subagents in parallel (conflicts)
+- Make subagent read plan file (provide full text instead)
+- Skip scene-setting context (subagent needs to understand where task fits)
+- Ignore subagent questions (answer before letting them proceed)
+- Accept "close enough" on spec compliance (spec reviewer found issues = not done)
+- Skip review loops (reviewer found issues = implementer fixes = review again)
+- Let implementer self-review replace actual review (both are needed)
+- **Start code quality review before spec compliance is ✅** (wrong order)
+- Move to next task while either review has open issues
+
+**If subagent asks questions:**
+- Answer clearly and completely
+- Provide additional context if needed
+- Don't rush them into implementation
+
+**If reviewer finds issues:**
+- Implementer (same subagent) fixes them
+- Reviewer reviews again
+- Repeat until approved
+- Don't skip the re-review
+
+**If subagent fails task:**
+- Dispatch fix subagent with specific instructions
+- Don't try to fix manually (context pollution)
+
+## Integration
+
+**Required workflow skills:**
+- **superpowers:using-git-worktrees** - REQUIRED: Set up isolated workspace before starting
+- **superpowers:writing-plans** - Creates the plan this skill executes
+- **superpowers:requesting-code-review** - Code review template for reviewer subagents
+- **superpowers:finishing-a-development-branch** - Complete development after all tasks
+
+**Subagents should use:**
+- **superpowers:test-driven-development** - Subagents follow TDD for each task
+
+**Alternative workflow:**
+- **superpowers:executing-plans** - Use for parallel session instead of same-session execution
+
+---
+
+[Request interrupted by user]
+
+---
+
+continue

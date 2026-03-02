@@ -469,3 +469,79 @@ hast du die Erfolgsmeldung angepasst?
 
 ich möchte noch das avatar icon incl. un-identified status oben rechts in der Toolbar sehen
 
+### Prompt 65
+
+jetzt müssen wir das alles in shareßui implementieren, Hier ist das profile/avatar icon noch ihne IDENTISIED status und auch noch das alte mit der url von GCS?
+
+### Prompt 66
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me chronologically analyze this conversation to create a thorough summary.
+
+1. The conversation continued from a prior session where the profile picture migration plan (GCS → MinIO) was being executed using subagent-driven development.
+
+2. Task 6 (ProfilePictureSection in SettingsPage) had just been completed with commit 820b9ad....
+
+### Prompt 67
+
+Base directory for this skill: /home/tomblume/.claude/skills/devops
+
+# shaRe Platform DevOps
+
+Manage the shaRe platform on the Scaleway production server.
+
+## Server
+
+- **IP**: `51.15.211.196`
+- **SSH**: `ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196`
+- **Infra dir on server**: `/opt/share-platform/infra`
+- **Compose files**: `docker-compose.prod.yml`, `docker-compose.dev.yml`
+- **Env files**: `.env.prod`, `.env.dev`
+
+## Service Map
+
+| Service | Image | Compose service name | Source repo |
+|...
+
+### Prompt 68
+
+es gibt noch ein Avatar in z.b. https://wurzelwerk.up2go.com/web/shareholders/29ce29c8-bf39-4495-8353-e67f4cdba382 )rechte seite) und in der shareHolder View https://wurzelwerk.up2go.com/shareholder
+
+### Prompt 69
+
+one more issue, we have a inconsitency when navigating to Account Settings (upper right, avatar menu). Here we navigate to keycloark and not to sharemember.app settings. Neben den Attributen eID verification Status gibt es noch eine SharememberID, aktuell leer für user tom.blume, was wird hier gespeichert, ist das kein System key?  UNd wir haben in Kezcloak account setgings noch die 2FA Einstellungen, bitte überlegen wie wir das nach sharemembner.app portieren. Bitte für all die Punkte eine T...
+
+### Prompt 70
+
+ok, we start with?
+
+### Prompt 71
+
+yes, go ahead with all issue in sequence you decide
+
+### Prompt 72
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/subagent-driven-development
+
+# Subagent-Driven Development
+
+Execute plan by dispatching fresh subagent per task, with two-stage review after each: spec compliance review first, then code quality review.
+
+**Core principle:** Fresh subagent per task + two-stage review (spec then quality) = high quality, fast iteration
+
+## When to Use
+
+```dot
+digraph when_to_use {
+    "Have implement...
+
+### Prompt 73
+
+[Request interrupted by user]
+
+### Prompt 74
+
+continue
+
