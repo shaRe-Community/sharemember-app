@@ -15,6 +15,8 @@ type PageState =
   | { kind: 'loading' }
   | { kind: 'not_found' }
   | { kind: 'already_processed' }
+  | { kind: 'not_identified' }
+  | { kind: 'self_vouch' }
   | { kind: 'error' }
   | { kind: 'active'; request: VouchRequest }
   | { kind: 'confirmed'; name: string }
@@ -33,10 +35,12 @@ export function VouchPage(): JSX.Element {
     fetchVouchRequest(requestId, user.accessToken)
       .then((req) => setState({ kind: 'active', request: req }))
       .catch((err) => {
-        if (err instanceof ApiError && err.status === 404) {
-          setState({ kind: 'not_found' })
-        } else if (err instanceof ApiError && err.status === 409) {
-          setState({ kind: 'already_processed' })
+        if (err instanceof ApiError) {
+          if (err.status === 404) setState({ kind: 'not_found' })
+          else if (err.status === 409) setState({ kind: 'already_processed' })
+          else if (err.status === 403) setState({ kind: 'not_identified' })
+          else if (err.status === 400) setState({ kind: 'self_vouch' })
+          else setState({ kind: 'error' })
         } else {
           setState({ kind: 'error' })
         }
@@ -74,11 +78,13 @@ export function VouchPage(): JSX.Element {
           </div>
         )}
 
-        {(state.kind === 'not_found' || state.kind === 'already_processed' || state.kind === 'error') && (
+        {(state.kind === 'not_found' || state.kind === 'already_processed' || state.kind === 'not_identified' || state.kind === 'self_vouch' || state.kind === 'error') && (
           <div className="vouch-card">
             <p className="vouch-info-text">
               {state.kind === 'not_found' && t('vouch.not_found')}
               {state.kind === 'already_processed' && t('vouch.already_processed')}
+              {state.kind === 'not_identified' && t('vouch.not_identified')}
+              {state.kind === 'self_vouch' && t('vouch.self_vouch')}
               {state.kind === 'error' && t('vouch.network_error')}
             </p>
             <button className="cta-button" onClick={() => navigate('/hub')}>

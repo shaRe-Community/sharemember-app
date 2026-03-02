@@ -45,6 +45,26 @@ export function declineVouch(requestId: string, accessToken: string): Promise<vo
   )
 }
 
+export function createOpenVouchRequest(
+  accessToken: string,
+): Promise<VouchRequest> {
+  return apiFetch<VouchRequest>(
+    '/v2/sharemember/vouch-requests/open',
+    accessToken,
+    { method: 'POST' },
+  )
+}
+
+export function fetchRequestStatus(
+  requestId: string,
+  accessToken: string,
+): Promise<{ status: string }> {
+  return apiFetch<{ status: string }>(
+    `/v2/sharemember/vouch-requests/${requestId}/status`,
+    accessToken,
+  )
+}
+
 export function createVouchRequest(
   targetEmail: string,
   accessToken: string,

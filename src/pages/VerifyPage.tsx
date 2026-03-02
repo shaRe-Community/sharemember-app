@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { QRCodeSVG } from 'qrcode.react'
 import { useAuth } from '../auth/AuthContext'
 import { AppShell } from '../components/AppShell'
 import { apiFetch, ApiError } from '../api/api'
-import { createVouchRequest } from '../api/vouch'
+import { createVouchRequest, createOpenVouchRequest, fetchRequestStatus } from '../api/vouch'
 
 type Phase =
   | { kind: 'idle' }
@@ -164,7 +165,7 @@ export function VerifyPage(): JSX.Element {
                 <span>{t('verify.or_alternatively')}</span>
               </div>
 
-              <VouchRequestForm />
+              <VouchSection />
             </>
           )}
         </div>
@@ -188,6 +189,144 @@ function VerifyStep({
       <div>
         <strong>{title}</strong>
         <p>{detail}</p>
+      </div>
+    </div>
+  )
+}
+
+function VouchSection(): JSX.Element {
+  const [mode, setMode] = useState<'choose' | 'qr' | 'email'>('choose')
+
+  if (mode === 'qr') return <QrVouchMode onBack={() => setMode('choose')} />
+  if (mode === 'email') return <EmailVouchMode onBack={() => setMode('choose')} />
+
+  return <VouchModeChooser onQr={() => setMode('qr')} onEmail={() => setMode('email')} />
+}
+
+function VouchModeChooser({ onQr, onEmail }: { onQr: () => void; onEmail: () => void }): JSX.Element {
+  const { t } = useTranslation()
+  return (
+    <div className="vouch-request-form">
+      <p className="vouch-request-label">{t('verify.vouch_request_intro')}</p>
+      <button
+        className="nav-btn nav-btn-secondary vouch-request-btn"
+        style={{ width: '100%' }}
+        onClick={onQr}
+      >
+        {t('verify.vouch_qr_cta')}
+      </button>
+      <button
+        className="vouch-back-link"
+        onClick={onEmail}
+      >
+        {t('verify.vouch_email_cta')}
+      </button>
+    </div>
+  )
+}
+
+function QrVouchMode({ onBack }: { onBack: () => void }): JSX.Element {
+  const { user, refreshUser } = useAuth()
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const [requestId, setRequestId] = useState<string | null>(null)
+  const [status, setStatus] = useState<'idle' | 'loading' | 'showing' | 'confirmed' | 'error'>('idle')
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current)
+    }
+  }, [])
+
+  const handleShowQr = async (): Promise<void> => {
+    if (!user) return
+    setStatus('loading')
+    try {
+      const req = await createOpenVouchRequest(user.accessToken)
+      setRequestId(req.id)
+      setStatus('showing')
+
+      // Start polling for status
+      pollRef.current = setInterval(async () => {
+        try {
+          const { status: reqStatus } = await fetchRequestStatus(req.id, user.accessToken)
+          if (reqStatus === 'confirmed') {
+            if (pollRef.current) clearInterval(pollRef.current)
+            setStatus('confirmed')
+            await refreshUser()
+            setTimeout(() => navigate('/profile', { replace: true }), 2000)
+          }
+        } catch {
+          // Polling error — silently continue
+        }
+      }, 3000)
+    } catch {
+      setStatus('error')
+    }
+  }
+
+  if (status === 'confirmed') {
+    return (
+      <div className="vouch-qr-section">
+        <div className="verify-icon verify-icon-success">✓</div>
+        <p className="vouch-request-sent">{t('verify.vouch_qr_confirmed')}</p>
+      </div>
+    )
+  }
+
+  if (status === 'showing' && requestId) {
+    const qrUrl = `${window.location.origin}/vouch/${requestId}`
+    return (
+      <div className="vouch-qr-section">
+        <p className="vouch-request-label">{t('verify.vouch_qr_title')}</p>
+        <div className="vouch-qr-container">
+          <QRCodeSVG
+            value={qrUrl}
+            size={200}
+            bgColor="#ffffff"
+            fgColor="#031633"
+            level="M"
+          />
+        </div>
+        <p className="vouch-request-label">{t('verify.vouch_qr_instructions')}</p>
+        <p className="vouch-responsibility" style={{ fontSize: '0.75rem' }}>{t('verify.vouch_qr_hint')}</p>
+        <button className="vouch-back-link" onClick={onBack}>
+          {t('verify.vouch_back')}
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="vouch-qr-section">
+      <button
+        className="nav-btn nav-btn-secondary vouch-request-btn"
+        style={{ width: '100%' }}
+        onClick={() => void handleShowQr()}
+        disabled={status === 'loading'}
+      >
+        {status === 'loading' ? t('verify.starting') : t('verify.vouch_qr_cta')}
+      </button>
+      {status === 'error' && (
+        <p className="vouch-request-error">{t('verify.vouch_error_generic')}</p>
+      )}
+      <button className="vouch-back-link" onClick={onBack}>
+        {t('verify.vouch_back')}
+      </button>
+    </div>
+  )
+}
+
+function EmailVouchMode({ onBack }: { onBack: () => void }): JSX.Element {
+  const { t } = useTranslation()
+  return (
+    <div>
+      <VouchRequestForm />
+      <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+        <button className="vouch-back-link" onClick={onBack}>
+          {t('verify.vouch_back')}
+        </button>
       </div>
     </div>
   )

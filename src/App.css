@@ -1354,3 +1354,38 @@
   text-align: center;
   margin: 0;
 }
+
+/* QR code vouch section */
+.vouch-qr-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.vouch-qr-container {
+  background: #ffffff;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vouch-back-link {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.15);
+  transition: color 0.2s;
+}
+
+.vouch-back-link:hover {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration-color: rgba(255, 255, 255, 0.4);
+}

@@ -124,6 +124,13 @@
     "vouch_request_cta": "Send request",
     "vouch_request_sending": "Sending…",
     "vouch_request_sent": "Request sent! They'll see it next time they open the app.",
+    "vouch_qr_cta": "Show QR code",
+    "vouch_email_cta": "Request via email instead",
+    "vouch_qr_title": "Show this QR code to an IDENTIFIED member",
+    "vouch_qr_instructions": "Ask an IDENTIFIED member to scan this code with their phone.",
+    "vouch_qr_hint": "They must be signed in to the shaRe app to confirm.",
+    "vouch_qr_confirmed": "Identity confirmed! Redirecting to your profile…",
+    "vouch_back": "Back",
     "vouch_error_not_found": "No IDENTIFIED member found with that email address.",
     "vouch_error_duplicate": "You already have a pending request to this person.",
     "vouch_error_generic": "Something went wrong. Please try again."
@@ -151,6 +158,8 @@
     "declined_message": "Vouch request declined.",
     "banner_single": "{{name}} is asking you to confirm their identity.",
     "banner_multiple": "{{count}} people are asking you to confirm their identity.",
-    "banner_cta": "Confirm now →"
+    "banner_cta": "Confirm now →",
+    "not_identified": "Only IDENTIFIED members can vouch for others.",
+    "self_vouch": "You cannot vouch for yourself."
   }
 }

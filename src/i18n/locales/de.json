@@ -124,6 +124,13 @@
     "vouch_request_cta": "Anfrage senden",
     "vouch_request_sending": "Wird gesendet…",
     "vouch_request_sent": "Anfrage gesendet! Die Person wird beim nächsten Öffnen der App benachrichtigt.",
+    "vouch_qr_cta": "QR-Code anzeigen",
+    "vouch_email_cta": "Stattdessen per E-Mail anfragen",
+    "vouch_qr_title": "Zeige diesen QR-Code einem IDENTIFIZIERTEN Mitglied",
+    "vouch_qr_instructions": "Bitte ein IDENTIFIZIERTES Mitglied, diesen Code mit dem Handy zu scannen.",
+    "vouch_qr_hint": "Die Person muss in der shaRe-App angemeldet sein, um zu bestätigen.",
+    "vouch_qr_confirmed": "Identität bestätigt! Weiterleitung zu deinem Profil…",
+    "vouch_back": "Zurück",
     "vouch_error_not_found": "Kein IDENTIFIZIERTES Mitglied mit dieser E-Mail-Adresse gefunden.",
     "vouch_error_duplicate": "Du hast bereits eine offene Anfrage an diese Person.",
     "vouch_error_generic": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
@@ -151,6 +158,8 @@
     "declined_message": "Bürgschaftsantrag abgelehnt.",
     "banner_single": "{{name}} bittet dich, die Identität zu bestätigen.",
     "banner_multiple": "{{count}} Personen bitten dich um Identitätsbestätigung.",
-    "banner_cta": "Jetzt bestätigen →"
+    "banner_cta": "Jetzt bestätigen →",
+    "not_identified": "Nur IDENTIFIZIERTE Mitglieder können für andere bürgen.",
+    "self_vouch": "Du kannst nicht für dich selbst bürgen."
   }
 }
