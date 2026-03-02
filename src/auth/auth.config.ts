@@ -5,8 +5,11 @@ const realm = import.meta.env.VITE_KEYCLOAK_REALM
 const publicUrl = import.meta.env.VITE_PUBLIC_URL
 const clientId = import.meta.env.VITE_KEYCLOAK_CLIENT_ID
 
+export const REMEMBER_ME_KEY = 'share_remember_me'
+
 function buildSettings(authorizationEndpoint?: string): UserManagerSettings {
   const base = `${ssoUrl}/realms/${realm}`
+  const rememberMe = localStorage.getItem(REMEMBER_ME_KEY) === '1'
   return {
     authority: base,
     client_id: clientId,
@@ -16,7 +19,7 @@ function buildSettings(authorizationEndpoint?: string): UserManagerSettings {
     scope: 'openid profile email',
     automaticSilentRenew: true,
     filterProtocolClaims: false,
-    userStore: new WebStorageStateStore({ store: localStorage }),
+    userStore: new WebStorageStateStore({ store: rememberMe ? localStorage : sessionStorage }),
     ...(authorizationEndpoint
       ? {
           metadata: {

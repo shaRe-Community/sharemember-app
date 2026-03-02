@@ -6,7 +6,7 @@ import {
   ReactNode,
 } from 'react'
 import type { User } from 'oidc-client-ts'
-import { userManager, registerUserManager } from './auth.config'
+import { userManager, registerUserManager, REMEMBER_ME_KEY } from './auth.config'
 
 export type EidStatus = 'un_identified' | 'identified'
 
@@ -23,7 +23,7 @@ export interface AuthUser {
 interface AuthContextValue {
   user: AuthUser | null
   isLoading: boolean
-  login: (redirectTo?: string) => Promise<void>
+  login: (redirectTo?: string, rememberMe?: boolean) => Promise<void>
   logout: () => Promise<void>
   register: () => Promise<void>
   refreshUser: () => Promise<void>
@@ -68,9 +68,15 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
     }
   }, [])
 
-  const login = (redirectTo?: string) => userManager.signinRedirect({ state: redirectTo })
+  const login = (redirectTo?: string, rememberMe?: boolean) => {
+    if (rememberMe) {
+      localStorage.setItem(REMEMBER_ME_KEY, '1')
+    }
+    return userManager.signinRedirect({ state: redirectTo })
+  }
   const register = () => registerUserManager.signinRedirect()
   const logout = async () => {
+    localStorage.removeItem(REMEMBER_ME_KEY)
     await userManager.removeUser()
     window.location.href = '/'
   }

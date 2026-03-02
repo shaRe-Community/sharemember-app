@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
 import { LanguageSwitcher } from '../components/LanguageSwitcher'
@@ -5,9 +6,10 @@ import { LanguageSwitcher } from '../components/LanguageSwitcher'
 export function LandingPage(): JSX.Element {
   const { user, isLoading, login, register } = useAuth()
   const { t } = useTranslation()
+  const [rememberMe, setRememberMe] = useState(false)
 
   const handleLogin = (): void => {
-    void login()
+    void login(undefined, rememberMe)
   }
 
   const handleRegister = (): void => {
@@ -25,6 +27,14 @@ export function LandingPage(): JSX.Element {
               </a>
             ) : (
               <>
+                <label className="remember-me-label">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                  />
+                  {t('nav.remember_me')}
+                </label>
                 <button
                   className="nav-btn nav-btn-secondary"
                   onClick={handleLogin}
