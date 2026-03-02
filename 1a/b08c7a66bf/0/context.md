@@ -857,3 +857,7 @@ after confirmation we need show a message "shaRe Member Idnetified" and hide the
 
 die DE variante ist falsch weil english
 
+### Prompt 124
+
+wenn ich ABmelden betätige lande ich meistens nicht in share.community sondern auf /hub
+
