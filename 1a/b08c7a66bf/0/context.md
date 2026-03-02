@@ -830,3 +830,30 @@ POST
 Status Code
 400 Bad Request
 
+### Prompt 119
+
+Request URL
+https://wurzelwerk.up2go.REDACTED
+Request Method
+POST
+Status Code
+500 Internal Server Error
+Remote Address
+51.15.211.196:443
+
+### Prompt 120
+
+after confirmation we need show a message "shaRe Member Idnetified" and hide the buttons "Identität bestätigen" and "Ablehnen"
+
+### Prompt 121
+
+after confirmation we need show a message "shaRe Member Idnetified" and hide the buttons "Identität bestätigen" and "Ablehnen"
+
+### Prompt 122
+
+[Request interrupted by user for tool use]
+
+### Prompt 123
+
+die DE variante ist falsch weil english
+
