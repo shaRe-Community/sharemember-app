@@ -19,7 +19,7 @@ export async function apiFetch<T>(
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      ...(options?.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
       ...options?.headers,
       Authorization: `Bearer ${accessToken}`,
     },
