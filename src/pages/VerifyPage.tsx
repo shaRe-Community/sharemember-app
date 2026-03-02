@@ -325,7 +325,7 @@ function EmailVouchMode({ onBack }: { onBack: () => void }): JSX.Element {
       <VouchRequestForm />
       <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
         <button className="vouch-back-link" onClick={onBack}>
-          {t('verify.vouch_back')}
+          {t('verify.vouch_back_to_qr')}
         </button>
       </div>
     </div>

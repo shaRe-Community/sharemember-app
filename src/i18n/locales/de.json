@@ -131,6 +131,7 @@
     "vouch_qr_hint": "Die Person muss in der shaRe-App angemeldet sein, um zu bestätigen.",
     "vouch_qr_confirmed": "Identität bestätigt! Weiterleitung zu deinem Profil…",
     "vouch_back": "Zurück",
+    "vouch_back_to_qr": "Stattdessen QR-Code anzeigen",
     "vouch_error_not_found": "Kein IDENTIFIZIERTES Mitglied mit dieser E-Mail-Adresse gefunden.",
     "vouch_error_duplicate": "Du hast bereits eine offene Anfrage an diese Person.",
     "vouch_error_generic": "Etwas ist schiefgelaufen. Bitte versuche es erneut."

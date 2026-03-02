@@ -131,6 +131,7 @@
     "vouch_qr_hint": "They must be signed in to the shaRe app to confirm.",
     "vouch_qr_confirmed": "Identity confirmed! Redirecting to your profile…",
     "vouch_back": "Back",
+    "vouch_back_to_qr": "Show QR code instead",
     "vouch_error_not_found": "No IDENTIFIED member found with that email address.",
     "vouch_error_duplicate": "You already have a pending request to this person.",
     "vouch_error_generic": "Something went wrong. Please try again."
