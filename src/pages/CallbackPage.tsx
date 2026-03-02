@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { userManager } from '../auth/auth.config'
 
 /**
@@ -8,6 +9,7 @@ import { userManager } from '../auth/auth.config'
  */
 export function CallbackPage(): JSX.Element {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const handled = useRef(false)
 
   useEffect(() => {
@@ -22,7 +24,7 @@ export function CallbackPage(): JSX.Element {
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-      <p>Signing in…</p>
+      <p>{t('callback.signing_in')}</p>
     </div>
   )
 }

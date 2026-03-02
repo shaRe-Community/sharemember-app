@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
 import { AppShell } from '../components/AppShell'
 import { apiFetch, ApiError } from '../api/api'
@@ -15,6 +16,7 @@ const STATE_KEY = 'eid_state'
 
 export function VerifyPage(): JSX.Element {
   const { user } = useAuth()
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
@@ -26,7 +28,7 @@ export function VerifyPage(): JSX.Element {
     const status = searchParams.get('status')
 
     if (status === 'cancelled') {
-      setPhase({ kind: 'error', message: 'Verification was cancelled. You can try again.' })
+      setPhase({ kind: 'error', message: t('verify.error_cancelled') })
       return
     }
 
@@ -34,7 +36,7 @@ export function VerifyPage(): JSX.Element {
 
     const storedState = sessionStorage.getItem(STATE_KEY)
     if (storedState !== returnedState) {
-      setPhase({ kind: 'error', message: 'Invalid session state. Please start over.' })
+      setPhase({ kind: 'error', message: t('verify.error_invalid_state') })
       return
     }
 
@@ -51,14 +53,9 @@ export function VerifyPage(): JSX.Element {
       })
       .catch((err) => {
         if (err instanceof ApiError && err.status === 409) {
-          setPhase({
-            kind: 'error',
-            message:
-              'This eID is already linked to another shaRe Member account. ' +
-              'If you believe this is an error, please contact support.',
-          })
+          setPhase({ kind: 'error', message: t('verify.error_duplicate') })
         } else {
-          setPhase({ kind: 'error', message: 'Verification failed. Please try again.' })
+          setPhase({ kind: 'error', message: t('verify.error_failed') })
         }
       })
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -76,7 +73,7 @@ export function VerifyPage(): JSX.Element {
       sessionStorage.setItem(STATE_KEY, state)
       window.location.href = redirectUrl
     } catch {
-      setPhase({ kind: 'error', message: 'Could not start eID verification. Please try again.' })
+      setPhase({ kind: 'error', message: t('verify.error_start') })
     }
   }
 
@@ -86,10 +83,10 @@ export function VerifyPage(): JSX.Element {
         <div className="verify-container">
           <div className="verify-card">
             <div className="verify-icon verify-icon-success">✓</div>
-            <h1 className="verify-title">Already verified</h1>
-            <p className="verify-subtitle">Your identity is confirmed. You have full platform access.</p>
+            <h1 className="verify-title">{t('verify.already_verified_title')}</h1>
+            <p className="verify-subtitle">{t('verify.already_verified_desc')}</p>
             <button className="cta-button" onClick={() => navigate('/profile')}>
-              Back to Profile
+              {t('verify.back_to_profile')}
             </button>
           </div>
         </div>
@@ -103,29 +100,27 @@ export function VerifyPage(): JSX.Element {
         <div className="verify-card">
 
           {phase.kind === 'processing' && (
-            <LoadingState message="Completing verification…" />
+            <LoadingState message={t('verify.processing')} />
           )}
 
           {phase.kind === 'success' && (
             <>
               <div className="verify-icon verify-icon-success">✓</div>
-              <h1 className="verify-title">Identity verified!</h1>
-              <p className="verify-subtitle">
-                You are now an IDENTIFIED shaRe Member. Redirecting to your profile…
-              </p>
+              <h1 className="verify-title">{t('verify.success_title')}</h1>
+              <p className="verify-subtitle">{t('verify.success_desc')}</p>
             </>
           )}
 
           {phase.kind === 'error' && (
             <>
               <div className="verify-icon verify-icon-error">✕</div>
-              <h1 className="verify-title">Verification failed</h1>
+              <h1 className="verify-title">{t('verify.failed_title')}</h1>
               <p className="verify-subtitle">{phase.message}</p>
               <button
                 className="cta-button"
                 onClick={() => setPhase({ kind: 'idle' })}
               >
-                Try again
+                {t('verify.try_again')}
               </button>
             </>
           )}
@@ -133,26 +128,24 @@ export function VerifyPage(): JSX.Element {
           {(phase.kind === 'idle' || phase.kind === 'starting') && (
             <>
               <div className="verify-icon verify-icon-neutral">🪪</div>
-              <h1 className="verify-title">Verify your identity</h1>
-              <p className="verify-subtitle">
-                Become an IDENTIFIED shaRe Member — one person, one account, guaranteed.
-              </p>
+              <h1 className="verify-title">{t('verify.title')}</h1>
+              <p className="verify-subtitle">{t('verify.subtitle')}</p>
 
               <div className="verify-steps">
                 <VerifyStep
                   number={1}
-                  title="German Personalausweis with eID function"
-                  detail="Your ID card must have the online eID function enabled (most cards issued after 2010)."
+                  title={t('verify.step1_title')}
+                  detail={t('verify.step1_detail')}
                 />
                 <VerifyStep
                   number={2}
-                  title="AusweisApp on your phone"
-                  detail="Download the official AusweisApp2 app to read your ID card via NFC."
+                  title={t('verify.step2_title')}
+                  detail={t('verify.step2_detail')}
                 />
                 <VerifyStep
                   number={3}
-                  title="Your 6-digit eID PIN"
-                  detail="You set this PIN when you activated the online eID function at your local authority."
+                  title={t('verify.step3_title')}
+                  detail={t('verify.step3_detail')}
                 />
               </div>
 
@@ -161,13 +154,10 @@ export function VerifyPage(): JSX.Element {
                 onClick={() => void handleStart()}
                 disabled={phase.kind === 'starting'}
               >
-                {phase.kind === 'starting' ? 'Starting…' : 'Start eID verification'}
+                {phase.kind === 'starting' ? t('verify.starting') : t('verify.start')}
               </button>
 
-              <p className="verify-privacy">
-                We store only a cryptographic hash of your ID — no name, address, or
-                biometric data is retained.
-              </p>
+              <p className="verify-privacy">{t('verify.privacy')}</p>
             </>
           )}
         </div>
