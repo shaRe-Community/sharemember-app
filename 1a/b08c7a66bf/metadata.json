@@ -5,10 +5,8 @@
   "branch": "main",
   "checkpoints_count": 1,
   "files_touched": [
-    "src/App.css",
-    "src/auth/AuthContext.tsx",
-    "src/auth/auth.config.ts",
-    "src/pages/LandingPage.tsx"
+    "index.html",
+    "vite.config.ts"
   ],
   "sessions": [
     {
@@ -20,10 +18,10 @@
     }
   ],
   "token_usage": {
-    "input_tokens": 21,
-    "cache_creation_tokens": 8793,
-    "cache_read_tokens": 2243220,
-    "output_tokens": 5619,
-    "api_call_count": 17
+    "input_tokens": 36,
+    "cache_creation_tokens": 20057,
+    "cache_read_tokens": 3810713,
+    "output_tokens": 9519,
+    "api_call_count": 26
   }
 }

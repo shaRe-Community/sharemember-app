@@ -678,3 +678,27 @@ du bist mir manchmal zu schnell. bevor wir auf prod deployen bitte mich fragen. 
 
 ja
 
+### Prompt 97
+
+was sind die anderen offenen punkte?
+
+### Prompt 98
+
+ich denke die dinge in memory.md sind alle erledigt (ggf. 691 offen)
+
+### Prompt 99
+
+[Request interrupted by user]
+
+### Prompt 100
+
+continue
+
+### Prompt 101
+
+erst SM-ey3 und dann share-platform-5ve (mobil)... da faellt mir ein im Profibild editor koennen wir dann auch die Kamera nutzen um ein Profilbild zu machen ,zusaetlich zum hochladen, das zuerst als neuen issue fuer SM aber noch nciht angehen
+
+### Prompt 102
+
+das shareholder deploy ist nicht dringend, da es noch nicht offiziell ausgerollt ist
+
