@@ -77,8 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
   const register = () => registerUserManager.signinRedirect()
   const logout = async () => {
     localStorage.removeItem(REMEMBER_ME_KEY)
-    await userManager.removeUser()
-    window.location.href = '/'
+    await userManager.signoutRedirect()
   }
   const refreshUser = () => userManager.signinSilent().then(() => undefined)
 
