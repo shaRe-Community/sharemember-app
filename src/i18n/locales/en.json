@@ -79,7 +79,17 @@
     "picture_uploading": "Uploading…",
     "picture_success": "Profile picture updated.",
     "picture_error": "Upload failed. Please try again.",
-    "picture_size_error": "File too large — please use an image under 5 MB."
+    "picture_size_error": "File too large — please use an image under 5 MB.",
+    "two_factor_title": "Two-Factor Authentication",
+    "two_factor_enabled": "Enabled — Authenticator app active",
+    "two_factor_disabled": "Disabled — No two-factor method set",
+    "two_factor_enable": "Enable 2FA →",
+    "two_factor_disable": "Remove 2FA",
+    "two_factor_disabling": "Removing…",
+    "two_factor_disabled_success": "Two-factor authentication removed.",
+    "two_factor_confirm_disable": "Remove two-factor authentication? You will only need your password to sign in.",
+    "two_factor_setup_note": "Setup opens in a new tab. Return here when done.",
+    "two_factor_load_error": "Could not load security settings."
   },
   "verify": {
     "title": "Verify your identity",

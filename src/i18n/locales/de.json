@@ -79,7 +79,17 @@
     "picture_uploading": "Wird hochgeladen…",
     "picture_success": "Profilbild aktualisiert.",
     "picture_error": "Upload fehlgeschlagen. Bitte erneut versuchen.",
-    "picture_size_error": "Datei zu groß — bitte verwende ein Bild unter 5 MB."
+    "picture_size_error": "Datei zu groß — bitte verwende ein Bild unter 5 MB.",
+    "two_factor_title": "Zwei-Faktor-Authentifizierung",
+    "two_factor_enabled": "Aktiviert — Authenticator-App verbunden",
+    "two_factor_disabled": "Deaktiviert — Kein zweiter Faktor eingerichtet",
+    "two_factor_enable": "2FA aktivieren →",
+    "two_factor_disable": "2FA entfernen",
+    "two_factor_disabling": "Wird entfernt…",
+    "two_factor_disabled_success": "Zwei-Faktor-Authentifizierung wurde entfernt.",
+    "two_factor_confirm_disable": "Zwei-Faktor-Authentifizierung entfernen? Danach reicht dein Passwort zur Anmeldung.",
+    "two_factor_setup_note": "Die Einrichtung öffnet sich in einem neuen Tab. Kehre danach hierher zurück.",
+    "two_factor_load_error": "Sicherheitseinstellungen konnten nicht geladen werden."
   },
   "verify": {
     "title": "Identität bestätigen",

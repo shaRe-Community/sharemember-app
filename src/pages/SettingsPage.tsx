@@ -22,6 +22,7 @@ export function SettingsPage(): JSX.Element {
         <ProfilePictureSection token={user!.accessToken} currentPicture={user!.picture} />
         <PersonalInfoSection token={user!.accessToken} />
         <PasswordSection token={user!.accessToken} />
+        <TwoFactorSection token={user!.accessToken} />
       </div>
     </AppShell>
   )
@@ -166,6 +167,114 @@ function ProfilePictureSection({ token, currentPicture }: { token: string; curre
       />
       {error && <p className="form-error" style={{ marginTop: '1rem' }}>{error}</p>}
       {success && <p className="form-success" style={{ marginTop: '1rem' }}>{t('settings.picture_success')}</p>}
+    </div>
+  )
+}
+
+interface OtpCredential {
+  id: string
+  type: string
+  userLabel: string
+  createdDate: number
+}
+
+function TwoFactorSection({ token }: { token: string }): JSX.Element {
+  const { t } = useTranslation()
+  const ssoUrl = import.meta.env.VITE_SSO_URL as string
+  const realm = import.meta.env.VITE_KEYCLOAK_REALM as string
+  const clientId = import.meta.env.VITE_KEYCLOAK_CLIENT_ID as string
+
+  const [credentials, setCredentials] = useState<OtpCredential[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isDisabling, setIsDisabling] = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const loadCredentials = (): void => {
+    setIsLoading(true)
+    setError(null)
+    fetch(`${ssoUrl}/realms/${realm}/account/credentials`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return res.json() as Promise<OtpCredential[]>
+      })
+      .then((data) => setCredentials(data.filter((c) => c.type === 'otp')))
+      .catch(() => setError(t('settings.two_factor_load_error')))
+      .finally(() => setIsLoading(false))
+  }
+
+  useEffect(() => {
+    loadCredentials()
+  }, [token])
+
+  const otpCredential = credentials[0] ?? null
+  const isEnabled = otpCredential !== null
+
+  const handleEnable = (): void => {
+    const url =
+      `${ssoUrl}/realms/${realm}/login-actions/required-action` +
+      `?execution=CONFIGURE_TOTP&client_id=${encodeURIComponent(clientId)}&tab_id=`
+    window.open(url, '_blank')
+  }
+
+  const handleDisable = async (): Promise<void> => {
+    if (!otpCredential) return
+    if (!window.confirm(t('settings.two_factor_confirm_disable'))) return
+
+    setIsDisabling(true)
+    setSuccess(false)
+    setError(null)
+    try {
+      const res = await fetch(
+        `${ssoUrl}/realms/${realm}/account/credentials/${otpCredential.id}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      )
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      setSuccess(true)
+      loadCredentials()
+    } catch {
+      setError(t('settings.two_factor_load_error'))
+    } finally {
+      setIsDisabling(false)
+    }
+  }
+
+  if (isLoading) return <div className="settings-card"><p>{t('nav.loading')}</p></div>
+
+  return (
+    <div className="settings-card">
+      <h2 className="settings-section-title">{t('settings.two_factor_title')}</h2>
+      <div className="two-factor-status">
+        <span className={`two-factor-dot ${isEnabled ? 'enabled' : 'disabled'}`} />
+        <span>{isEnabled ? t('settings.two_factor_enabled') : t('settings.two_factor_disabled')}</span>
+      </div>
+      {error && <p className="form-error">{error}</p>}
+      {success && <p className="form-success">{t('settings.two_factor_disabled_success')}</p>}
+      {!isEnabled && (
+        <>
+          <button type="button" className="cta-button" onClick={handleEnable}>
+            {t('settings.two_factor_enable')}
+          </button>
+          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+            {t('settings.two_factor_setup_note')}
+          </p>
+        </>
+      )}
+      {isEnabled && (
+        <button
+          type="button"
+          className="cta-button cta-button--secondary"
+          onClick={() => void handleDisable()}
+          disabled={isDisabling}
+        >
+          {isDisabling ? t('settings.two_factor_disabling') : t('settings.two_factor_disable')}
+        </button>
+      )}
     </div>
   )
 }
