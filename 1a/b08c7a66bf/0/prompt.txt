@@ -5024,3 +5024,185 @@ Use the beads MCP `show` tool to retrieve issue details and present them clearly
 - Related issues
 
 If the issue has dependencies, offer to show the full dependency tree.
+
+---
+
+erst operator-ts
+
+---
+
+dann mach die 3 fehlenden punkte und deploy danach alles auf Prod
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/skills/devops
+
+# shaRe Platform DevOps
+
+Manage the shaRe platform on the Scaleway production server.
+
+## Server
+
+- **IP**: `51.15.211.196`
+- **SSH**: `ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196`
+- **Infra dir on server**: `/opt/share-platform/infra`
+- **Compose files**: `docker-compose.prod.yml`, `docker-compose.dev.yml`
+- **Env files**: `.env.prod`, `.env.dev`
+
+## Service Map
+
+| Service | Image | Compose service name | Source repo |
+|---------|-------|---------------------|-------------|
+| operator | `ghcr.io/share-community/operator:latest` | `operator-{env}` | `../operator-ts/` |
+| share-ui | `ghcr.io/share-community/share-ui:latest` | `share-ui-{env}` | `../share-ui/` (Dockerfile in `../u2g-infrastructure-ts/services/share-ui/Dockerfile`) |
+| sharemember-app | `ghcr.io/share-community/sharemember-app:latest` | `sharemember-app-{env}` | `../sharemember-app/` (Dockerfile in `../u2g-infrastructure-ts/services/sharemember-app/Dockerfile`) — **prod only** |
+| keycloak | `ghcr.io/share-community/sharemembers:latest` | `keycloak-{env}` | `../sharemembers/` |
+| neo4j | (standard image) | `neo4j-{env}` | — |
+| redis | (standard image) | `redis-{env}` | — |
+| postgres | `postgres:16-alpine` | `postgres-{env}` | — |
+| odoo | `ghcr.io/share-community/odoo:latest` | `odoo-{env}` | `../u2g-infrastructure-ts/services/odoo/` |
+| onlyoffice | `onlyoffice/documentserver:latest` | `onlyoffice-{env}` | — |
+| drawio | `jgraph/drawio:latest` | `drawio-{env}` | — |
+| minio | `minio/minio:latest` | `minio-{env}` | — |
+| metabase | `metabase/metabase:latest` | `metabase-{env}` | — |
+| traefik | — | `coolify-proxy` (shared) | — |
+
+Container naming: `share-{env}-{service}-{env}-1` (e.g. `share-prod-operator-prod-1`)
+
+### Postgres — shared instance, multiple databases
+
+| Database | Owner | Used by |
+|----------|-------|---------|
+| `keycloak` | keycloak | Keycloak auth |
+| `odoodb` | odoo | Odoo 18 |
+| `sharedb` | share | operator-ts analytics (future) |
+| `metabase` | metabase | Metabase analytics |
+
+### Odoo — self-hosted Odoo 18 Community
+
+- **URL**: `https://odoo.wurzelwerk.up2go.com`
+- **DB**: `odoodb` on shared `postgres-prod`
+- **Admin user**: `admin` (password in `.env.prod` as `ODOO_ADMIN_PASSWD`)
+- **Service user** (used by operator-ts): `operator@share.local` (password = `ODOO_API_KEY` in `.env.prod`)
+- **Installed modules**: `mail` (includes discuss.channel), `calendar`, `project`, `account`
+- **Healthcheck**: `https://odoo.wurzelwerk.up2go.com/web/health` (expect `{"status":"pass"}`)
+
+### Metabase — analytics & reporting
+
+- **URL**: `https://metabase.up2go.com` (platform-admin only, basic auth protected)
+- **DB**: `metabase` on shared `postgres-prod`
+- **Data sources**: connect to `sharedb` (postgresql://postgres-prod:5432/sharedb) for analytics
+- **Healthcheck**: `https://metabase.up2go.com/api/health` (expect 200)
+
+## Commands
+
+Parse `deploy operator prod, then deploy sharemember-app prod` to determine the action. Default env is `prod`.
+
+### `deploy <service> [env]`
+
+Build, transfer, and restart a service:
+
+1. **Build** the Docker image from the source repo
+2. **Transfer** via `docker save | ssh ... docker load`
+3. **Restart** via `docker compose up -d <service-env>`
+4. **ALWAYS restart Traefik** after any container recreate: `docker restart coolify-proxy`
+5. **Wait 5 seconds**, then verify the service started by checking logs
+6. **Verify all routes** respond (200/302)
+
+Build commands per service:
+```bash
+# operator
+cd /home/tomblume/IdeaProjects/operator-ts
+docker build -t ghcr.io/share-community/operator:latest .
+
+# share-ui
+cd /home/tomblume/IdeaProjects/share-ui
+docker build -t ghcr.io/share-community/share-ui:latest \
+  -f /home/tomblume/IdeaProjects/u2g-infrastructure-ts/services/share-ui/Dockerfile .
+
+# sharemember-app
+cd /home/tomblume/IdeaProjects/sharemember-app
+docker build -t ghcr.io/share-community/sharemember-app:latest \
+  -f /home/tomblume/IdeaProjects/u2g-infrastructure-ts/services/sharemember-app/Dockerfile .
+
+# keycloak
+cd /home/tomblume/IdeaProjects/sharemembers
+docker build -t ghcr.io/share-community/sharemembers:latest .
+
+# odoo (custom image with OCA extra-addons support)
+cd /home/tomblume/IdeaProjects/u2g-infrastructure-ts/services/odoo
+docker build -t ghcr.io/share-community/odoo:latest .
+```
+
+Restart on server:
+```bash
+ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196 \
+  "cd /opt/share-platform/infra && \
+   docker compose -f docker-compose.{env}.yml -p share-{env} --env-file .env.{env} \
+   up -d {service-name}"
+```
+
+### `status [env]`
+
+Check all container status and route health:
+```bash
+SSH="ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196"
+$SSH "docker ps --format 'table {{.Names}}\t{{.Status}}' | grep share-{env}"
+```
+
+Then check routes:
+- `https://wurzelwerk.up2go.com` (share-ui, expect 200)
+- `https://id.wurzelwerk.up2go.com` (sharemember-app, expect 200 — prod only)
+- `https://sso.wurzelwerk.up2go.com` (keycloak, expect 302)
+- `https://operator.wurzelwerk.up2go.com/health` (operator direct, expect 200)
+- `https://wurzelwerk.up2go.com/api/health` (operator via api, expect 200)
+- `https://odoo.wurzelwerk.up2go.com/web/health` (odoo, expect 200 with `{"status":"pass"}`)
+- `https://metabase.up2go.com/api/health` (metabase, expect 200 — basic auth required)
+
+Dev routes use `share.dev.up2go.com`, `sso.dev.sharemembers.net`, `operator.dev.up2go.com`.
+
+### `restart <service|traefik> [env]`
+
+Restart a specific service or Traefik:
+- **traefik**: `docker restart coolify-proxy` (fixes 504/CORS issues)
+- **other**: `docker compose ... restart {service-env}`
+
+### `logs <service> [env] [lines]`
+
+Show recent logs (default 30 lines):
+```bash
+ssh ... "docker logs share-{env}-{service}-{env}-1 --tail {lines}"
+```
+
+### `neo4j <cypher> [env]`
+
+Run a Cypher query against Neo4j:
+```bash
+ssh ... 'docker exec share-{env}-neo4j-{env}-1 cypher-shell \
+  -u neo4j \
+  -p $(docker inspect share-{env}-neo4j-{env}-1 \
+    --format "{{range .Config.Env}}{{println .}}{{end}}" | grep NEO4J_AUTH | cut -d/ -f2) \
+  "<cypher query>"'
+```
+
+### `diagnose`
+
+Run full diagnostic:
+1. Check all container status
+2. Check all route health codes
+3. Check for errors in operator logs (last 50 lines)
+4. Check memory usage on server
+5. Report findings and suggest fixes
+
+## Known Issues
+
+- **504 Gateway Timeout after deploy**: Traefik loses routing to recreated containers. Fix: `docker restart coolify-proxy`
+- **CORS errors from sso.wurzelwerk...**: Same cause as above — Keycloak is unreachable via Traefik
+- **Keycloak startup takes ~4 minutes**: Wait for `healthy` status before testing auth flows
+
+## Important
+
+- Always restart Traefik (`coolify-proxy`) after deploying any service
+- After deploy, verify ALL routes (not just the deployed service)
+- Never expose Neo4j credentials in output — use the `docker inspect` pattern
+- Default to `prod` environment unless explicitly told otherwise

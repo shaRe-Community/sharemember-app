@@ -770,3 +770,32 @@ Use the beads MCP `show` tool to retrieve issue details and present them clearly
 
 If the issue has dependencies, offer to show the full dependency tree.
 
+### Prompt 112
+
+erst operator-ts
+
+### Prompt 113
+
+dann mach die 3 fehlenden punkte und deploy danach alles auf Prod
+
+### Prompt 114
+
+Base directory for this skill: /home/tomblume/.claude/skills/devops
+
+# shaRe Platform DevOps
+
+Manage the shaRe platform on the Scaleway production server.
+
+## Server
+
+- **IP**: `51.15.211.196`
+- **SSH**: `ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196`
+- **Infra dir on server**: `/opt/share-platform/infra`
+- **Compose files**: `docker-compose.prod.yml`, `docker-compose.dev.yml`
+- **Env files**: `.env.prod`, `.env.dev`
+
+## Service Map
+
+| Service | Image | Compose service name | Source repo |
+|...
+
