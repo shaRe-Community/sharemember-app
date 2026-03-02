@@ -89,7 +89,8 @@
     "two_factor_disabled_success": "Zwei-Faktor-Authentifizierung wurde entfernt.",
     "two_factor_confirm_disable": "Zwei-Faktor-Authentifizierung entfernen? Danach reicht dein Passwort zur Anmeldung.",
     "two_factor_setup_note": "Die Einrichtung öffnet sich in einem neuen Tab. Kehre danach hierher zurück.",
-    "two_factor_load_error": "Sicherheitseinstellungen konnten nicht geladen werden."
+    "two_factor_load_error": "Sicherheitseinstellungen konnten nicht geladen werden.",
+    "two_factor_disable_error": "Zwei-Faktor-Authentifizierung konnte nicht entfernt werden. Bitte versuche es erneut."
   },
   "verify": {
     "title": "Identität bestätigen",

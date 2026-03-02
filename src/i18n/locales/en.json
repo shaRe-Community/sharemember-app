@@ -89,7 +89,8 @@
     "two_factor_disabled_success": "Two-factor authentication removed.",
     "two_factor_confirm_disable": "Remove two-factor authentication? You will only need your password to sign in.",
     "two_factor_setup_note": "Setup opens in a new tab. Return here when done.",
-    "two_factor_load_error": "Could not load security settings."
+    "two_factor_load_error": "Could not load security settings.",
+    "two_factor_disable_error": "Could not remove two-factor authentication. Please try again."
   },
   "verify": {
     "title": "Verify your identity",

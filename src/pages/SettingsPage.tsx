@@ -182,7 +182,6 @@ function TwoFactorSection({ token }: { token: string }): JSX.Element {
   const { t } = useTranslation()
   const ssoUrl = import.meta.env.VITE_SSO_URL as string
   const realm = import.meta.env.VITE_KEYCLOAK_REALM as string
-  const clientId = import.meta.env.VITE_KEYCLOAK_CLIENT_ID as string
 
   const [credentials, setCredentials] = useState<OtpCredential[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -190,7 +189,7 @@ function TwoFactorSection({ token }: { token: string }): JSX.Element {
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const loadCredentials = (): void => {
+  useEffect(() => {
     setIsLoading(true)
     setError(null)
     fetch(`${ssoUrl}/realms/${realm}/account/credentials`, {
@@ -203,19 +202,13 @@ function TwoFactorSection({ token }: { token: string }): JSX.Element {
       .then((data) => setCredentials(data.filter((c) => c.type === 'otp')))
       .catch(() => setError(t('settings.two_factor_load_error')))
       .finally(() => setIsLoading(false))
-  }
-
-  useEffect(() => {
-    loadCredentials()
   }, [token])
 
   const otpCredential = credentials[0] ?? null
   const isEnabled = otpCredential !== null
 
   const handleEnable = (): void => {
-    const url =
-      `${ssoUrl}/realms/${realm}/login-actions/required-action` +
-      `?execution=CONFIGURE_TOTP&client_id=${encodeURIComponent(clientId)}&tab_id=`
+    const url = `${ssoUrl}/realms/${realm}/account/#/security/signingin`
     window.open(url, '_blank')
   }
 
@@ -236,9 +229,21 @@ function TwoFactorSection({ token }: { token: string }): JSX.Element {
       )
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       setSuccess(true)
-      loadCredentials()
+      setIsLoading(true)
+      setError(null)
+      fetch(`${ssoUrl}/realms/${realm}/account/credentials`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(async (res2) => {
+          setSuccess(false)
+          if (!res2.ok) throw new Error(`HTTP ${res2.status}`)
+          return res2.json() as Promise<OtpCredential[]>
+        })
+        .then((data) => setCredentials(data.filter((c) => c.type === 'otp')))
+        .catch(() => setError(t('settings.two_factor_load_error')))
+        .finally(() => setIsLoading(false))
     } catch {
-      setError(t('settings.two_factor_load_error'))
+      setError(t('settings.two_factor_disable_error'))
     } finally {
       setIsDisabling(false)
     }
