@@ -670,3 +670,11 @@ pwa ist prima.
 
 koennen wir die login daten nach erfolgreichem login dauerhaft speichen, so dass ich nicht fuer jede session eine anmeldung benoetige?
 
+### Prompt 95
+
+du bist mir manchmal zu schnell. bevor wir auf prod deployen bitte mich fragen. Was denkst du (kritisch). Wuerde das specihern des zugangs nicht nur mobil sinn machen und es im Desktop nicht zu speichern (internet cafe, sonstige Pool PCs). Das Mobile Telefon ist mehr ein persoenlciher gegenstand aber eine Browser session kann ueberall sein.
+
+### Prompt 96
+
+ja
+

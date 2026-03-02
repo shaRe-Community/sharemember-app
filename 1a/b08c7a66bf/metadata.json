@@ -5,7 +5,10 @@
   "branch": "main",
   "checkpoints_count": 1,
   "files_touched": [
-    "src/auth/auth.config.ts"
+    "src/App.css",
+    "src/auth/AuthContext.tsx",
+    "src/auth/auth.config.ts",
+    "src/pages/LandingPage.tsx"
   ],
   "sessions": [
     {
@@ -17,10 +20,10 @@
     }
   ],
   "token_usage": {
-    "input_tokens": 10,
-    "cache_creation_tokens": 3821,
-    "cache_read_tokens": 1001815,
-    "output_tokens": 2252,
-    "api_call_count": 8
+    "input_tokens": 21,
+    "cache_creation_tokens": 8793,
+    "cache_read_tokens": 2243220,
+    "output_tokens": 5619,
+    "api_call_count": 17
   }
 }
