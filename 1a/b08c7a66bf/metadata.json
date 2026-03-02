@@ -3,9 +3,33 @@
   "checkpoint_id": "1ab08c7a66bf",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 1,
+  "checkpoints_count": 0,
   "files_touched": [
-    "src/auth/AuthContext.tsx"
+    "docs/plans/2026-03-01-settings-page.md",
+    "index.html",
+    "src/App.css",
+    "src/App.tsx",
+    "src/api/api.ts",
+    "src/api/vouch.ts",
+    "src/auth/AuthContext.tsx",
+    "src/auth/auth.config.ts",
+    "src/components/AppShell.tsx",
+    "src/components/LanguageSwitcher.tsx",
+    "src/components/ProtectedRoute.tsx",
+    "src/components/VouchRequestBanner.tsx",
+    "src/i18n/config.ts",
+    "src/i18n/locales/de.json",
+    "src/i18n/locales/en.json",
+    "src/main.tsx",
+    "src/pages/CallbackPage.tsx",
+    "src/pages/HubPage.tsx",
+    "src/pages/JoinPage.tsx",
+    "src/pages/LandingPage.tsx",
+    "src/pages/ProfilePage.tsx",
+    "src/pages/SettingsPage.tsx",
+    "src/pages/VerifyPage.tsx",
+    "src/pages/VouchPage.tsx",
+    "vite.config.ts"
   ],
   "sessions": [
     {
@@ -17,10 +41,10 @@
     }
   ],
   "token_usage": {
-    "input_tokens": 12,
-    "cache_creation_tokens": 6666,
-    "cache_read_tokens": 947232,
-    "output_tokens": 2659,
-    "api_call_count": 10
+    "input_tokens": 16,
+    "cache_creation_tokens": 124190,
+    "cache_read_tokens": 786321,
+    "output_tokens": 7159,
+    "api_call_count": 8
   }
 }

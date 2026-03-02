@@ -861,3 +861,19 @@ die DE variante ist falsch weil english
 
 wenn ich ABmelden betätige lande ich meistens nicht in share.community sondern auf /hub
 
+### Prompt 125
+
+can we design a INDENTIFY flow, bei dem der Anfragende auf seinem Mobiltelelfon einen button drückt der einen QR Code erstellt und anzeigt mit allen nötigen Informationen,  Der IDENTIFIKATOR user kann dann einfach den Code Scannen, und die sharemember.app wird geüffnet und der QR Code information engezeigt , Dann kann der IDENTIFIKATOR bestätigen
+
+### Prompt 126
+
+[Request interrupted by user for tool use]
+
+### Prompt 127
+
+the Voucer has to be IDENTIFIED to be able to use the scanned QR code
+
+### Prompt 128
+
+[Request interrupted by user for tool use]
+
