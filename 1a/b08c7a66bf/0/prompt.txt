@@ -5206,3 +5206,321 @@ Run full diagnostic:
 - After deploy, verify ALL routes (not just the deployed service)
 - Never expose Neo4j credentials in output — use the `docker inspect` pattern
 - Default to `prod` environment unless explicitly told otherwise
+
+---
+
+make manfred.schon shaRe Member IDENTIFIED, so I can test the flow
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me analyze the conversation chronologically to capture all relevant details.
+
+## Session Overview
+This session continued from a previous context where peer vouching (share-platform-5ve) was the next planned feature. The session also had a plan file for community logo upload.
+
+## Chronological Analysis
+
+### 1. bd list — listing all open beads issues
+User asked to list beads issues. I ran `bd list --status open` across all repos and displayed:
+- sharemember-app: SM-6d6 (blocked), SM-duf (P4)
+- share-ui: SUI-6xy, SUI-jkg, SUI-629, SUI-d32, SUI-15h
+- share-platform: share-platform-5ve (peer vouching)
+- sharemembers: sharemembers-w79
+
+### 2. share-platform-5ve — Peer Vouching with UX skill
+User: "mit share-platform-5ve weiter machen, nutze den UX skill"
+I invoked frontend-design:frontend-design skill.
+
+I explored the sharemember-app codebase:
+- `index.html` — dark navy PWA app
+- `vite.config.ts` — VitePWA configured
+- `src/App.tsx` — routes: /, /callback, /hub, /join, /profile, /verify, /settings
+- `src/index.css` — CSS vars: --sm-color-primary-red (#e10814), --sm-color-background-darkblue (#001c3d)
+- `src/App.css` — existing CSS patterns (dark navy, red, cards, buttons)
+- `src/components/AppShell.tsx` — header nav with eid_status badge
+- `src/pages/HubPage.tsx` — community cards grid
+
+**Design direction**: "Bürgschafts-Zeremonie" — civic notarization ceremony. Key design element: seal-stamp animation (CSS @keyframes) on confirmation. Pulsing avatar ring for identity "in question".
+
+### 3. Frontend Implementation — sharemember-app
+
+**New files created:**
+- `src/api/vouch.ts` — VouchRequest interface, fetchVouchRequest, fetchPendingVouchRequests, confirmVouch, declineVouch
+- `src/pages/VouchPage.tsx` — PageState tagged union (loading/not_found/already_processed/error/active/confirmed/declined), VoucheeAvatar component
+- `src/components/VouchRequestBanner.tsx` — shown on HubPage for IDENTIFIED users
+
+**Modified files:**
+- `src/App.tsx` — added `/vouch/:requestId` route and VouchPage import
+- `src/pages/HubPage.tsx` — added `<VouchRequestBanner />`
+- `src/App.css` — added vouch styles including `.vouch-seal` with `seal-stamp` @keyframes animation, pulsing avatar ring, banner styles
+- `src/i18n/locales/de.json` — added vouch keys (not_found, already_processed, responsibility_statement, etc.)
+- `src/i18n/locales/en.json` — same in English
+
+TypeScript check: clean. Committed: `feat: peer vouching UI — VouchPage, VouchRequestBanner, vouch API types` (commit 386b099). Pushed.
+
+### 4. Backend Implementation — operator-ts
+
+**Explored:**
+- `src/sharemember/sharemember.controller.ts` — `@Controller('v2/sharemember/me')` pattern
+- `src/sharemember/sharemember.service.ts` — joinCommunity, joinOpenCommunity
+- `src/sharemember/sharemember.repository.ts` — raw Cypher, MEMBER_OF pattern
+- `src/sharemember/sharemember.module.ts`
+- `src/sharemember/interfaces/sharemember.interface.ts` — EidStatus type
+- `src/common/interfaces/sharemember-token.interface.ts` — SharememberToken (sub, shareholderId, eid_status)
+- `src/shareholders/shareholders.service.spec.ts` — test pattern (jest.Mocked, beforeEach)
+- `src/eid/eid.service.ts` — `updateKeycloakEidStatus()` method (Keycloak admin API call)
+- `src/eid/eid.repository.ts` — identify(), getEidStatus()
+- `src/eid/eid.module.ts` — not exported initially
+
+**New files created:**
+- `src/sharemember/dto/vouch-request.dto.ts` — VouchRequesteeDto, VouchRequestDto
+- `src/sharemember/vouch.repository.ts` — RawVouchRequest interface, getPendingRequests, getRawRequest, countActiveVouches, confirmRequest, declineRequest
+- `src/sharemember/vouch.service.ts` — VouchService with MAX_ACTIVE_VOUCHES=3, getPendingRequests, getRequest, confirm, decline
+- `src/sharemember/vouch.service.spec.ts` — 14 tests covering all business rules
+- `src/sharemember/vouch.controller.ts` — VouchController @Controller('v2/sharemember/vouch-requests'), 4 endpoints
+
+**Modified files:**
+- `src/eid/eid.module.ts` — added `exports: [EidService]`
+- `src/sharemember/sharemember.module.ts` — added VouchController, VouchService, VouchRepository, imported EidModule
+
+Tests: 224/224 passing (previously 210, +14 new). Committed: `feat: peer vouching endpoints — GET/confirm/decline vouch requests` (commit 8fd3792). Pushed.
+
+### 5. "erst operator-ts" — user wanted backend first before deploying
+
+User confirmed to do backend before deploying. Then: "dann mach die 3 fehlenden punkte und deploy danach alles auf Prod"
+
+**3 missing points:**
+1. POST /v2/sharemember/vouch-requests — explicit vouch request creation by target email
+2. Frontend UI for sending a request (VouchRequestForm on VerifyPage)
+3. Inviter flow — auto-create VouchRequest to IDENTIFIED founder on community join
+
+### 6. Backend — 3 missing points (via subagent)
+
+I dispatched a subagent to implement in operator-ts:
+
+**VouchRepository additions:**
+- `findIdentifiedByEmail(email)` — finds IDENTIFIED ShareMember via `WHERE $email IN sh.emails`
+- `hasPendingRequest(requesterKeycloakId, targetKeycloakId)` — checks for existing pending request
+- `createRequest(requesterKeycloakId, targetKeycloakId, requestId)` — creates VouchRequest node
+- `maybeCreateInviterRequest(newMemberKeycloakId, communityId, requestId)` — uses OPTIONAL MATCH + WHERE existing IS NULL (avoiding Neo4j 5 EXISTS{} subquery issues)
+
+**VouchService additions:**
+- `createRequest(requesterKeycloakId, requesterEidStatus, targetEmail)` — throws 400 (already identified), 404 (not found), 409 (duplicate)
+- `createInviterRequest(newMemberKeycloakId, communityId)` — delegates to repository, catches/logs errors (best-effort)
+
+**VouchController:**
+- Added `CreateVouchRequestBody` with `@IsEmail()`, POST endpoint returning 201
+
+**SharememberService:**
+- Injected VouchService
+- After both join methods: `void this.vouchService.createInviterRequest(...).catch(() => {})`
+
+**Tests:** 224 → 230 (6 new). `writeVoid` used for maybeCreateInviterRequest (fire-and-forget).
+
+Committed and pushed from subagent.
+
+### 7. Frontend — VouchRequestForm on VerifyPage
+
+**Modified files:**
+- `src/api/vouch.ts` — added `createVouchRequest(targetEmail, accessToken)`
+- `src/pages/VerifyPage.tsx` — added VouchRequestForm component (email input, sending state machine: idle/sending/sent/error_not_found/error_duplicate/error), divider between eID and peer vouching
+- `src/App.css` — added vouch-request-form, verify-vouch-divider styles
+- `src/i18n/locales/de.json` — added verify.or_alternatively, vouch_request_intro, vouch_request_cta, etc.
+- `src/i18n/locales/en.json` — same
+
+TypeScript: clean. Committed: `feat: vouch request form on VerifyPage` (commit 6a2defc). Pushed.
+
+### 8. Deploy to Prod
+
+Built operator and sharemember-app images in parallel. Transferred and restarted sequentially. Restarted Traefik after each. All routes green:
+- 200 https://id.wurzelwerk.up2go.com
+- 200 https://wurzelwerk.up2go.com/api/health
+- 200 https://operator.wurzelwerk.up2go.com/health
+- 200 https://wurzelwerk.up2go.com
+- 302 https://sso.wurzelwerk.up2go.com
+
+Closed share-platform-5ve beads issue. Synced beads.
+
+### 9. Make manfred.schon IDENTIFIED for testing
+
+User: "make manfred.schon shaRe Member IDENTIFIED, so I can test the flow"
+
+**Neo4j:** Updated successfully:
+```cypher
+MATCH (sm:ShareMember {keycloakId: 'REDACTED'})
+SET sm.eidStatus = 'identified'
+RETURN sm.eidStatus AS newStatus
+```
+Result: `"identified"` ✓
+
+**Keycloak update: FAILING**
+- Attempt 1: `cut -d= -f2` doesn't handle values with `=` (like base64 secrets) → empty vars → 401
+- Attempt 2: `source /opt/share-platform/infra/.env.prod` → bash errors on comment lines with spaces (e.g. "Tom Blume", "Manfred Schon") → KEYCLOAK_URL empty, CLIENT_ID empty → 401
+- Attempt 3: Read vars from running operator container → `KEYCLOAK_ADMIN_CLIENT_ID` is empty in container → 401
+
+**Current status:** Neo4j updated, Keycloak NOT yet updated. manfred.schon's JWT will still show `eid_status = un_identified` until Keycloak is fixed. The Keycloak cache also needs to be cleared after the update.
+
+The `KEYCLOAK_ADMIN_CLIENT_ID` env var is empty in the container — likely using a different variable name or the admin client is configured differently.
+
+Summary:
+1. Primary Request and Intent:
+   - List open beads issues across all repos
+   - Continue with share-platform-5ve (Peer Vouching), using the UX/frontend-design skill
+   - Implement the full peer vouching feature end-to-end:
+     - Frontend: VouchPage (/vouch/:requestId), VouchRequestBanner on HubPage (sharemember-app)
+     - Backend: GET/confirm/decline endpoints (operator-ts)
+     - Backend: POST /v2/sharemember/vouch-requests (explicit request by email)
+     - Frontend: VouchRequestForm on VerifyPage
+     - Backend: Auto-create VouchRequest to IDENTIFIED founder on community join (inviter flow)
+   - Deploy both operator-ts and sharemember-app to prod
+   - Make manfred.schon IDENTIFIED so the flow can be tested
+
+2. Key Technical Concepts:
+   - **Peer vouching graph model**: `(:ShareMember)-[:VOUCHED_FOR {id, vouchedAt}]->(:ShareMember)` and `(:VouchRequest {id, status, requestedAt})-[:FROM]->(:ShareMember), -[:TO]->(:ShareMember)`
+   - **Tagged union state machine** in React: `PageState = { kind: 'loading' } | { kind: 'confirmed'; name: string } | ...`
+   - **CSS seal-stamp animation**: `cubic-bezier(0.175, 0.885, 0.32, 1.275)` overshoot curve for memorable confirmation moment
+   - **Interface-first API design**: vouch.ts defines all types/functions before backend exists
+   - **EidService.updateKeycloakEidStatus()** reused after vouch confirm (exports added to EidModule)
+   - **MAX_ACTIVE_VOUCHES = 3** cap enforced at service level (read → write, not fully atomic for MVP)
+   - **Fire-and-forget inviter flow**: `void this.vouchService.createInviterRequest(...).catch(() => {})` — non-blocking
+   - **OPTIONAL MATCH + WHERE existing IS NULL** to avoid duplicate VouchRequests (instead of Neo4j 5 EXISTS{} subquery)
+   - **`maybeCreateInviterRequest`** — finds IDENTIFIED community founder via `(sh:Shareholder)-[:FOUNDED]->(c:Community)` then `(sm:ShareMember)-[:IS]->(sh)`
+   - **Keycloak admin client credentials** flow for eid_status attribute updates
+   - **Traefik restart** required after every container recreate (known issue: loses routing)
+   - **shareMemember app routes**: dark navy (#001c3d), red accent (#FF3B2F), CSS-only (no MUI yet)
+
+3. Files and Code Sections:
+
+   **sharemember-app:**
+
+   - `src/api/vouch.ts` — Created: VouchRequest interface + all API functions
+     ```typescript
+     export function createVouchRequest(targetEmail: string, accessToken: string): Promise<VouchRequest> {
+       return apiFetch<VouchRequest>('/v2/sharemember/vouch-requests', accessToken, {
+         method: 'POST', body: JSON.stringify({ targetEmail }),
+       })
+     }
+     ```
+
+   - `src/pages/VouchPage.tsx` — Created: full confirmation page with 5 states, seal animation, VoucheeAvatar
+     ```typescript
+     type PageState =
+       | { kind: 'loading' }
+       | { kind: 'not_found' }
+       | { kind: 'already_processed' }
+       | { kind: 'error' }
+       | { kind: 'active'; request: VouchRequest }
+       | { kind: 'confirmed'; name: string }
+       | { kind: 'declined' }
+     ```
+
+   - `src/components/VouchRequestBanner.tsx` — Created: shown on HubPage for IDENTIFIED users with pending requests; only fetches if `user.eidStatus === 'identified'`
+
+   - `src/pages/VerifyPage.tsx` — Modified: added VouchRequestForm component below eID steps with divider "oder alternativ". State: `'idle' | 'sending' | 'sent' | 'error_not_found' | 'error_duplicate' | 'error'`
+
+   - `src/pages/HubPage.tsx` — Modified: added `<VouchRequestBanner />` above unidentified-banner
+
+   - `src/App.tsx` — Modified: added route `/vouch/:requestId` → `<VouchPage />`
+
+   - `src/App.css` — Modified: added vouch-page, vouch-card, vouchee-avatar (pulsing ring), vouch-seal (seal-stamp keyframe), vouch-banner, verify-vouch-divider, vouch-request-form styles
+     ```css
+     @keyframes seal-stamp {
+       0%   { transform: scale(0) rotate(-25deg); opacity: 0; }
+       65%  { transform: scale(1.12) rotate(4deg); opacity: 1; }
+       100% { transform: scale(1) rotate(0deg); opacity: 1; }
+     }
+     @keyframes avatar-identity-pulse {
+       0%, 100% { box-shadow: 0 0 0 0 rgba(255, 59, 47, 0.25); }
+       50%       { box-shadow: 0 0 0 10px rgba(255, 59, 47, 0); }
+     }
+     ```
+
+   - `src/i18n/locales/de.json` + `en.json` — Modified: added `vouch.*` keys (not_found, already_processed, responsibility_statement, confirm_cta, confirmed_title, confirmed_body, banner_single/multiple, vouch_request_intro, vouch_request_sent, vouch_error_not_found, etc.) and `verify.or_alternatively`, `verify.vouch_request_*`
+
+   **operator-ts:**
+
+   - `src/sharemember/dto/vouch-request.dto.ts` — Created: VouchRequesteeDto, VouchRequestDto
+
+   - `src/sharemember/vouch.repository.ts` — Created: full repository with 7 methods:
+     - `getPendingRequests(voucherKeycloakId)` — `WHERE status = 'pending'` + `ORDER BY requestedAt ASC`
+     - `getRawRequest(requestId, voucherKeycloakId)` — returns with `.status` field for 409 detection
+     - `countActiveVouches(voucherKeycloakId)` — counts `[:VOUCHED_FOR]` relationships
+     - `confirmRequest(requestId, voucherKeycloakId, vouchId)` — SET status + CREATE VOUCHED_FOR + SET eidStatus = 'identified', returns requesteeKeycloakId
+     - `declineRequest(requestId, voucherKeycloakId)` — SET status = 'declined', returns bool
+     - `findIdentifiedByEmail(email)` — `WHERE $email IN sh.emails`, returns `{keycloakId, shareMemberId, name}`
+     - `hasPendingRequest(requesterKeycloakId, targetKeycloakId)` — returns boolean
+     - `createRequest(requesterKeycloakId, targetKeycloakId, requestId)` — creates VouchRequest node with FROM/TO
+     - `maybeCreateInviterRequest(newMemberKeycloakId, communityId, requestId)` — uses `neo4j.writeVoid()`, OPTIONAL MATCH guard
+
+   - `src/sharemember/vouch.service.ts` — Created: VouchService with MAX_ACTIVE_VOUCHES=3, all business rule validation (404/409/403/400), best-effort createInviterRequest
+
+   - `src/sharemember/vouch.service.spec.ts` — Created: 20 tests total (14 original + 6 new for createRequest/createInviterRequest), all passing
+
+   - `src/sharemember/vouch.controller.ts` — Created: VouchController `@Controller('v2/sharemember/vouch-requests')`, 5 endpoints (POST /, GET /, GET /:id, POST /:id/confirm, POST /:id/decline)
+
+   - `src/sharemember/sharemember.module.ts` — Modified: added VouchController/Service/Repository + EidModule import
+
+   - `src/sharemember/sharemember.service.ts` — Modified: injected VouchService, fire-and-forget `createInviterRequest` calls after both join methods
+
+   - `src/eid/eid.module.ts` — Modified: added `exports: [EidService]`
+
+4. Errors and Fixes:
+   - **Keycloak eid_status update for manfred.schon — currently failing:**
+     - Attempt 1: `grep VAR .env.prod | cut -d= -f2` fails for values containing `=` (base64 secrets) → vars empty → 401
+     - Attempt 2: `source /opt/share-platform/infra/.env.prod` → bash errors on comment lines containing spaces like "Tom Blume", "Manfred Schon" → KEYCLOAK_URL empty → 401
+     - Attempt 3: `docker exec share-prod-operator-prod-1 printenv KEYCLOAK_ADMIN_CLIENT_ID` → returns empty string → 401
+     - **Status: UNRESOLVED** — Neo4j was updated successfully (`eidStatus = 'identified'`), but Keycloak attribute not yet updated. manfred.schon's JWT will still show `eid_status = un_identified` on next login.
+   - **`testPathPattern` jest flag**: jest version on operator-ts replaced `--testPathPattern` with `--testPathPatterns`; fixed by using `npx jest vouch.service` directly instead of npm script
+   - **Neo4j 5 EXISTS{} subquery**: Not supported in the Neo4j version on prod; fixed by using `OPTIONAL MATCH ... WHERE existing IS NULL` pattern in `maybeCreateInviterRequest`
+
+5. Problem Solving:
+   - **Design for mobile-first peer vouching**: Chose "Bürgschafts-Zeremonie" aesthetic — civic ceremony metaphor with seal-stamp animation as the memorable moment
+   - **Keycloak admin credential access**: `KEYCLOAK_ADMIN_CLIENT_ID` env var appears to be empty/missing in the operator-prod container despite being used successfully by the running service code. The actual admin credential may use a different env var name or be loaded differently
+   - **Inviter flow without personal invite links**: Pragmatic MVP approach — auto-create VouchRequest to community FOUNDER (via `[:FOUNDED]` relationship) when new member joins, rather than per-shareholder invite links which don't exist yet
+
+6. All user messages:
+   - `bd list`
+   - `mit share-platform-5ve weiter machen, nutze den UX skill`
+   - `erst operator-ts` (do backend before deploying)
+   - `dann mach die 3 fehlenden punkte und deploy danach alles auf Prod`
+   - `make manfred.schon shaRe Member IDENTIFIED, so I can test the flow`
+
+7. Pending Tasks:
+   - **Complete Keycloak eid_status update for manfred.schon** — Neo4j is already updated to `identified`, but the Keycloak user attribute `eid_status` has not been set. Need to find the correct admin credential approach. The `KEYCLOAK_ADMIN_CLIENT_ID` env var is empty in the container's environment. May need to check the actual env var name or use kcadm directly.
+   - After Keycloak is updated, may also need to clear Keycloak user cache: `POST /admin/realms/{realm}/clear-user-cache`
+
+8. Current Work:
+   Making manfred.schon (Keycloak ID: `REDACTED`) an IDENTIFIED shaRe Member for testing the peer vouching flow. Neo4j was successfully updated:
+   ```
+   MATCH (sm:ShareMember {keycloakId: 'REDACTED'})
+   SET sm.eidStatus = 'identified'
+   → Result: "identified" ✓
+   ```
+   The Keycloak admin API update is failing because `KEYCLOAK_ADMIN_CLIENT_ID` is empty in the running container's environment, despite the service using it successfully. The last attempted approach was reading env vars from the container: `docker exec share-prod-operator-prod-1 printenv KEYCLOAK_ADMIN_CLIENT_ID` returned empty.
+
+9. Optional Next Step:
+   Complete the Keycloak eid_status update for manfred.schon. The correct approach is to find the admin credentials via a different method — likely checking the docker-compose.prod.yml for the actual env var names used, or using `kcadm.sh` directly inside the Keycloak container:
+   ```bash
+   docker exec share-prod-keycloak-prod-1 /opt/keycloak/bin/kcadm.sh \
+     set-password ... # or update attribute directly
+   ```
+   Or alternatively check what env var name the operator actually uses for admin credentials by inspecting the NestJS config service call in eid.service.ts (`KEYCLOAK_ADMIN_CLIENT_ID`, `KEYCLOAK_ADMIN_CLIENT_SECRET`) and cross-referencing with docker-compose.prod.yml environment section.
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/tomblume/.REDACTED.jsonl
+Please continue the conversation from where we left off without asking the user any further questions. Continue with the last task that you were asked to work on.
+
+---
+
+what is the password of manfred.schon
+
+---
+
+confirm runs into an error: 
+https://wurzelwerk.up2go.REDACTED
+Request Method
+POST
+Status Code
+400 Bad Request

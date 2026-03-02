@@ -799,3 +799,34 @@ Manage the shaRe platform on the Scaleway production server.
 | Service | Image | Compose service name | Source repo |
 |...
 
+### Prompt 115
+
+make manfred.schon shaRe Member IDENTIFIED, so I can test the flow
+
+### Prompt 116
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me analyze the conversation chronologically to capture all relevant details.
+
+## Session Overview
+This session continued from a previous context where peer vouching (share-platform-5ve) was the next planned feature. The session also had a plan file for community logo upload.
+
+## Chronological Analysis
+
+### 1. bd list — listing al...
+
+### Prompt 117
+
+what is the password of manfred.schon
+
+### Prompt 118
+
+confirm runs into an error: 
+https://wurzelwerk.up2go.REDACTED
+Request Method
+POST
+Status Code
+400 Bad Request
+
