@@ -1021,3 +1021,227 @@
 }
 .two-factor-dot.enabled { background: #22c55e; }
 .two-factor-dot.disabled { background: #9ca3af; }
+
+/* ============================================================
+   VOUCH FLOW — Peer identity vouching
+   ============================================================ */
+
+.vouch-page {
+  min-height: calc(100vh - 4rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+/* Card */
+.vouch-card {
+  background-color: #031633;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  padding: 2.5rem 2rem;
+  max-width: 400px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  text-align: center;
+}
+
+/* Avatar of the person to vouch for */
+.vouchee-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background-color: #18203a;
+  border: 2px solid rgba(255, 59, 47, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  animation: avatar-identity-pulse 3s ease-in-out infinite;
+}
+
+@keyframes avatar-identity-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 59, 47, 0.25); }
+  50%       { box-shadow: 0 0 0 10px rgba(255, 59, 47, 0); }
+}
+
+.vouchee-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vouchee-avatar-initials {
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+  letter-spacing: -0.02em;
+}
+
+/* Text */
+.vouch-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.vouch-request-text {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.vouch-divider {
+  width: 100%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.vouch-responsibility {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.45);
+  line-height: 1.65;
+  margin: 0;
+  padding: 0 0.25rem;
+}
+
+.vouch-info-text {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* Buttons */
+.vouch-confirm-btn {
+  width: 100%;
+  padding: 0.875rem;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+}
+
+.vouch-decline-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  transition: color 0.2s;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.15);
+}
+
+.vouch-decline-btn:hover:not(:disabled) {
+  color: rgba(255, 255, 255, 0.65);
+  text-decoration-color: rgba(255, 255, 255, 0.4);
+}
+
+.vouch-decline-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Success state — seal stamp animation */
+.vouch-success-card {
+  gap: 1.5rem;
+}
+
+.vouch-seal {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #FF3B2F;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: seal-stamp 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes seal-stamp {
+  0%   { transform: scale(0) rotate(-25deg); opacity: 0; }
+  65%  { transform: scale(1.12) rotate(4deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.vouch-seal-check {
+  font-size: 2.25rem;
+  color: white;
+  line-height: 1;
+  display: block;
+}
+
+.vouch-success-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: white;
+  margin: 0;
+  letter-spacing: -0.03em;
+}
+
+.vouch-success-text {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Loading spinner */
+.vouch-loading {
+  display: flex;
+  justify-content: center;
+  padding: 4rem;
+}
+
+.vouch-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.12);
+  border-top-color: #FF3B2F;
+  border-radius: 50%;
+  animation: vouch-spin 0.75s linear infinite;
+}
+
+@keyframes vouch-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Vouch request banner — shown on HubPage for IDENTIFIED users */
+.vouch-banner {
+  background: linear-gradient(135deg, #1e0e0e 0%, #2c1414 100%);
+  border-left: 3px solid #FF3B2F;
+  padding: 0.875rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.vouch-banner-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.vouch-banner-text {
+  flex: 1;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.4;
+}
+
+.vouch-banner-cta {
+  color: #FF3B2F;
+  text-decoration: none;
+  font-weight: 600;
+  white-space: nowrap;
+  font-size: 0.875rem;
+  transition: opacity 0.2s;
+}
+
+.vouch-banner-cta:hover {
+  opacity: 0.75;
+}

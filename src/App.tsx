@@ -8,6 +8,7 @@ import { JoinPage } from './pages/JoinPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { VerifyPage } from './pages/VerifyPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { VouchPage } from './pages/VouchPage'
 
 function App(): JSX.Element {
   return (
@@ -25,6 +26,7 @@ function App(): JSX.Element {
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/verify" element={<VerifyPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/vouch/:requestId" element={<VouchPage />} />
           </Route>
         </Routes>
       </AuthProvider>

@@ -125,5 +125,22 @@
   },
   "callback": {
     "signing_in": "Anmeldung läuft…"
+  },
+  "vouch": {
+    "not_found": "Dieser Bürgschaftsantrag wurde nicht gefunden.",
+    "already_processed": "Dieser Bürgschaftsantrag wurde bereits bearbeitet.",
+    "network_error": "Verbindungsfehler. Bitte versuche es erneut.",
+    "back_to_hub": "Zurück zur Übersicht",
+    "requests_confirmation": "bittet dich, die Identität persönlich zu bestätigen.",
+    "responsibility_statement": "Mit deiner Bestätigung bürgst du persönlich dafür, dass du diese Person kennst und sie die ist, die sie vorgibt zu sein. Bürgschaften können nicht widerrufen werden.",
+    "confirm_cta": "Identität bestätigen",
+    "confirming": "Wird bestätigt…",
+    "decline_cta": "Ablehnen",
+    "confirmed_title": "Bestätigt!",
+    "confirmed_body": "{{name}} ist jetzt ein IDENTIFIZIERTES shaRe-Mitglied.",
+    "declined_message": "Bürgschaftsantrag abgelehnt.",
+    "banner_single": "{{name}} bittet dich, die Identität zu bestätigen.",
+    "banner_multiple": "{{count}} Personen bitten dich um Identitätsbestätigung.",
+    "banner_cta": "Jetzt bestätigen →"
   }
 }

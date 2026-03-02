@@ -125,5 +125,22 @@
   },
   "callback": {
     "signing_in": "Signing in…"
+  },
+  "vouch": {
+    "not_found": "This vouch request was not found.",
+    "already_processed": "This vouch request has already been processed.",
+    "network_error": "Connection error. Please try again.",
+    "back_to_hub": "Back to hub",
+    "requests_confirmation": "is asking you to personally confirm their identity.",
+    "responsibility_statement": "By confirming, you personally vouch that you know this person and that they are who they claim to be. Vouches cannot be revoked.",
+    "confirm_cta": "Confirm identity",
+    "confirming": "Confirming…",
+    "decline_cta": "Decline",
+    "confirmed_title": "Confirmed!",
+    "confirmed_body": "{{name}} is now an IDENTIFIED shaRe Member.",
+    "declined_message": "Vouch request declined.",
+    "banner_single": "{{name}} is asking you to confirm their identity.",
+    "banner_multiple": "{{count}} people are asking you to confirm their identity.",
+    "banner_cta": "Confirm now →"
   }
 }

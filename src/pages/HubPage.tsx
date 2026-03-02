@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
 import { AppShell } from '../components/AppShell'
+import { VouchRequestBanner } from '../components/VouchRequestBanner'
 import { apiFetch, fetchPublicCommunities, joinOpenCommunity } from '../api/api'
 import type { CommunityTeaser, PublicCommunityTeaser } from '../api/types'
 
@@ -53,6 +54,7 @@ export function HubPage(): JSX.Element {
 
   return (
     <AppShell>
+      <VouchRequestBanner />
       {user?.eidStatus === 'un_identified' && (
         <div className="unidentified-banner">
           <span>{t('banner.unidentified')}</span>
