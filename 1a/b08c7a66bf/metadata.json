@@ -5,8 +5,14 @@
   "branch": "main",
   "checkpoints_count": 1,
   "files_touched": [
-    "index.html",
-    "vite.config.ts"
+    "src/App.css",
+    "src/App.tsx",
+    "src/api/vouch.ts",
+    "src/components/VouchRequestBanner.tsx",
+    "src/i18n/locales/de.json",
+    "src/i18n/locales/en.json",
+    "src/pages/HubPage.tsx",
+    "src/pages/VouchPage.tsx"
   ],
   "sessions": [
     {
@@ -18,10 +24,10 @@
     }
   ],
   "token_usage": {
-    "input_tokens": 36,
-    "cache_creation_tokens": 20057,
-    "cache_read_tokens": 3810713,
-    "output_tokens": 9519,
-    "api_call_count": 26
+    "input_tokens": 58,
+    "cache_creation_tokens": 81468,
+    "cache_read_tokens": 3895531,
+    "output_tokens": 21613,
+    "api_call_count": 42
   }
 }

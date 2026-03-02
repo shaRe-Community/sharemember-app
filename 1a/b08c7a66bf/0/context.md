@@ -702,3 +702,71 @@ erst SM-ey3 und dann share-platform-5ve (mobil)... da faellt mir ein im Profibil
 
 das shareholder deploy ist nicht dringend, da es noch nicht offiziell ausgerollt ist
 
+### Prompt 103
+
+ja
+
+### Prompt 104
+
+/model
+
+### Prompt 105
+
+was ist mit dem hindergrund prozess
+
+### Prompt 106
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me chronologically analyze the conversation to create a thorough summary.
+
+The conversation started as a continuation from a previous session that had been compacted. The summary showed we were in the middle of updating documentation files.
+
+1. **Documentation updates** - Completed u2g-infrastructure-ts/CLAUDE.md updates (server sp...
+
+### Prompt 107
+
+bd list
+
+### Prompt 108
+
+List beads issues with optional filtering.
+
+## Basic Filters
+
+- **--status, -s**: Filter by status (open, in_progress, blocked, closed)
+- **--priority, -p**: Filter by priority (0-4: 0=critical, 1=high, 2=medium, 3=low, 4=backlog)
+- **--type, -t**: Filter by type (bug, feature, task, epic, chore)
+- **--assignee, -a**: Filter by assignee
+- **--label, -l**: Filter by labels (comma-separated, must have ALL labels)
+- **--label-any**: Filter by labels (OR semantics, must have AT LEAST ONE)
+- **--titl...
+
+### Prompt 109
+
+mit share-platform-5ve weiter machen, nutze den UX skill
+
+### Prompt 110
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/frontend-design/55b58ec6e564/skills/frontend-design
+
+This skill guides creation of distinctive, production-grade frontend interfaces that avoid generic "AI slop" aesthetics. Implement real working code with exceptional attention to aesthetic details and creative choices.
+
+The user provides frontend requirements: a component, page, application, or interface to build. They may include context about the purp...
+
+### Prompt 111
+
+Display detailed information about a beads issue.
+
+If an issue ID is provided as , use it. Otherwise, ask the user for the issue ID.
+
+Use the beads MCP `show` tool to retrieve issue details and present them clearly, including:
+- Issue ID, title, and description
+- Status, priority, and type
+- Creation and update timestamps
+- Dependencies (what this issue blocks or is blocked by)
+- Related issues
+
+If the issue has dependencies, offer to show the full dependency tree.
+
