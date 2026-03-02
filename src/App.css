@@ -505,6 +505,38 @@
   display: inline-block;
 }
 
+.nav-avatar-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.nav-avatar-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.nav-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--sm-color-primary-red);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--sm-color-primary-red);
+  overflow: hidden;
+}
+
+.avatar-unidentified .nav-avatar {
+  filter: grayscale(100%);
+  border: 2px dashed rgba(255,255,255,0.4);
+  background-color: #555;
+}
+
 .avatar {
   width: 80px;
   height: 80px;
