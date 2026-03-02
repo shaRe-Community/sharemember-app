@@ -285,3 +285,175 @@ This skill guides creation of distinctive, production-grade frontend interfaces 
 
 The user provides frontend requirements: a component, page, application, or interface to build. They may include context about the purp...
 
+### Prompt 39
+
+gut. Gibt es eine moeglichkeit alle existierende communities anzuzeigen, auch die in der ich noch keinen shareholder habe?
+
+### Prompt 40
+
+option D mit isPublic flag. wir brauchen dann im CommunityEditor noch die möglichkeit einen InvitaionCode und das isPublic zu pflegen
+
+### Prompt 41
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/writing-plans
+
+# Writing Plans
+
+## Overview
+
+Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs they might need to check, how to test it. Give them the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits....
+
+### Prompt 42
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me chronologically analyze this conversation to create a thorough summary.
+
+1. **Sign Up button PKCE fix**: User reported "Sign Up" button had no functionality. Investigation revealed the manually-constructed registration URL lacked `code_challenge_method=S256` (PKCE), returning `Missing parameter: code_challenge_method` from Keycl...
+
+### Prompt 43
+
+2
+
+### Prompt 44
+
+what can we do?
+
+### Prompt 45
+
+share-platform-wia
+
+### Prompt 46
+
+Display detailed information about a beads issue.
+
+If an issue ID is provided as , use it. Otherwise, ask the user for the issue ID.
+
+Use the beads MCP `show` tool to retrieve issue details and present them clearly, including:
+- Issue ID, title, and description
+- Status, priority, and type
+- Creation and update timestamps
+- Dependencies (what this issue blocks or is blocked by)
+- Related issues
+
+If the issue has dependencies, offer to show the full dependency tree.
+
+### Prompt 47
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/writing-plans
+
+# Writing Plans
+
+## Overview
+
+Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs they might need to check, how to test it. Give them the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits....
+
+### Prompt 48
+
+1
+
+### Prompt 49
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/subagent-driven-development
+
+# Subagent-Driven Development
+
+Execute plan by dispatching fresh subagent per task, with two-stage review after each: spec compliance review first, then code quality review.
+
+**Core principle:** Fresh subagent per task + two-stage review (spec then quality) = high quality, fast iteration
+
+## When to Use
+
+```dot
+digraph when_to_use {
+    "Have implement...
+
+### Prompt 50
+
+please help me with 0, i can not find it in the ream settings
+
+### Prompt 51
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me chronologically analyze this conversation to create a thorough summary.
+
+1. The conversation started with context recovery - the user was working on the share-platform (shaRe cooperative governance system) and had been implementing various features.
+
+2. The plan file at share-platform/docs/plans/2026-03-01-profile-picture-minio....
+
+### Prompt 52
+
+cannot save profile picture: https://sso.wurzelwerk.up2go.com/realms/prod-sharemembers/profile_pictures' from origin 'https://share.community' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+
+### Prompt 53
+
+Base directory for this skill: /home/tomblume/.claude/skills/devops
+
+# shaRe Platform DevOps
+
+Manage the shaRe platform on the Scaleway production server.
+
+## Server
+
+- **IP**: `51.15.211.196`
+- **SSH**: `ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196`
+- **Infra dir on server**: `/opt/share-platform/infra`
+- **Compose files**: `docker-compose.prod.yml`, `docker-compose.dev.yml`
+- **Env files**: `.env.prod`, `.env.dev`
+
+## Service Map
+
+| Service | Image | Compose service name | Source repo |
+|...
+
+### Prompt 54
+
+i get 🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+settings:1 Access to fetch at 'https://sso.wurzelwerk.up2go.com/realms/prod-sharemembers/profile_pictures' from origin 'https://share.community' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.Understand this error
+index-CLWNC3oY.js:4  POST https://sso.wurzelwerk.up2go....
+
+### Prompt 55
+
+profile picture is not visible after saving . Request URL
+https://sso.wurzelwerk.up2go.com/realms/prod-sharemembers/profile_pictures
+Request Method
+POST
+Status Code
+204 No Content
+Remote Address
+51.15.211.196:443
+
+### Prompt 56
+
+still the same issue
+
+### Prompt 57
+
+i see q request : Request URL
+https://minio.up2go.com/share-profile-pictures/29ce29c8-bf39-4495-8353-e67f4cdba382/profile.png?v=55c8df16-aec4-428d-b245-0a1a63675834
+Request Method
+GET
+Status Code
+200 OK
+Referrer Policy
+strict-origin-when-cross-origin, but picture is not shown
+
+### Prompt 58
+
+the frontend still uses wrong url!
+
+### Prompt 59
+
+I tried in an incognito session but still the old url
+
+### Prompt 60
+
+noch eine kleinigkeit, wie schaffen wir es das Bild direkt nach dem upload und save zu aktualisieren, aktuell muss ich mich nochmal ausloggen und einloggen. nichts implementieren erstmal nachdenken
+
+### Prompt 61
+
+dann option A
+

@@ -2175,3 +2175,1209 @@ Interpret creatively and make unexpected choices that feel genuinely designed fo
 **IMPORTANT**: Match implementation complexity to the aesthetic vision. Maximalist designs need elaborate code with extensive animations and effects. Minimalist or refined designs need restraint, precision, and careful attention to spacing, typography, and subtle details. Elegance comes from executing the vision well.
 
 Remember: Claude is capable of extraordinary creative work. Don't hold back, show what can truly be created when thinking outside the box and committing fully to a distinctive vision.
+
+---
+
+gut. Gibt es eine moeglichkeit alle existierende communities anzuzeigen, auch die in der ich noch keinen shareholder habe?
+
+---
+
+option D mit isPublic flag. wir brauchen dann im CommunityEditor noch die möglichkeit einen InvitaionCode und das isPublic zu pflegen
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/writing-plans
+
+# Writing Plans
+
+## Overview
+
+Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs they might need to check, how to test it. Give them the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits.
+
+Assume they are a skilled developer, but know almost nothing about our toolset or problem domain. Assume they don't know good test design very well.
+
+**Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
+
+**Context:** This should be run in a dedicated worktree (created by brainstorming skill).
+
+**Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
+
+## Bite-Sized Task Granularity
+
+**Each step is one action (2-5 minutes):**
+- "Write the failing test" - step
+- "Run it to make sure it fails" - step
+- "Implement the minimal code to make the test pass" - step
+- "Run the tests and make sure they pass" - step
+- "Commit" - step
+
+## Plan Document Header
+
+**Every plan MUST start with this header:**
+
+```markdown
+# [Feature Name] Implementation Plan
+
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+**Goal:** [One sentence describing what this builds]
+
+**Architecture:** [2-3 sentences about approach]
+
+**Tech Stack:** [Key technologies/libraries]
+
+---
+```
+
+## Task Structure
+
+````markdown
+### Task N: [Component Name]
+
+**Files:**
+- Create: `exact/path/to/file.py`
+- Modify: `exact/path/to/existing.py:123-145`
+- Test: `tests/exact/path/to/test.py`
+
+**Step 1: Write the failing test**
+
+```python
+def test_specific_behavior():
+    result = function(input)
+    assert result == expected
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `pytest tests/path/test.py::test_name -v`
+Expected: FAIL with "function not defined"
+
+**Step 3: Write minimal implementation**
+
+```python
+def function(input):
+    return expected
+```
+
+**Step 4: Run test to verify it passes**
+
+Run: `pytest tests/path/test.py::test_name -v`
+Expected: PASS
+
+**Step 5: Commit**
+
+```bash
+git add tests/path/test.py src/path/file.py
+git commit -m "feat: add specific feature"
+```
+````
+
+## Remember
+- Exact file paths always
+- Complete code in plan (not "add validation")
+- Exact commands with expected output
+- Reference relevant skills with @ syntax
+- DRY, YAGNI, TDD, frequent commits
+
+## Execution Handoff
+
+After saving the plan, offer execution choice:
+
+**"Plan complete and saved to `docs/plans/<filename>.md`. Two execution options:**
+
+**1. Subagent-Driven (this session)** - I dispatch fresh subagent per task, review between tasks, fast iteration
+
+**2. Parallel Session (separate)** - Open new session with executing-plans, batch execution with checkpoints
+
+**Which approach?"**
+
+**If Subagent-Driven chosen:**
+- **REQUIRED SUB-SKILL:** Use superpowers:subagent-driven-development
+- Stay in this session
+- Fresh subagent per task + code review
+
+**If Parallel Session chosen:**
+- Guide them to open new session in worktree
+- **REQUIRED SUB-SKILL:** New session uses superpowers:executing-plans
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me chronologically analyze this conversation to create a thorough summary.
+
+1. **Sign Up button PKCE fix**: User reported "Sign Up" button had no functionality. Investigation revealed the manually-constructed registration URL lacked `code_challenge_method=S256` (PKCE), returning `Missing parameter: code_challenge_method` from Keycloak. Fix: created `registerUserManager` in `auth.config.ts` with overridden `metadata.authorization_endpoint` pointing to `/registrations`, which lets `oidc-client-ts` handle PKCE automatically. Updated `AuthContext.tsx` to expose `register()` and wired to button in `LandingPage.tsx`.
+
+2. **Profile page avatar question**: User asked what the avatar placeholder was. Explained it's initials-based (no actual image), intentional design choice aligning with eID privacy philosophy.
+
+3. **KC Account Theme analysis**: User asked about existing KC account theme at `sharemembers/themes/share/account`. I explored it via agent. Found: 3 custom pages (ProfilePicture with canvas editor, Communities, JoinCommunity), backend using GCS for storage (legacy), profile picture URL stored as KC user attribute `picture` → JWT claim. Communities and JoinCommunity pages are obsolete (replaced by sharemember-app).
+
+4. **Architecture decision for profile data**: User asked how to handle personal info and signing in (password reset) given operator-ts is community-scoped. Key decision: Keycloak = identity layer (personal info, password, profile picture), operator-ts = community layer. Identified KC Account REST API as direct callable from sharemember-app.
+
+5. **3 Beads issues created**:
+   - `SM-6ih`: Personal Info & Passwort in sharemember-app (P2)
+   - `share-platform-wia`: Profilbild: GCS → MinIO + sharemember-app Integration (P2)
+   - `sharemembers-w79`: KC Account Theme: Communities & JoinCommunity entfernen (P3)
+
+6. **MEMORY.md updated** with architecture decisions, identity layer split, new beads issues.
+
+7. **SM-6ih implementation** (Settings Page): Used writing-plans skill → subagent-driven-development skill. 6 tasks:
+   - Task 1: `src/api/keycloak-account.ts` — KC Account REST API module
+   - Task 2: i18n strings (EN+DE)
+   - Task 3: `src/pages/SettingsPage.tsx` — PersonalInfoSection + PasswordSection
+   - Task 4: CSS for settings layout
+   - Task 5: Wire route + nav
+   - Task 6: Deploy
+
+8. **Quality fixes during implementation**:
+   - `getAccountInfo` return type narrowed from `Promise<KcUserInfo | void>` to `Promise<KcUserInfo>` 
+   - Error handling changed to use `ApiError` from `api.ts` (carries HTTP status)
+   - `t` removed from `useEffect` deps array in PersonalInfoSection
+   - CSS bug: `.settings-card { background: white }` caused white labels on white background → fixed to `background-color: #18203a`
+   - Form spacing: Added `.settings-card form { display: flex; flex-direction: column; gap: 1rem }` and `.settings-card .cta-button { align-self: flex-start }`
+
+9. **CSS bug fix**: User said "das css ist falsch. weiße labels auf weissem hintergrund. button abstände nicht ordentlich". Used frontend-design skill to identify and fix: changed card background from white to `#18203a`, fixed title/section title colors, added form flex layout.
+
+10. **Community directory feature**: User asked about showing all communities including those not yet joined. Discussed Option D (isPublic flag). Then said to implement it with CommunityEditorDialog support for inviteCode and isPublic.
+
+11. **Plan writing in progress**: Currently using writing-plans skill to create comprehensive multi-repo plan for the isPublic feature. Plan will be saved to `share-platform/docs/plans/`. Research was complete, about to write the plan file.
+
+Key files:
+- `sharemember-app/src/auth/auth.config.ts` - registerUserManager added
+- `sharemember-app/src/auth/AuthContext.tsx` - register() added
+- `sharemember-app/src/pages/LandingPage.tsx` - uses register() 
+- `sharemember-app/src/api/keycloak-account.ts` - NEW
+- `sharemember-app/src/pages/SettingsPage.tsx` - NEW
+- `sharemember-app/src/App.css` - settings CSS fixed
+- `sharemember-app/src/App.tsx` - /settings route added
+- `sharemember-app/src/components/AppShell.tsx` - Settings nav link
+- `sharemember-app/src/i18n/locales/en.json` - settings keys
+- `sharemember-app/src/i18n/locales/de.json` - settings keys
+
+Pending: Writing the isPublic + CommunityEditor plan and then executing it.
+
+Summary:
+1. Primary Request and Intent:
+   - Fix "Sign Up" button having no functionality — should navigate to Keycloak registration page
+   - Analyze KC account theme (`sharemembers/themes/share/account`) and determine what to keep/migrate
+   - Clarify architecture: how does personal profile data fit with operator-ts being community-scoped?
+   - Create 3 Beads issues for: (1) Personal Info/Password in sharemember-app, (2) Profile picture GCS→MinIO, (3) KC Theme cleanup
+   - Implement SM-6ih: Settings page with Personal Info + Change Password via Keycloak Account REST API
+   - Fix CSS bug: white labels on white background, bad button spacing on settings page
+   - Implement "isPublic" community directory feature (Option D) with CommunityEditorDialog support for inviteCode and isPublic fields
+
+2. Key Technical Concepts:
+   - **PKCE (Proof Key for Code Exchange)**: `oidc-client-ts` `signinRedirect()` handles PKCE automatically. Manual URL construction bypasses PKCE, causing `Missing parameter: code_challenge_method` from Keycloak. Solution: override `metadata.authorization_endpoint` in a second `UserManager` to point to `/registrations`.
+   - **Keycloak Account REST API**: `/realms/{realm}/account` — `GET`/`POST` for personal info, `PUT /credentials/password` for password change. Callable directly from frontend with Bearer token.
+   - **Identity Layer vs Application Layer**: Keycloak owns identity data (name, email, password, profile picture). operator-ts is community-scoped and must NOT handle ShareMember identity data.
+   - **KC Account Theme**: Custom React app (`@keycloak/keycloak-account-ui` v26). ProfilePicture page uses `POST /realms/{realm}/profile_pictures` → `Storage.kt` → GCS (legacy). Communities/JoinCommunity pages are obsolete.
+   - **GCS → MinIO migration**: `Storage.kt` in Keycloak plugin uses Google Cloud Storage SDK (legacy). Should be replaced with MinIO (S3-compatible, EU, consistent with operator-ts).
+   - **`isPublic` community flag**: New boolean on Community Neo4j node. Powers public community directory. Related: `hasInviteCode` indicator for UI flow (direct join vs invite code required).
+   - **Dark navy design system**: All cards use `#18203a` background, `#0f1628` inputs, form labels are `rgba(255,255,255,0.8)`. White card backgrounds break label visibility.
+   - **CASE WHEN guard pattern**: Cypher update uses `c.field = CASE WHEN $field IS NOT NULL THEN $field ELSE c.field END` to preserve existing values when null passed.
+   - **Subagent-Driven Development**: Fresh subagent per task + two-stage review (spec compliance first, then code quality). Caught two real bugs: `Promise<KcUserInfo | void>` return type and missing HTTP status on errors.
+
+3. Files and Code Sections:
+
+   - **`sharemember-app/src/auth/auth.config.ts`**
+     - Refactored to module-scope env vars, `buildSettings(authorizationEndpoint?)`, exported `registerUserManager` pointing to `/registrations` endpoint for PKCE-correct registration
+     ```typescript
+     export const registerUserManager = new UserManager(
+       buildSettings(`${ssoUrl}/realms/${realm}/protocol/openid-connect/registrations`),
+     )
+     ```
+
+   - **`sharemember-app/src/auth/AuthContext.tsx`**
+     - Added `register: () => Promise<void>` to interface, implementation uses `registerUserManager.signinRedirect()`
+     - `logout` uses `userManager.removeUser() + window.location.href = '/'` (not `signoutRedirect()`)
+
+   - **`sharemember-app/src/pages/LandingPage.tsx`**
+     - `handleRegister` simplified to `void register()` — removed manual URL construction
+
+   - **`sharemember-app/src/api/keycloak-account.ts`** (NEW)
+     ```typescript
+     import { ApiError } from './api'
+     const BASE = `${SSO_URL}/realms/${REALM}/account`
+     export interface KcUserInfo { username, firstName, lastName, email }
+     // getAccountInfo returns Promise<KcUserInfo> (not | void)
+     // kcFetch throws ApiError (with status code) not plain Error
+     export function changePassword(token, currentPassword, newPassword): Promise<void>
+     // PUT /credentials/password with { currentPassword, newPassword, confirmation: newPassword }
+     ```
+
+   - **`sharemember-app/src/pages/SettingsPage.tsx`** (NEW)
+     - Two sub-components: `PersonalInfoSection({ token })` and `PasswordSection({ token })`
+     - `PersonalInfoSection`: `useEffect([token])` loads account info, firstName+lastName in `.settings-row`, email full width
+     - Error handling: `err instanceof ApiError && err.status === 401 ? t('settings.error_401') : t('settings.error_generic')`
+     - `PasswordSection`: client-side mismatch check, clears fields on success, `autoComplete="current-password"/"new-password"`, `minLength={8}`
+
+   - **`sharemember-app/src/App.css`**
+     - Settings CSS fixed: `background-color: #18203a` (dark navy, not white), `color: white` on titles
+     - `.settings-card form { display: flex; flex-direction: column; gap: 1rem }` for button spacing
+     - `.settings-card .cta-button { align-self: flex-start }` + mobile `align-self: stretch`
+     - `.settings-section-title { color: rgba(255,255,255,0.9); border-bottom: 1px solid rgba(255,255,255,0.08) }`
+
+   - **`sharemember-app/src/App.tsx`**
+     - Added `<Route path="/settings" element={<SettingsPage />} />` in protected routes
+
+   - **`sharemember-app/src/components/AppShell.tsx`**
+     - Added `<Link to="/settings" className="shell-nav-link">{t('nav.settings')}</Link>` after profile link
+
+   - **`sharemember-app/src/i18n/locales/en.json` and `de.json`**
+     - Added `nav.settings` and full `settings.*` block (18 keys) in both locales
+
+   - **`share-platform/docs/plans/`**
+     - Plan for isPublic feature being written (in progress at summary point)
+
+4. Errors and fixes:
+   - **`ERR_BLOCKED_BY_RESPONSE.NotSameOrigin` on logo image**: COEP requires `Cross-Origin-Resource-Policy: cross-origin` header → fixed in `community-logo.controller.ts`
+   - **Sign Up button no functionality**: Manual URL construction bypassed PKCE → fixed with `registerUserManager` using `metadata.authorization_endpoint` override
+   - **White labels on white background (settings page)**: `.settings-card { background: white }` used on dark-theme app where `.form-label` is `rgba(255,255,255,0.8)` → fixed to `background-color: #18203a`. User explicitly said "das css ist falsch. weiße labels auf weissem hintergrund. du hast doch einen UX/UI Skill nutz den"
+   - **Button spacing on settings page**: `<form>` had no layout → fixed with `display: flex; flex-direction: column; gap: 1rem` on `.settings-card form`
+   - **`getAccountInfo` return type `Promise<KcUserInfo | void>`**: Code quality reviewer flagged — narrowed to `Promise<KcUserInfo>` with guard: `if (!result) throw new Error('Unexpected empty response')`
+   - **`kcFetch` throwing plain `Error`**: Code quality reviewer flagged inconsistency with `ApiError` in `api.ts` → changed to `throw new ApiError(res.status, ...)`
+   - **`t` in `useEffect` deps array**: Reviewer caught `[token, t]` causing re-fetches on language switch → fixed to `[token]`
+
+5. Problem Solving:
+   - **Architecture clarity for identity data**: Established that Keycloak = identity layer, operator-ts = community layer. Personal info, password, profile picture all belong in Keycloak, not operator-ts.
+   - **KC Account Theme obsolescence**: Communities + JoinCommunity pages fully replaced by sharemember-app. Only ProfilePicture needs migration (GCS→MinIO). PersonalInfo/SigningIn standard KC components remain as fallback.
+   - **Community discovery**: No public listing endpoint exists. Decided on Option D (explicit `isPublic` boolean flag) over implicit proxies like `frontendUrl IS NOT NULL`.
+
+6. All user messages:
+   - "der button 'sign up' hat keine funktionalität, sollte auf die Registrierungsseite 'Ohne invite code' springen..."
+   - "die profile page zeigt einen platzhalter für ein Avatarbild. was ist heir angedacht?"
+   - "wir haben bereits das hier: 'https://sso.wurzelwerk.up2go.com/realms/prod-sharemembers/account', hier ist auch ein Profilbild incl. bildeditor hinterlegt. schau im repo sharemembers/themes/share/account nach..."
+   - (empty — waiting for analysis)
+   - "der operator ist doch community spezifisch, wie sollen wir hier generelle shaRe Member informationen pflegen? WIe passt das in die Architektur?"
+   - (empty — waiting for recommendations)
+   - "jawohl, und die dokumentation demensprechend anpassen context speichern für eine näcshte Session."
+   - "ok, dann machen wir das noch heute, starte dann die implementierung von SM-6ih"
+   - "1" (chose subagent-driven execution)
+   - (empty — continue)
+   - (empty — continue)
+   - (empty — continue)
+   - (empty — continue)
+   - (empty — continue)
+   - "das css ist falsch. weiße labels auf weissem hintergrund. button abstände nicht ordentlich. du hast doch einen UX/UI Skill nutz den"
+   - "gut. Gibt es eine moeglichkeit alle existierende communities anzuzeigen, auch die in der ich noch keinen shareholder habe?"
+   - "option D mit isPublic flag. wir brauchen dann im CommunityEditor noch die möglichkeit einen InvitaionCode und das isPublic zu pflegen"
+
+7. Pending Tasks:
+   - **CURRENTLY IN PROGRESS**: Write implementation plan for `isPublic` community directory feature (multi-repo: operator-ts + share-ui + sharemember-app), save to `share-platform/docs/plans/2026-03-01-community-directory.md`
+   - **`share-platform-wia`**: Profilbild GCS→MinIO + sharemember-app Integration (P2)
+   - **`sharemembers-w79`**: KC Account Theme: Communities & JoinCommunity entfernen (P3)
+   - **`SM-duf`**: Add MUI to sharemember-app (P4, backlog)
+   - **`share-ui` 38y**: UN-IDENTIFIED visual indicators
+   - **`share-ui` 691**: Block restricted actions for UN-IDENTIFIED
+
+8. Current Work:
+   Writing the multi-repo implementation plan for the `isPublic` community directory feature. The user confirmed: "option D mit isPublic flag. wir brauchen dann im CommunityEditor noch die möglichkeit einen InvitaionCode und das isPublic zu pflegen"
+
+   Research complete. The plan covers:
+   - **operator-ts Task 1**: Add `isPublic: boolean` to Community interface, `mapCommunity()`, `update()` Cypher CASE WHEN, `UpdateCommunityDto`, `CommunityResponseDto`, `toCommunityResponseDto()`, service + controller wiring
+   - **operator-ts Task 2**: New `GET /v2/sharemember/me/communities/discover` endpoint — `findPublicCommunities(shareholderId)` in SharememberRepository with `isMember` + `hasInviteCode` fields, new `PublicCommunityTeaserDto`
+   - **operator-ts Task 3**: New `POST /v2/sharemember/me/communities/:communityId/join` for open (no invite code) public communities
+   - **share-ui Task 4**: `types.gen.ts` — add `isPublic` to `UpdateCommunityDto` and `CommunityDto`
+   - **share-ui Task 5**: `CommunityEditorDialog.tsx` — add `inviteCode` state + TextField, `isPublic` state + Switch/toggle, wire to PUT body; i18n keys for EN+DE
+   - **sharemember-app Task 6**: `types.ts` — add `PublicCommunityTeaser`; `api/api.ts` — add `fetchPublicCommunities()`; i18n keys
+   - **sharemember-app Task 7**: `HubPage.tsx` — "Discover Communities" section below "My Communities", shows public communities with `isMember` indicator (Enter vs Join), handles open vs invite-required join
+   - **Task 8**: Deploy all three services in order
+
+   Plan to be saved at: `REDACTED.md`
+
+9. Optional Next Step:
+   Complete writing and save the implementation plan file at `share-platform/docs/plans/2026-03-01-community-directory.md`, then offer the two execution options (subagent-driven vs parallel session). The user's last explicit request was: "option D mit isPublic flag. wir brauchen dann im CommunityEditor noch die möglichkeit einen InvitaionCode und das isPublic zu pflegen" — the plan was being written to address exactly this.
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/tomblume/.REDACTED.jsonl
+Please continue the conversation from where we left off without asking the user any further questions. Continue with the last task that you were asked to work on.
+
+---
+
+2
+
+---
+
+what can we do?
+
+---
+
+share-platform-wia
+
+---
+
+Display detailed information about a beads issue.
+
+If an issue ID is provided as , use it. Otherwise, ask the user for the issue ID.
+
+Use the beads MCP `show` tool to retrieve issue details and present them clearly, including:
+- Issue ID, title, and description
+- Status, priority, and type
+- Creation and update timestamps
+- Dependencies (what this issue blocks or is blocked by)
+- Related issues
+
+If the issue has dependencies, offer to show the full dependency tree.
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/writing-plans
+
+# Writing Plans
+
+## Overview
+
+Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs they might need to check, how to test it. Give them the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits.
+
+Assume they are a skilled developer, but know almost nothing about our toolset or problem domain. Assume they don't know good test design very well.
+
+**Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
+
+**Context:** This should be run in a dedicated worktree (created by brainstorming skill).
+
+**Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
+
+## Bite-Sized Task Granularity
+
+**Each step is one action (2-5 minutes):**
+- "Write the failing test" - step
+- "Run it to make sure it fails" - step
+- "Implement the minimal code to make the test pass" - step
+- "Run the tests and make sure they pass" - step
+- "Commit" - step
+
+## Plan Document Header
+
+**Every plan MUST start with this header:**
+
+```markdown
+# [Feature Name] Implementation Plan
+
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+**Goal:** [One sentence describing what this builds]
+
+**Architecture:** [2-3 sentences about approach]
+
+**Tech Stack:** [Key technologies/libraries]
+
+---
+```
+
+## Task Structure
+
+````markdown
+### Task N: [Component Name]
+
+**Files:**
+- Create: `exact/path/to/file.py`
+- Modify: `exact/path/to/existing.py:123-145`
+- Test: `tests/exact/path/to/test.py`
+
+**Step 1: Write the failing test**
+
+```python
+def test_specific_behavior():
+    result = function(input)
+    assert result == expected
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `pytest tests/path/test.py::test_name -v`
+Expected: FAIL with "function not defined"
+
+**Step 3: Write minimal implementation**
+
+```python
+def function(input):
+    return expected
+```
+
+**Step 4: Run test to verify it passes**
+
+Run: `pytest tests/path/test.py::test_name -v`
+Expected: PASS
+
+**Step 5: Commit**
+
+```bash
+git add tests/path/test.py src/path/file.py
+git commit -m "feat: add specific feature"
+```
+````
+
+## Remember
+- Exact file paths always
+- Complete code in plan (not "add validation")
+- Exact commands with expected output
+- Reference relevant skills with @ syntax
+- DRY, YAGNI, TDD, frequent commits
+
+## Execution Handoff
+
+After saving the plan, offer execution choice:
+
+**"Plan complete and saved to `docs/plans/<filename>.md`. Two execution options:**
+
+**1. Subagent-Driven (this session)** - I dispatch fresh subagent per task, review between tasks, fast iteration
+
+**2. Parallel Session (separate)** - Open new session with executing-plans, batch execution with checkpoints
+
+**Which approach?"**
+
+**If Subagent-Driven chosen:**
+- **REQUIRED SUB-SKILL:** Use superpowers:subagent-driven-development
+- Stay in this session
+- Fresh subagent per task + code review
+
+**If Parallel Session chosen:**
+- Guide them to open new session in worktree
+- **REQUIRED SUB-SKILL:** New session uses superpowers:executing-plans
+
+---
+
+1
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/subagent-driven-development
+
+# Subagent-Driven Development
+
+Execute plan by dispatching fresh subagent per task, with two-stage review after each: spec compliance review first, then code quality review.
+
+**Core principle:** Fresh subagent per task + two-stage review (spec then quality) = high quality, fast iteration
+
+## When to Use
+
+```dot
+digraph when_to_use {
+    "Have implementation plan?" [shape=diamond];
+    "Tasks mostly independent?" [shape=diamond];
+    "Stay in this session?" [shape=diamond];
+    "subagent-driven-development" [shape=box];
+    "executing-plans" [shape=box];
+    "Manual execution or brainstorm first" [shape=box];
+
+    "Have implementation plan?" -> "Tasks mostly independent?" [label="yes"];
+    "Have implementation plan?" -> "Manual execution or brainstorm first" [label="no"];
+    "Tasks mostly independent?" -> "Stay in this session?" [label="yes"];
+    "Tasks mostly independent?" -> "Manual execution or brainstorm first" [label="no - tightly coupled"];
+    "Stay in this session?" -> "subagent-driven-development" [label="yes"];
+    "Stay in this session?" -> "executing-plans" [label="no - parallel session"];
+}
+```
+
+**vs. Executing Plans (parallel session):**
+- Same session (no context switch)
+- Fresh subagent per task (no context pollution)
+- Two-stage review after each task: spec compliance first, then code quality
+- Faster iteration (no human-in-loop between tasks)
+
+## The Process
+
+```dot
+digraph process {
+    rankdir=TB;
+
+    subgraph cluster_per_task {
+        label="Per Task";
+        "Dispatch implementer subagent (./implementer-prompt.md)" [shape=box];
+        "Implementer subagent asks questions?" [shape=diamond];
+        "Answer questions, provide context" [shape=box];
+        "Implementer subagent implements, tests, commits, self-reviews" [shape=box];
+        "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [shape=box];
+        "Spec reviewer subagent confirms code matches spec?" [shape=diamond];
+        "Implementer subagent fixes spec gaps" [shape=box];
+        "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [shape=box];
+        "Code quality reviewer subagent approves?" [shape=diamond];
+        "Implementer subagent fixes quality issues" [shape=box];
+        "Mark task complete in TodoWrite" [shape=box];
+    }
+
+    "Read plan, extract all tasks with full text, note context, create TodoWrite" [shape=box];
+    "More tasks remain?" [shape=diamond];
+    "Dispatch final code reviewer subagent for entire implementation" [shape=box];
+    "Use superpowers:finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
+
+    "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Dispatch implementer subagent (./implementer-prompt.md)";
+    "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer subagent asks questions?";
+    "Implementer subagent asks questions?" -> "Answer questions, provide context" [label="yes"];
+    "Answer questions, provide context" -> "Dispatch implementer subagent (./implementer-prompt.md)";
+    "Implementer subagent asks questions?" -> "Implementer subagent implements, tests, commits, self-reviews" [label="no"];
+    "Implementer subagent implements, tests, commits, self-reviews" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)";
+    "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" -> "Spec reviewer subagent confirms code matches spec?";
+    "Spec reviewer subagent confirms code matches spec?" -> "Implementer subagent fixes spec gaps" [label="no"];
+    "Implementer subagent fixes spec gaps" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [label="re-review"];
+    "Spec reviewer subagent confirms code matches spec?" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="yes"];
+    "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" -> "Code quality reviewer subagent approves?";
+    "Code quality reviewer subagent approves?" -> "Implementer subagent fixes quality issues" [label="no"];
+    "Implementer subagent fixes quality issues" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="re-review"];
+    "Code quality reviewer subagent approves?" -> "Mark task complete in TodoWrite" [label="yes"];
+    "Mark task complete in TodoWrite" -> "More tasks remain?";
+    "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
+    "More tasks remain?" -> "Dispatch final code reviewer subagent for entire implementation" [label="no"];
+    "Dispatch final code reviewer subagent for entire implementation" -> "Use superpowers:finishing-a-development-branch";
+}
+```
+
+## Prompt Templates
+
+- `./implementer-prompt.md` - Dispatch implementer subagent
+- `./spec-reviewer-prompt.md` - Dispatch spec compliance reviewer subagent
+- `./code-quality-reviewer-prompt.md` - Dispatch code quality reviewer subagent
+
+## Example Workflow
+
+```
+You: I'm using Subagent-Driven Development to execute this plan.
+
+[Read plan file once: docs/plans/feature-plan.md]
+[Extract all 5 tasks with full text and context]
+[Create TodoWrite with all tasks]
+
+Task 1: Hook installation script
+
+[Get Task 1 text and context (already extracted)]
+[Dispatch implementation subagent with full task text + context]
+
+Implementer: "Before I begin - should the hook be installed at user or system level?"
+
+You: "User level (~/.config/superpowers/hooks/)"
+
+Implementer: "Got it. Implementing now..."
+[Later] Implementer:
+  - Implemented install-hook command
+  - Added tests, 5/5 passing
+  - Self-review: Found I missed --force flag, added it
+  - Committed
+
+[Dispatch spec compliance reviewer]
+Spec reviewer: ✅ Spec compliant - all requirements met, nothing extra
+
+[Get git SHAs, dispatch code quality reviewer]
+Code reviewer: Strengths: Good test coverage, clean. Issues: None. Approved.
+
+[Mark Task 1 complete]
+
+Task 2: Recovery modes
+
+[Get Task 2 text and context (already extracted)]
+[Dispatch implementation subagent with full task text + context]
+
+Implementer: [No questions, proceeds]
+Implementer:
+  - Added verify/repair modes
+  - 8/8 tests passing
+  - Self-review: All good
+  - Committed
+
+[Dispatch spec compliance reviewer]
+Spec reviewer: ❌ Issues:
+  - Missing: Progress reporting (spec says "report every 100 items")
+  - Extra: Added --json flag (not requested)
+
+[Implementer fixes issues]
+Implementer: Removed --json flag, added progress reporting
+
+[Spec reviewer reviews again]
+Spec reviewer: ✅ Spec compliant now
+
+[Dispatch code quality reviewer]
+Code reviewer: Strengths: Solid. Issues (Important): Magic number (100)
+
+[Implementer fixes]
+Implementer: Extracted PROGRESS_INTERVAL constant
+
+[Code reviewer reviews again]
+Code reviewer: ✅ Approved
+
+[Mark Task 2 complete]
+
+...
+
+[After all tasks]
+[Dispatch final code-reviewer]
+Final reviewer: All requirements met, ready to merge
+
+Done!
+```
+
+## Advantages
+
+**vs. Manual execution:**
+- Subagents follow TDD naturally
+- Fresh context per task (no confusion)
+- Parallel-safe (subagents don't interfere)
+- Subagent can ask questions (before AND during work)
+
+**vs. Executing Plans:**
+- Same session (no handoff)
+- Continuous progress (no waiting)
+- Review checkpoints automatic
+
+**Efficiency gains:**
+- No file reading overhead (controller provides full text)
+- Controller curates exactly what context is needed
+- Subagent gets complete information upfront
+- Questions surfaced before work begins (not after)
+
+**Quality gates:**
+- Self-review catches issues before handoff
+- Two-stage review: spec compliance, then code quality
+- Review loops ensure fixes actually work
+- Spec compliance prevents over/under-building
+- Code quality ensures implementation is well-built
+
+**Cost:**
+- More subagent invocations (implementer + 2 reviewers per task)
+- Controller does more prep work (extracting all tasks upfront)
+- Review loops add iterations
+- But catches issues early (cheaper than debugging later)
+
+## Red Flags
+
+**Never:**
+- Start implementation on main/master branch without explicit user consent
+- Skip reviews (spec compliance OR code quality)
+- Proceed with unfixed issues
+- Dispatch multiple implementation subagents in parallel (conflicts)
+- Make subagent read plan file (provide full text instead)
+- Skip scene-setting context (subagent needs to understand where task fits)
+- Ignore subagent questions (answer before letting them proceed)
+- Accept "close enough" on spec compliance (spec reviewer found issues = not done)
+- Skip review loops (reviewer found issues = implementer fixes = review again)
+- Let implementer self-review replace actual review (both are needed)
+- **Start code quality review before spec compliance is ✅** (wrong order)
+- Move to next task while either review has open issues
+
+**If subagent asks questions:**
+- Answer clearly and completely
+- Provide additional context if needed
+- Don't rush them into implementation
+
+**If reviewer finds issues:**
+- Implementer (same subagent) fixes them
+- Reviewer reviews again
+- Repeat until approved
+- Don't skip the re-review
+
+**If subagent fails task:**
+- Dispatch fix subagent with specific instructions
+- Don't try to fix manually (context pollution)
+
+## Integration
+
+**Required workflow skills:**
+- **superpowers:using-git-worktrees** - REQUIRED: Set up isolated workspace before starting
+- **superpowers:writing-plans** - Creates the plan this skill executes
+- **superpowers:requesting-code-review** - Code review template for reviewer subagents
+- **superpowers:finishing-a-development-branch** - Complete development after all tasks
+
+**Subagents should use:**
+- **superpowers:test-driven-development** - Subagents follow TDD for each task
+
+**Alternative workflow:**
+- **superpowers:executing-plans** - Use for parallel session instead of same-session execution
+
+---
+
+please help me with 0, i can not find it in the ream settings
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me chronologically analyze this conversation to create a thorough summary.
+
+1. The conversation started with context recovery - the user was working on the share-platform (shaRe cooperative governance system) and had been implementing various features.
+
+2. The plan file at share-platform/docs/plans/2026-03-01-profile-picture-minio.md was already written before this session started (from prior context).
+
+3. The user chose option 1 (Subagent-Driven Development) to execute the profile picture migration plan.
+
+4. I invoked the subagent-driven-development skill and read the plan.
+
+5. Task 0: Verified `picture` JWT claim mapping in Keycloak - found it was already correctly configured in the `profile` scope, assigned to `prod-sharemember-app` client, with `access.token.claim: true`.
+
+6. Task 1: Replace GCS with MinIO in sharemembers plugin
+- Implementer rewrote Storage.kt using MinIO Java SDK
+- Spec reviewer: ✅ compliant
+- Code quality reviewer: found Critical issue (deleteProfilePicture silently swallows all errors) and Important issues (trailing slash in URL, ensureBucket race)
+- Fix: added java.util.logging.Logger + .onFailure handler, .trimEnd('/') on MINIO_PUBLIC_URL
+- Re-review: ✅ approved
+
+7. Tasks 2+3: Server deployment
+- Updated docker-compose.prod.yml locally to replace KEYCLOAK_SHAREMEMBER_* vars with MINIO_* vars
+- Committed to u2g-infrastructure-ts
+- Server-side sed mangled the compose file → fixed by scp'ing correct file from local repo
+- Added METABASE_BASIC_AUTH_USERS to .env.prod (missing var preventing deployment)
+- Created share-profile-pictures bucket in MinIO with public read policy
+- Built and deployed Keycloak image
+- Verified endpoint reachable (500 from empty POST = correct, no MinIO init errors)
+
+8. Task 4: Add `picture` to AuthUser + ProfilePage avatar
+- Added picture: string | null to AuthUser interface and mapUser()
+- Updated ProfilePage.tsx to show img when user.picture is set
+- Added .avatar-img CSS
+- Spec: ✅ compliant
+- Code quality: flagged unplanned changes (logout/register) but these were pre-existing from prior session, not new regressions. Approved.
+
+9. Task 5: Port ProfilePictureEditor
+- Created ProfilePictureEditor.tsx - canvas-based circular crop editor
+- First quality review found Critical issues: race condition between draw and blob-export effects, no touch support
+- Also: minScale applied once instead of twice, unused `src` field, handleZoom not in useCallback
+- Fix commit 03db105: merged toBlob into draw effect, added touch handlers with passive:false, double 0.8 factor, removed src, wrapped handleZoom in useCallback, moved size to EDITOR_SIZE module constant
+- Re-spec: ✅ compliant
+- Re-quality: approved with note that Fix 7 (alt attribute) references i18n keys not yet added - these will be added in Task 6
+
+10. Task 6: Add ProfilePictureSection to SettingsPage - CURRENTLY IN PROGRESS
+- Implementer completed the task: commit 820b9ad
+- Added 9 i18n keys to en.json and de.json
+- Added avatar-editor CSS classes + .cta-button--secondary styles to App.css
+- Added ProfilePictureSection component to SettingsPage.tsx
+- ProfilePictureSection above PersonalInfoSection in SettingsPage
+- Uses VITE_SSO_URL and VITE_KEYCLOAK_REALM (confirmed correct env var names)
+- 0 TypeScript errors
+- Awaiting spec compliance review
+
+The next step is to dispatch spec compliance reviewer for Task 6, then code quality reviewer.
+
+Summary:
+1. Primary Request and Intent:
+   The user selected option 1 (Subagent-Driven Development) to execute the profile picture migration plan at `share-platform/docs/plans/2026-03-01-profile-picture-minio.md`. The feature migrates profile picture storage from Google Cloud Storage to MinIO (self-hosted S3-compatible) in the Keycloak plugin, and adds a profile picture upload UI to the sharemember-app Settings page. The plan has 8 tasks: verify JWT claim mapping, replace GCS with MinIO in Storage.kt, configure server env vars + deploy Keycloak, add `picture` to AuthUser + ProfilePage avatar, create ProfilePictureEditor canvas component, add ProfilePictureSection to SettingsPage.
+
+2. Key Technical Concepts:
+   - **Subagent-Driven Development**: Fresh subagent per task + two-stage review (spec compliance first, then code quality)
+   - **MinIO Java SDK** (`io.minio:minio:8.5.17`): replaces `google-cloud-storage` in the Keycloak plugin's `build.gradle.kts`
+   - **Keycloak `picture` JWT claim**: Already configured in the built-in OIDC `profile` scope with `access.token.claim: true` — no new mapping needed
+   - **Storage.kt Kotlin object**: Singleton with lazy MinioClient initialized from env vars; `uploadProfilePicture` and `deleteProfilePicture` public API unchanged
+   - **Canvas circular crop editor**: Uses `ctx.arc()` + `ctx.clip()` for circular masking; `canvas.toBlob()` merged into draw effect to avoid race condition
+   - **Touch support**: `touchmove` registered with `{ passive: false }` on document so `e.preventDefault()` can suppress page scroll during drag
+   - **`java.util.logging.Logger` (JUL)**: Used in Storage.kt to log deletion failures — correct choice for Keycloak plugin environment
+   - **GDPR-sensitive deletion path**: `deleteProfilePicture` must log (not swallow) errors on anonymization path
+   - **Module-level `EDITOR_SIZE = 200`**: Canvas size constant moved outside component to avoid stale closure in `useEffect` dependency arrays
+   - **minScale double factor**: `Math.max(EDITOR_SIZE / w, EDITOR_SIZE / h) * 0.8 * 0.8` (matching KC theme original) gives more zoom-out room
+   - **KC profile_pictures endpoint**: `POST /realms/{realm}/profile_pictures` accepts multipart with `file` field + Bearer token
+   - **VITE_SSO_URL + VITE_KEYCLOAK_REALM**: Correct env var names confirmed in sharemember-app
+
+3. Files and Code Sections:
+
+   - **`/home/tomblume/IdeaProjects/sharemembers/plugins/build.gradle.kts`**
+     - Removed `com.google.cloud:libraries-bom` + `google-cloud-storage`
+     - Added `io.minio:minio:8.5.17` + `com.squareup.okhttp3:okhttp:4.12.0`
+
+   - **`/home/tomblume/IdeaProjects/sharemembers/plugins/src/main/kotlin/com/up2go/sharemembers/common/Storage.kt`**
+     - Full rewrite: lazy `MinioClient`, `uploadProfilePicture`, `deleteProfilePicture` with `.onFailure` logging, `ensureBucket`, `buildProfilePictureUrl` with `trimEnd('/')`
+     - Commits: `0f067a42` (initial rewrite), `0d967cb7` (quality fixes: logger + URL trim)
+     ```kotlin
+     private val LOG: java.util.logging.Logger =
+         java.util.logging.Logger.getLogger(Storage::class.java.name)
+     
+     fun deleteProfilePicture(userId: String) {
+         runCatching {
+             minioClient.removeObject(
+                 RemoveObjectArgs.builder()
+                     .bucket(profileBucketName)
+                     .`object`("$userId/profile.png")
+                     .build()
+             )
+         }.onFailure { ex ->
+             LOG.severe("Failed to delete profile picture for user $userId: ${ex.message}")
+         }
+     }
+     
+     private val minioPublicUrl: String = (System.getenv("MINIO_PUBLIC_URL")
+         ?: throw IllegalStateException("MINIO_PUBLIC_URL is not set"))
+         .trimEnd('/')
+     ```
+
+   - **`/home/tomblume/IdeaProjects/u2g-infrastructure-ts/docker-compose.prod.yml`**
+     - Replaced `KEYCLOAK_SHAREMEMBER_PROFILES_BUCKET` + `KEYCLOAK_SHAREMEMBER_CONTENT_BASE_URL` with MinIO env vars in Keycloak service definition:
+     ```yaml
+     MINIO_ENDPOINT: http://minio-prod:9000
+     MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+     MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+     MINIO_PROFILE_BUCKET: share-profile-pictures
+     MINIO_PUBLIC_URL: https://minio.up2go.com
+     ```
+     - Commit: `5c2d13d`
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/src/auth/AuthContext.tsx`**
+     - Added `picture: string | null` to `AuthUser` interface (line 20)
+     - Added `picture: (profile.picture as string) ?? null` to `mapUser()` (line 42)
+     - Commit: `e87c82c`
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/src/pages/ProfilePage.tsx`**
+     - Avatar updated to show `<img>` when `user?.picture` is truthy, initials fallback otherwise
+     - CSS class used is `.avatar` (not `.profile-avatar` as plan described)
+     ```tsx
+     <div className="avatar">
+       {user?.picture ? (
+         <img src={user.picture} alt={user.name} className="avatar-img" />
+       ) : (
+         initials
+       )}
+     </div>
+     ```
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/src/App.css`**
+     - Added `.avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }`
+     - Added `.avatar-editor`, `.avatar-editor-controls`, `.avatar-current`, `.avatar-current-img`, `.avatar-current-label`, `.avatar-zoom-slider`, `.avatar-editor-buttons`, `.cta-button--secondary` CSS rules (Task 6)
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/src/components/ProfilePictureEditor.tsx`** (NEW)
+     - Canvas-based circular crop editor, no external UI library
+     - Props: `currentPicture: string | null`, `onUpload: (blob: Blob) => Promise<void>`, `isUploading: boolean`
+     - Key fixes applied: `toBlob()` merged into draw effect (race condition fix), touch handlers added with `passive: false`, minScale = `* 0.8 * 0.8`, removed `src` from ImageState, `handleZoom` in `useCallback`, `EDITOR_SIZE = 200` at module scope
+     - Commits: `860fd5d` (initial), `03db105` (quality fixes)
+     ```typescript
+     const EDITOR_SIZE = 200
+     
+     // Draw effect with toBlob merged at end (race condition fix)
+     useEffect(() => {
+       // ... draw logic ...
+       ctx.restore()
+       // Export blob after drawing — always captures the freshly painted frame
+       canvas.toBlob((b) => {
+         if (b) setBlob(b)
+       }, 'image/png')
+     }, [imageState, scale, position])
+     
+     // Touch support
+     document.addEventListener('touchmove', handleTouchMove, { passive: false })
+     document.addEventListener('touchend', handleTouchEnd)
+     ```
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/src/pages/SettingsPage.tsx`** (Task 6 - just completed)
+     - Added `import { ProfilePictureEditor } from '../components/ProfilePictureEditor'`
+     - Added `ProfilePictureSection` component (POSTs to `${ssoUrl}/realms/${realm}/profile_pictures`)
+     - Renders `ProfilePictureSection` above `PersonalInfoSection` in `SettingsPage`
+     - Commit: `820b9ad`
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/src/i18n/locales/en.json`** (Task 6)
+     - Added 9 keys to `settings` block: `picture_title`, `picture_current`, `picture_select`, `picture_change`, `picture_upload`, `picture_uploading`, `picture_success`, `picture_error`, `picture_size_error`
+
+   - **`/home/tomblume/IdeaProjects/sharemember-app/src/i18n/locales/de.json`** (Task 6)
+     - Same 9 keys in German
+
+4. Errors and Fixes:
+
+   - **`deleteProfilePicture` silently swallowed ALL errors** (Critical, Task 1):
+     - Added `java.util.logging.Logger` and `.onFailure { ex -> LOG.severe(...) }` handler
+     - GDPR-sensitive deletion path must never fail silently
+
+   - **Double slash in profile picture URL** (Important, Task 1):
+     - `buildProfilePictureUrl` used string interpolation; if `MINIO_PUBLIC_URL` had trailing slash → `https://minio.up2go.com//share-profile-pictures/...`
+     - Fixed with `.trimEnd('/')` on `minioPublicUrl` at read time
+
+   - **Docker build failed: no space left on device** (Tasks 2+3):
+     - Ran `docker system prune -f` → freed 15.92 GB
+     - Rebuild succeeded
+
+   - **Server-side sed mangled docker-compose.prod.yml** (Tasks 2+3):
+     - Sed created duplicate MINIO_* entries (lines 244-249 had duplicates)
+     - Fixed by `scp`-ing the correct local file to the server: `scp ... docker-compose.prod.yml root@51.15.211.196:/opt/share-platform/infra/`
+
+   - **`METABASE_BASIC_AUTH_USERS` missing from server .env.prod** (Tasks 2+3):
+     - New compose file required this var (added in a recent commit `04b2d50` for Traefik basic auth)
+     - Generated htpasswd entry using Python's `crypt` module and appended to `.env.prod`
+
+   - **Race condition: blob export before canvas draw** (Critical, Task 5):
+     - Two separate `useEffect` hooks with same deps could run in any order; `toBlob()` captured stale canvas
+     - Fixed by merging `canvas.toBlob()` to end of draw effect, removing the separate blob-export effect
+
+   - **No touch support** (Critical, Task 5):
+     - Mobile users could not drag or zoom
+     - Added `handleTouchStart`, `handleTouchMove`, `handleTouchEnd` handlers; `touchmove` registered with `{ passive: false }`
+
+   - **minScale factor applied once instead of twice** (Important, Task 5):
+     - Original KC theme applied `* 0.8 * 0.8 = 0.64x`; port only applied once
+     - Fixed to `Math.max(EDITOR_SIZE / w, EDITOR_SIZE / h) * 0.8 * 0.8`
+
+   - **`src` field dead state in ImageState** (Important, Task 5):
+     - Stored full base64 data URL in state but never read; potentially MBs of memory
+     - Removed from interface and `setImageState()` call
+
+   - **Fix 7 (alt attribute) referenced missing i18n keys** (Important, Task 5 quality re-review):
+     - `alt={t('settings.picture_current')}` added before locale keys existed
+     - Resolved in Task 6 by adding all 9 `settings.picture_*` keys to both locale files
+
+5. Problem Solving:
+
+   - **Keycloak `picture` JWT claim**: Verified via `kcadm.sh` that the standard OIDC `profile` scope already contains the `picture` mapper with `access.token.claim: true` — no new configuration needed.
+   - **Old GCS env vars not in .env.prod**: `KEYCLOAK_SHAREMEMBER_CONTENT_BASE_URL` and `KEYCLOAK_SHAREMEMBER_PROFILES_BUCKET` were already absent from `.env.prod` but still hardcoded in compose file — resolved by updating `docker-compose.prod.yml`.
+   - **`logout` change flagged as regression in Task 4 quality review**: Code quality reviewer flagged `logout` changed from `signoutRedirect()` to `removeUser() + redirect`. Clarified this was intentional pre-existing work from prior session — sharemember-app portal keeps Keycloak sessions alive so users stay logged in to their community apps after leaving the portal.
+
+6. All User Messages:
+   - "share-platform-wia" (selected the beads issue to work on)
+   - "1" (chose Subagent-Driven Development execution)
+   - "please help me with 0, i can not find it in the realm settings" (needed help finding the picture JWT claim in Keycloak admin)
+   - (empty continue responses between subagent dispatches — user was approving to proceed after each agent completed)
+   - "what can we do?" (at session start, asking about available work)
+   - "2" (earlier in session, chose Parallel Session for community directory plan)
+
+7. Pending Tasks:
+   - **Task 6 spec compliance review**: Just completed implementation (commit `820b9ad`), spec compliance reviewer has not yet been dispatched
+   - **Task 6 code quality review**: Pending spec compliance passing
+   - **Final code review**: After all tasks complete, dispatch final code reviewer for entire implementation
+   - **Deploy sharemember-app**: Task 7 in plan — build + deploy updated sharemember-app
+   - **End-to-end verification**: Smoke test full upload flow, close beads issue `share-platform-wia`
+   - **Community directory plan execution** (`share-platform/docs/plans/2026-03-01-community-directory.md`): User chose parallel session (option 2), instructions given to open new session
+
+8. Current Work:
+   Task 6 (Add ProfilePictureSection to SettingsPage) implementation was just completed by subagent with commit `820b9ad`. The implementer reported:
+   - `ProfilePictureSection` added to `src/pages/SettingsPage.tsx` above `PersonalInfoSection`
+   - 9 i18n keys added to both `en.json` and `de.json`
+   - CSS classes added to `App.css`
+   - `handleUpload` POSTs to `${ssoUrl}/realms/${realm}/profile_pictures` using `VITE_SSO_URL` and `VITE_KEYCLOAK_REALM`
+   - 0 TypeScript errors
+
+   The next step per subagent-driven-development skill is to dispatch the spec compliance reviewer for Task 6, then code quality reviewer.
+
+9. Optional Next Step:
+   Dispatch spec compliance reviewer for Task 6, verifying that:
+   - `ProfilePictureSection` renders above `PersonalInfoSection` in `SettingsPage`
+   - 9 i18n keys present in both locale files
+   - All `.avatar-editor*` CSS classes added to `App.css`
+   - `.cta-button--secondary` styles added
+   - `handleUpload` POSTs to correct KC endpoint
+   - `ProfilePictureEditor` import present
+
+   Directly continuing from: "Task 6 implementation just completed, commit `820b9ad` — `feat(settings): add profile picture upload section to SettingsPage`"
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/tomblume/.REDACTED.jsonl
+Please continue the conversation from where we left off without asking the user any further questions. Continue with the last task that you were asked to work on.
+
+---
+
+cannot save profile picture: https://sso.wurzelwerk.up2go.com/realms/prod-sharemembers/profile_pictures' from origin 'https://share.community' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/skills/devops
+
+# shaRe Platform DevOps
+
+Manage the shaRe platform on the Scaleway production server.
+
+## Server
+
+- **IP**: `51.15.211.196`
+- **SSH**: `ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196`
+- **Infra dir on server**: `/opt/share-platform/infra`
+- **Compose files**: `docker-compose.prod.yml`, `docker-compose.dev.yml`
+- **Env files**: `.env.prod`, `.env.dev`
+
+## Service Map
+
+| Service | Image | Compose service name | Source repo |
+|---------|-------|---------------------|-------------|
+| operator | `ghcr.io/share-community/operator:latest` | `operator-{env}` | `../operator-ts/` |
+| share-ui | `ghcr.io/share-community/share-ui:latest` | `share-ui-{env}` | `../share-ui/` (Dockerfile in `../u2g-infrastructure-ts/services/share-ui/Dockerfile`) |
+| keycloak | `ghcr.io/share-community/sharemembers:latest` | `keycloak-{env}` | `../sharemembers/` |
+| neo4j | (standard image) | `neo4j-{env}` | — |
+| redis | (standard image) | `redis-{env}` | — |
+| postgres | `postgres:16-alpine` | `postgres-{env}` | — |
+| odoo | `ghcr.io/share-community/odoo:latest` | `odoo-{env}` | `../u2g-infrastructure-ts/services/odoo/` |
+| onlyoffice | `onlyoffice/documentserver:latest` | `onlyoffice-{env}` | — |
+| drawio | `jgraph/drawio:latest` | `drawio-{env}` | — |
+| minio | `minio/minio:latest` | `minio-{env}` | — |
+| metabase | `metabase/metabase:latest` | `metabase-{env}` | — |
+| traefik | — | `coolify-proxy` (shared) | — |
+
+Container naming: `share-{env}-{service}-{env}-1` (e.g. `share-prod-operator-prod-1`)
+
+### Postgres — shared instance, multiple databases
+
+| Database | Owner | Used by |
+|----------|-------|---------|
+| `keycloak` | keycloak | Keycloak auth |
+| `odoodb` | odoo | Odoo 18 |
+| `sharedb` | share | operator-ts analytics (future) |
+| `metabase` | metabase | Metabase analytics |
+
+### Odoo — self-hosted Odoo 18 Community
+
+- **URL**: `https://odoo.wurzelwerk.up2go.com`
+- **DB**: `odoodb` on shared `postgres-prod`
+- **Admin user**: `admin` (password in `.env.prod` as `ODOO_ADMIN_PASSWD`)
+- **Service user** (used by operator-ts): `operator@share.local` (password = `ODOO_API_KEY` in `.env.prod`)
+- **Installed modules**: `mail` (includes discuss.channel), `calendar`, `project`, `account`
+- **Healthcheck**: `https://odoo.wurzelwerk.up2go.com/web/health` (expect `{"status":"pass"}`)
+
+### Metabase — analytics & reporting
+
+- **URL**: `https://metabase.up2go.com` (platform-admin only, basic auth protected)
+- **DB**: `metabase` on shared `postgres-prod`
+- **Data sources**: connect to `sharedb` (postgresql://postgres-prod:5432/sharedb) for analytics
+- **Healthcheck**: `https://metabase.up2go.com/api/health` (expect 200)
+
+## Commands
+
+Parse `deploy keycloak` to determine the action. Default env is `prod`.
+
+### `deploy <service> [env]`
+
+Build, transfer, and restart a service:
+
+1. **Build** the Docker image from the source repo
+2. **Transfer** via `docker save | ssh ... docker load`
+3. **Restart** via `docker compose up -d <service-env>`
+4. **ALWAYS restart Traefik** after any container recreate: `docker restart coolify-proxy`
+5. **Wait 5 seconds**, then verify the service started by checking logs
+6. **Verify all routes** respond (200/302)
+
+Build commands per service:
+```bash
+# operator
+cd /home/tomblume/IdeaProjects/operator-ts
+docker build -t ghcr.io/share-community/operator:latest .
+
+# share-ui
+cd /home/tomblume/IdeaProjects/share-ui
+docker build -t ghcr.io/share-community/share-ui:latest \
+  -f /home/tomblume/IdeaProjects/u2g-infrastructure-ts/services/share-ui/Dockerfile .
+
+# keycloak
+cd /home/tomblume/IdeaProjects/sharemembers
+docker build -t ghcr.io/share-community/sharemembers:latest .
+
+# odoo (custom image with OCA extra-addons support)
+cd /home/tomblume/IdeaProjects/u2g-infrastructure-ts/services/odoo
+docker build -t ghcr.io/share-community/odoo:latest .
+```
+
+Restart on server:
+```bash
+ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196 \
+  "cd /opt/share-platform/infra && \
+   docker compose -f docker-compose.{env}.yml -p share-{env} --env-file .env.{env} \
+   up -d {service-name}"
+```
+
+### `status [env]`
+
+Check all container status and route health:
+```bash
+SSH="ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196"
+$SSH "docker ps --format 'table {{.Names}}\t{{.Status}}' | grep share-{env}"
+```
+
+Then check routes:
+- `https://wurzelwerk.up2go.com` (share-ui, expect 200)
+- `https://sso.wurzelwerk.up2go.com` (keycloak, expect 302)
+- `https://operator.wurzelwerk.up2go.com/health` (operator direct, expect 200)
+- `https://wurzelwerk.up2go.com/api/health` (operator via api, expect 200)
+- `https://odoo.wurzelwerk.up2go.com/web/health` (odoo, expect 200 with `{"status":"pass"}`)
+- `https://metabase.up2go.com/api/health` (metabase, expect 200 — basic auth required)
+
+Dev routes use `share.dev.up2go.com`, `sso.dev.sharemembers.net`, `operator.dev.up2go.com`.
+
+### `restart <service|traefik> [env]`
+
+Restart a specific service or Traefik:
+- **traefik**: `docker restart coolify-proxy` (fixes 504/CORS issues)
+- **other**: `docker compose ... restart {service-env}`
+
+### `logs <service> [env] [lines]`
+
+Show recent logs (default 30 lines):
+```bash
+ssh ... "docker logs share-{env}-{service}-{env}-1 --tail {lines}"
+```
+
+### `neo4j <cypher> [env]`
+
+Run a Cypher query against Neo4j:
+```bash
+ssh ... 'docker exec share-{env}-neo4j-{env}-1 cypher-shell \
+  -u neo4j \
+  -p $(docker inspect share-{env}-neo4j-{env}-1 \
+    --format "{{range .Config.Env}}{{println .}}{{end}}" | grep NEO4J_AUTH | cut -d/ -f2) \
+  "<cypher query>"'
+```
+
+### `diagnose`
+
+Run full diagnostic:
+1. Check all container status
+2. Check all route health codes
+3. Check for errors in operator logs (last 50 lines)
+4. Check memory usage on server
+5. Report findings and suggest fixes
+
+## Known Issues
+
+- **504 Gateway Timeout after deploy**: Traefik loses routing to recreated containers. Fix: `docker restart coolify-proxy`
+- **CORS errors from sso.wurzelwerk...**: Same cause as above — Keycloak is unreachable via Traefik
+- **Keycloak startup takes ~4 minutes**: Wait for `healthy` status before testing auth flows
+
+## Important
+
+- Always restart Traefik (`coolify-proxy`) after deploying any service
+- After deploy, verify ALL routes (not just the deployed service)
+- Never expose Neo4j credentials in output — use the `docker inspect` pattern
+- Default to `prod` environment unless explicitly told otherwise
+
+---
+
+i get 🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+settings:1 Access to fetch at 'https://sso.wurzelwerk.up2go.com/realms/prod-sharemembers/profile_pictures' from origin 'https://share.community' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.Understand this error
+index-CLWNC3oY.js:4  POST https://sso.wurzelwerk.up2go.com/realms/prod-sharemembers/profile_pictures net::ERR_FAILED 500 (Internal Server Error)
+m @ index-CLWNC3oY.js:4
+onClick @ index-CLWNC3oY.js:4
+Pa @ react-DdXWdMVC.js:5
+za @ react-DdXWdMVC.js:5
+Ta @ react-DdXWdMVC.js:5
+Do @ react-DdXWdMVC.js:5
+Oo @ react-DdXWdMVC.js:5
+(anonymous) @ react-DdXWdMVC.js:5
+ai @ react-DdXWdMVC.js:8
+Vi @ react-DdXWdMVC.js:5
+au @ react-DdXWdMVC.js:5
+Ql @ react-DdXWdMVC.js:5
+Qa @ react-DdXWdMVC.js:5Understand this error
+
+---
+
+profile picture is not visible after saving . Request URL
+https://sso.wurzelwerk.up2go.com/realms/prod-sharemembers/profile_pictures
+Request Method
+POST
+Status Code
+204 No Content
+Remote Address
+51.15.211.196:443
+
+---
+
+still the same issue
+
+---
+
+i see q request : Request URL
+https://minio.up2go.com/share-profile-pictures/29ce29c8-bf39-4495-8353-e67f4cdba382/profile.png?v=55c8df16-aec4-428d-b245-0a1a63675834
+Request Method
+GET
+Status Code
+200 OK
+Referrer Policy
+strict-origin-when-cross-origin, but picture is not shown
+
+---
+
+the frontend still uses wrong url!
+
+---
+
+I tried in an incognito session but still the old url
+
+---
+
+noch eine kleinigkeit, wie schaffen wir es das Bild direkt nach dem upload und save zu aktualisieren, aktuell muss ich mich nochmal ausloggen und einloggen. nichts implementieren erstmal nachdenken
+
+---
+
+dann option A

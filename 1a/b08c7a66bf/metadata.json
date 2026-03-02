@@ -5,7 +5,23 @@
   "branch": "main",
   "checkpoints_count": 1,
   "files_touched": [
-    "src/App.css"
+    "docs/plans/2026-03-01-settings-page.md",
+    "src/App.css",
+    "src/auth/AuthContext.tsx",
+    "src/auth/auth.config.ts",
+    "src/components/AppShell.tsx",
+    "src/components/LanguageSwitcher.tsx",
+    "src/i18n/config.ts",
+    "src/i18n/locales/de.json",
+    "src/i18n/locales/en.json",
+    "src/main.tsx",
+    "src/pages/CallbackPage.tsx",
+    "src/pages/HubPage.tsx",
+    "src/pages/JoinPage.tsx",
+    "src/pages/LandingPage.tsx",
+    "src/pages/ProfilePage.tsx",
+    "src/pages/SettingsPage.tsx",
+    "src/pages/VerifyPage.tsx"
   ],
   "sessions": [
     {
@@ -17,10 +33,10 @@
     }
   ],
   "token_usage": {
-    "input_tokens": 13,
-    "cache_creation_tokens": 126257,
-    "cache_read_tokens": 1156020,
-    "output_tokens": 3827,
-    "api_call_count": 9
+    "input_tokens": 411,
+    "cache_creation_tokens": 846144,
+    "cache_read_tokens": 26275583,
+    "output_tokens": 128020,
+    "api_call_count": 241
   }
 }
