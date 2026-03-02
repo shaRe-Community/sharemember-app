@@ -1,4 +1,4 @@
-import { UserManager, UserManagerSettings } from 'oidc-client-ts'
+import { UserManager, UserManagerSettings, WebStorageStateStore } from 'oidc-client-ts'
 
 const ssoUrl = import.meta.env.VITE_SSO_URL
 const realm = import.meta.env.VITE_KEYCLOAK_REALM
@@ -16,6 +16,7 @@ function buildSettings(authorizationEndpoint?: string): UserManagerSettings {
     scope: 'openid profile email',
     automaticSilentRenew: true,
     filterProtocolClaims: false,
+    userStore: new WebStorageStateStore({ store: localStorage }),
     ...(authorizationEndpoint
       ? {
           metadata: {
