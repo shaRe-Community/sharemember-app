@@ -1,0 +1,1185 @@
+bd prime
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/beads-marketplace/beads/0.46.0/skills/beads
+
+# Beads - Persistent Task Memory for AI Agents
+
+Graph-based issue tracker that survives conversation compaction. Provides persistent memory for multi-session work with complex dependencies.
+
+## bd vs TodoWrite
+
+| bd (persistent) | TodoWrite (ephemeral) |
+|-----------------|----------------------|
+| Multi-session work | Single-session tasks |
+| Complex dependencies | Linear execution |
+| Survives compaction | Conversation-scoped |
+| Git-backed, team sync | Local to session |
+
+**Decision test**: "Will I need this context in 2 weeks?" → YES = bd
+
+**When to use bd**:
+- Work spans multiple sessions or days
+- Tasks have dependencies or blockers
+- Need to survive conversation compaction
+- Exploratory/research work with fuzzy boundaries
+- Collaboration with team (git sync)
+
+**When to use TodoWrite**:
+- Single-session linear tasks
+- Simple checklist for immediate work
+- All context is in current conversation
+- Will complete within current session
+
+## Prerequisites
+
+```bash
+bd --version  # Requires v0.34.0+
+```
+
+- **bd CLI** installed and in PATH
+- **Git repository** (bd requires git for sync)
+- **Initialization**: `bd init` run once (humans do this, not agents)
+
+## CLI Reference
+
+**Run `bd prime`** for AI-optimized workflow context (auto-loaded by hooks).
+**Run `bd <command> --help`** for specific command usage.
+
+Essential commands: `bd ready`, `bd create`, `bd show`, `bd update`, `bd close`, `bd sync`
+
+## Session Protocol
+
+1. `bd ready` — Find unblocked work
+2. `bd show <id>` — Get full context
+3. `bd update <id> --status in_progress` — Start work
+4. Add notes as you work (critical for compaction survival)
+5. `bd close <id> --reason "..."` — Complete task
+6. `bd sync` — Persist to git (always run at session end)
+
+## Advanced Features
+
+| Feature | CLI | Resource |
+|---------|-----|----------|
+| Molecules (templates) | `bd mol --help` | [MOLECULES.md](resources/MOLECULES.md) |
+| Chemistry (pour/wisp) | `bd pour`, `bd wisp` | [CHEMISTRY_PATTERNS.md](resources/CHEMISTRY_PATTERNS.md) |
+| Agent beads | `bd agent --help` | [AGENTS.md](resources/AGENTS.md) |
+| Async gates | `bd gate --help` | [ASYNC_GATES.md](resources/ASYNC_GATES.md) |
+| Worktrees | `bd worktree --help` | [WORKTREES.md](resources/WORKTREES.md) |
+
+## Resources
+
+| Resource | Content |
+|----------|---------|
+| [BOUNDARIES.md](resources/BOUNDARIES.md) | bd vs TodoWrite detailed comparison |
+| [CLI_REFERENCE.md](resources/CLI_REFERENCE.md) | Complete command syntax |
+| [DEPENDENCIES.md](resources/DEPENDENCIES.md) | Dependency system deep dive |
+| [INTEGRATION_PATTERNS.md](resources/INTEGRATION_PATTERNS.md) | TodoWrite and tool integration |
+| [ISSUE_CREATION.md](resources/ISSUE_CREATION.md) | When and how to create issues |
+| [MOLECULES.md](resources/MOLECULES.md) | Proto definitions, component labels |
+| [PATTERNS.md](resources/PATTERNS.md) | Common usage patterns |
+| [RESUMABILITY.md](resources/RESUMABILITY.md) | Compaction survival guide |
+| [STATIC_DATA.md](resources/STATIC_DATA.md) | Database schema reference |
+| [TROUBLESHOOTING.md](resources/TROUBLESHOOTING.md) | Error handling and fixes |
+| [WORKFLOWS.md](resources/WORKFLOWS.md) | Step-by-step workflow patterns |
+| [AGENTS.md](resources/AGENTS.md) | Agent bead tracking (v0.40+) |
+| [ASYNC_GATES.md](resources/ASYNC_GATES.md) | Human-in-the-loop gates |
+| [CHEMISTRY_PATTERNS.md](resources/CHEMISTRY_PATTERNS.md) | Mol vs Wisp decision tree |
+| [WORKTREES.md](resources/WORKTREES.md) | Parallel development patterns |
+
+## Full Documentation
+
+- **bd prime**: AI-optimized workflow context
+- **GitHub**: [github.com/steveyegge/beads](https://github.com/steveyegge/beads)
+
+---
+
+look at it
+
+---
+
+no, we added a feature for QR code INDENTIFCATION in sharememeber.app
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/beads-marketplace/beads/0.46.0/skills/beads
+
+# Beads - Persistent Task Memory for AI Agents
+
+Graph-based issue tracker that survives conversation compaction. Provides persistent memory for multi-session work with complex dependencies.
+
+## bd vs TodoWrite
+
+| bd (persistent) | TodoWrite (ephemeral) |
+|-----------------|----------------------|
+| Multi-session work | Single-session tasks |
+| Complex dependencies | Linear execution |
+| Survives compaction | Conversation-scoped |
+| Git-backed, team sync | Local to session |
+
+**Decision test**: "Will I need this context in 2 weeks?" → YES = bd
+
+**When to use bd**:
+- Work spans multiple sessions or days
+- Tasks have dependencies or blockers
+- Need to survive conversation compaction
+- Exploratory/research work with fuzzy boundaries
+- Collaboration with team (git sync)
+
+**When to use TodoWrite**:
+- Single-session linear tasks
+- Simple checklist for immediate work
+- All context is in current conversation
+- Will complete within current session
+
+## Prerequisites
+
+```bash
+bd --version  # Requires v0.34.0+
+```
+
+- **bd CLI** installed and in PATH
+- **Git repository** (bd requires git for sync)
+- **Initialization**: `bd init` run once (humans do this, not agents)
+
+## CLI Reference
+
+**Run `bd prime`** for AI-optimized workflow context (auto-loaded by hooks).
+**Run `bd <command> --help`** for specific command usage.
+
+Essential commands: `bd ready`, `bd create`, `bd show`, `bd update`, `bd close`, `bd sync`
+
+## Session Protocol
+
+1. `bd ready` — Find unblocked work
+2. `bd show <id>` — Get full context
+3. `bd update <id> --status in_progress` — Start work
+4. Add notes as you work (critical for compaction survival)
+5. `bd close <id> --reason "..."` — Complete task
+6. `bd sync` — Persist to git (always run at session end)
+
+## Advanced Features
+
+| Feature | CLI | Resource |
+|---------|-----|----------|
+| Molecules (templates) | `bd mol --help` | [MOLECULES.md](resources/MOLECULES.md) |
+| Chemistry (pour/wisp) | `bd pour`, `bd wisp` | [CHEMISTRY_PATTERNS.md](resources/CHEMISTRY_PATTERNS.md) |
+| Agent beads | `bd agent --help` | [AGENTS.md](resources/AGENTS.md) |
+| Async gates | `bd gate --help` | [ASYNC_GATES.md](resources/ASYNC_GATES.md) |
+| Worktrees | `bd worktree --help` | [WORKTREES.md](resources/WORKTREES.md) |
+
+## Resources
+
+| Resource | Content |
+|----------|---------|
+| [BOUNDARIES.md](resources/BOUNDARIES.md) | bd vs TodoWrite detailed comparison |
+| [CLI_REFERENCE.md](resources/CLI_REFERENCE.md) | Complete command syntax |
+| [DEPENDENCIES.md](resources/DEPENDENCIES.md) | Dependency system deep dive |
+| [INTEGRATION_PATTERNS.md](resources/INTEGRATION_PATTERNS.md) | TodoWrite and tool integration |
+| [ISSUE_CREATION.md](resources/ISSUE_CREATION.md) | When and how to create issues |
+| [MOLECULES.md](resources/MOLECULES.md) | Proto definitions, component labels |
+| [PATTERNS.md](resources/PATTERNS.md) | Common usage patterns |
+| [RESUMABILITY.md](resources/RESUMABILITY.md) | Compaction survival guide |
+| [STATIC_DATA.md](resources/STATIC_DATA.md) | Database schema reference |
+| [TROUBLESHOOTING.md](resources/TROUBLESHOOTING.md) | Error handling and fixes |
+| [WORKFLOWS.md](resources/WORKFLOWS.md) | Step-by-step workflow patterns |
+| [AGENTS.md](resources/AGENTS.md) | Agent bead tracking (v0.40+) |
+| [ASYNC_GATES.md](resources/ASYNC_GATES.md) | Human-in-the-loop gates |
+| [CHEMISTRY_PATTERNS.md](resources/CHEMISTRY_PATTERNS.md) | Mol vs Wisp decision tree |
+| [WORKTREES.md](resources/WORKTREES.md) | Parallel development patterns |
+
+## Full Documentation
+
+- **bd prime**: AI-optimized workflow context
+- **GitHub**: [github.com/steveyegge/beads](https://github.com/steveyegge/beads)
+
+---
+
+deploy to prod used devops skill
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/skills/devops
+
+# shaRe Platform DevOps
+
+Manage the shaRe platform on the Scaleway production server.
+
+## Server
+
+- **IP**: `51.15.211.196`
+- **SSH**: `ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196`
+- **Infra dir on server**: `/opt/share-platform/infra`
+- **Compose files**: `docker-compose.prod.yml`, `docker-compose.dev.yml`
+- **Env files**: `.env.prod`, `.env.dev`
+
+## Service Map
+
+| Service | Image | Compose service name | Source repo |
+|---------|-------|---------------------|-------------|
+| operator | `ghcr.io/share-community/operator:latest` | `operator-{env}` | `../operator-ts/` |
+| share-ui | `ghcr.io/share-community/share-ui:latest` | `share-ui-{env}` | `../share-ui/` (Dockerfile in `../u2g-infrastructure-ts/services/share-ui/Dockerfile`) |
+| sharemember-app | `ghcr.io/share-community/sharemember-app:latest` | `sharemember-app-{env}` | `../sharemember-app/` (Dockerfile in `../u2g-infrastructure-ts/services/sharemember-app/Dockerfile`) — **prod only** |
+| keycloak | `ghcr.io/share-community/sharemembers:latest` | `keycloak-{env}` | `../sharemembers/` |
+| neo4j | (standard image) | `neo4j-{env}` | — |
+| redis | (standard image) | `redis-{env}` | — |
+| postgres | `postgres:16-alpine` | `postgres-{env}` | — |
+| odoo | `ghcr.io/share-community/odoo:latest` | `odoo-{env}` | `../u2g-infrastructure-ts/services/odoo/` |
+| onlyoffice | `onlyoffice/documentserver:latest` | `onlyoffice-{env}` | — |
+| drawio | `jgraph/drawio:latest` | `drawio-{env}` | — |
+| minio | `minio/minio:latest` | `minio-{env}` | — |
+| metabase | `metabase/metabase:latest` | `metabase-{env}` | — |
+| traefik | — | `coolify-proxy` (shared) | — |
+
+Container naming: `share-{env}-{service}-{env}-1` (e.g. `share-prod-operator-prod-1`)
+
+### Postgres — shared instance, multiple databases
+
+| Database | Owner | Used by |
+|----------|-------|---------|
+| `keycloak` | keycloak | Keycloak auth |
+| `odoodb` | odoo | Odoo 18 |
+| `sharedb` | share | operator-ts analytics (future) |
+| `metabase` | metabase | Metabase analytics |
+
+### Odoo — self-hosted Odoo 18 Community
+
+- **URL**: `https://odoo.wurzelwerk.up2go.com`
+- **DB**: `odoodb` on shared `postgres-prod`
+- **Admin user**: `admin` (password in `.env.prod` as `ODOO_ADMIN_PASSWD`)
+- **Service user** (used by operator-ts): `operator@share.local` (password = `ODOO_API_KEY` in `.env.prod`)
+- **Installed modules**: `mail` (includes discuss.channel), `calendar`, `project`, `account`
+- **Healthcheck**: `https://odoo.wurzelwerk.up2go.com/web/health` (expect `{"status":"pass"}`)
+
+### Metabase — analytics & reporting
+
+- **URL**: `https://metabase.up2go.com` (platform-admin only, basic auth protected)
+- **DB**: `metabase` on shared `postgres-prod`
+- **Data sources**: connect to `sharedb` (postgresql://postgres-prod:5432/sharedb) for analytics
+- **Healthcheck**: `https://metabase.up2go.com/api/health` (expect 200)
+
+## Commands
+
+Parse `` to determine the action. Default env is `prod`.
+
+### `deploy <service> [env]`
+
+Build, transfer, and restart a service:
+
+1. **Build** the Docker image from the source repo
+2. **Transfer** via `docker save | ssh ... docker load`
+3. **Restart** via `docker compose up -d <service-env>`
+4. **ALWAYS restart Traefik** after any container recreate: `docker restart coolify-proxy`
+5. **Wait 5 seconds**, then verify the service started by checking logs
+6. **Verify all routes** respond (200/302)
+
+Build commands per service:
+```bash
+# operator
+cd /home/tomblume/IdeaProjects/operator-ts
+docker build -t ghcr.io/share-community/operator:latest .
+
+# share-ui
+cd /home/tomblume/IdeaProjects/share-ui
+docker build -t ghcr.io/share-community/share-ui:latest \
+  -f /home/tomblume/IdeaProjects/u2g-infrastructure-ts/services/share-ui/Dockerfile .
+
+# sharemember-app
+cd /home/tomblume/IdeaProjects/sharemember-app
+docker build -t ghcr.io/share-community/sharemember-app:latest \
+  -f /home/tomblume/IdeaProjects/u2g-infrastructure-ts/services/sharemember-app/Dockerfile .
+
+# keycloak
+cd /home/tomblume/IdeaProjects/sharemembers
+docker build -t ghcr.io/share-community/sharemembers:latest .
+
+# odoo (custom image with OCA extra-addons support)
+cd /home/tomblume/IdeaProjects/u2g-infrastructure-ts/services/odoo
+docker build -t ghcr.io/share-community/odoo:latest .
+```
+
+Restart on server:
+```bash
+ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196 \
+  "cd /opt/share-platform/infra && \
+   docker compose -f docker-compose.{env}.yml -p share-{env} --env-file .env.{env} \
+   up -d {service-name}"
+```
+
+### `status [env]`
+
+Check all container status and route health:
+```bash
+SSH="ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196"
+$SSH "docker ps --format 'table {{.Names}}\t{{.Status}}' | grep share-{env}"
+```
+
+Then check routes:
+- `https://wurzelwerk.up2go.com` (share-ui, expect 200)
+- `https://id.wurzelwerk.up2go.com` (sharemember-app, expect 200 — prod only)
+- `https://sso.wurzelwerk.up2go.com` (keycloak, expect 302)
+- `https://operator.wurzelwerk.up2go.com/health` (operator direct, expect 200)
+- `https://wurzelwerk.up2go.com/api/health` (operator via api, expect 200)
+- `https://odoo.wurzelwerk.up2go.com/web/health` (odoo, expect 200 with `{"status":"pass"}`)
+- `https://metabase.up2go.com/api/health` (metabase, expect 200 — basic auth required)
+
+Dev routes use `share.dev.up2go.com`, `sso.dev.sharemembers.net`, `operator.dev.up2go.com`.
+
+### `restart <service|traefik> [env]`
+
+Restart a specific service or Traefik:
+- **traefik**: `docker restart coolify-proxy` (fixes 504/CORS issues)
+- **other**: `docker compose ... restart {service-env}`
+
+### `logs <service> [env] [lines]`
+
+Show recent logs (default 30 lines):
+```bash
+ssh ... "docker logs share-{env}-{service}-{env}-1 --tail {lines}"
+```
+
+### `neo4j <cypher> [env]`
+
+Run a Cypher query against Neo4j:
+```bash
+ssh ... 'docker exec share-{env}-neo4j-{env}-1 cypher-shell \
+  -u neo4j \
+  -p $(docker inspect share-{env}-neo4j-{env}-1 \
+    --format "{{range .Config.Env}}{{println .}}{{end}}" | grep NEO4J_AUTH | cut -d/ -f2) \
+  "<cypher query>"'
+```
+
+### `diagnose`
+
+Run full diagnostic:
+1. Check all container status
+2. Check all route health codes
+3. Check for errors in operator logs (last 50 lines)
+4. Check memory usage on server
+5. Report findings and suggest fixes
+
+## Known Issues
+
+- **504 Gateway Timeout after deploy**: Traefik loses routing to recreated containers. Fix: `docker restart coolify-proxy`
+- **CORS errors from sso.wurzelwerk...**: Same cause as above — Keycloak is unreachable via Traefik
+- **Keycloak startup takes ~4 minutes**: Wait for `healthy` status before testing auth flows
+
+## Important
+
+- Always restart Traefik (`coolify-proxy`) after deploying any service
+- After deploy, verify ALL routes (not just the deployed service)
+- Never expose Neo4j credentials in output — use the `docker inspect` pattern
+- Default to `prod` environment unless explicitly told otherwise
+
+---
+
+wenn man die email methode wählt, gibt es einen BUtton rurück... bitte umbenebben "Stattdessen QR-Code anzeigen"
+
+---
+
+ist der operator-ts deployed?
+
+---
+
+ja
+
+---
+
+erstelle ein neues Password für shaRe Member manfred.schon
+
+---
+
+test1234
+
+---
+
+ja
+
+---
+
+yes
+
+---
+
+wenn ich den button "Show QR code" betätige, dann erscheint noch ein "Show QR code" button, anstatt der QR Code. Warum ist das so?
+
+---
+
+manfred.schon kann sich mit Test1234! nicht anmelden, erstelle ein neues Password TestTest1234!
+
+---
+
+login wirft "ungültiger Benutzername oder Passwort... was kann das sein?
+
+---
+
+bd list
+
+---
+
+List beads issues with optional filtering.
+
+## Basic Filters
+
+- **--status, -s**: Filter by status (open, in_progress, blocked, closed)
+- **--priority, -p**: Filter by priority (0-4: 0=critical, 1=high, 2=medium, 3=low, 4=backlog)
+- **--type, -t**: Filter by type (bug, feature, task, epic, chore)
+- **--assignee, -a**: Filter by assignee
+- **--label, -l**: Filter by labels (comma-separated, must have ALL labels)
+- **--label-any**: Filter by labels (OR semantics, must have AT LEAST ONE)
+- **--title**: Filter by title text (case-insensitive substring match)
+- **--limit, -n**: Limit number of results
+
+## Advanced Filters
+
+### Pattern Matching
+- **--title-contains**: Search for text in title (case-insensitive)
+- **--desc-contains**: Search for text in description (case-insensitive)
+- **--notes-contains**: Search for text in notes (case-insensitive)
+
+### Date Ranges
+- **--created-after**: Issues created after date (YYYY-MM-DD or ISO 8601)
+- **--created-before**: Issues created before date
+- **--updated-after**: Issues updated after date
+- **--updated-before**: Issues updated before date
+- **--closed-after**: Issues closed after date
+- **--closed-before**: Issues closed before date
+
+### Priority Range
+- **--priority-min**: Minimum priority (inclusive)
+- **--priority-max**: Maximum priority (inclusive)
+
+### Empty/Null Checks
+- **--empty-description**: Find issues with no description
+- **--no-assignee**: Find unassigned issues
+- **--no-labels**: Find issues with no labels
+
+## Examples
+
+### Basic Usage
+- `bd list --status open --priority 1`: High priority open issues
+- `bd list --type bug --assignee alice`: Alice's assigned bugs
+- `bd list --label backend,needs-review`: Backend issues needing review
+- `bd list --title "auth"`: Issues with "auth" in the title
+
+### Advanced Usage
+- `bd list --title-contains "auth" --status open`: Search open issues for auth-related work
+- `bd list --priority-min 0 --priority-max 1`: Critical and high priority issues only
+- `bd list --created-after 2025-01-01 --status open`: Recent open issues
+- `bd list --empty-description --status open`: Open issues missing descriptions
+- `bd list --no-assignee --priority 1`: High priority unassigned work
+- `bd list --desc-contains "TODO" --notes-contains "review"`: Find items needing attention
+
+## Output Formats
+
+- Default: Human-readable table
+- `--json`: JSON format for scripting
+- `--format digraph`: Graph format for golang.org/x/tools/cmd/digraph
+- `--format dot`: Graphviz DOT format
+
+---
+
+bd list für alle
+
+---
+
+prüfe ob wir 6d6 beginnen können. Ich habe ein Beispiel im Verzeinis "shaRe-profile-picture-editor", ggf. kannst du etwas übernehmen
+
+---
+
+ich möchte aber den Touch-pad code und die Maske mit dem Overlay nutzen. Auch nicht mobile vergessen
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/brainstorming
+
+# Brainstorming Ideas Into Designs
+
+## Overview
+
+Help turn ideas into fully formed designs and specs through natural collaborative dialogue.
+
+Start by understanding the current project context, then ask questions one at a time to refine the idea. Once you understand what you're building, present the design and get user approval.
+
+<HARD-GATE>
+Do NOT invoke any implementation skill, write any code, scaffold any project, or take any implementation action until you have presented a design and the user has approved it. This applies to EVERY project regardless of perceived simplicity.
+</HARD-GATE>
+
+## Anti-Pattern: "This Is Too Simple To Need A Design"
+
+Every project goes through this process. A todo list, a single-function utility, a config change — all of them. "Simple" projects are where unexamined assumptions cause the most wasted work. The design can be short (a few sentences for truly simple projects), but you MUST present it and get approval.
+
+## Checklist
+
+You MUST create a task for each of these items and complete them in order:
+
+1. **Explore project context** — check files, docs, recent commits
+2. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
+3. **Propose 2-3 approaches** — with trade-offs and your recommendation
+4. **Present design** — in sections scaled to their complexity, get user approval after each section
+5. **Write design doc** — save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
+6. **Transition to implementation** — invoke writing-plans skill to create implementation plan
+
+## Process Flow
+
+```dot
+digraph brainstorming {
+    "Explore project context" [shape=box];
+    "Ask clarifying questions" [shape=box];
+    "Propose 2-3 approaches" [shape=box];
+    "Present design sections" [shape=box];
+    "User approves design?" [shape=diamond];
+    "Write design doc" [shape=box];
+    "Invoke writing-plans skill" [shape=doublecircle];
+
+    "Explore project context" -> "Ask clarifying questions";
+    "Ask clarifying questions" -> "Propose 2-3 approaches";
+    "Propose 2-3 approaches" -> "Present design sections";
+    "Present design sections" -> "User approves design?";
+    "User approves design?" -> "Present design sections" [label="no, revise"];
+    "User approves design?" -> "Write design doc" [label="yes"];
+    "Write design doc" -> "Invoke writing-plans skill";
+}
+```
+
+**The terminal state is invoking writing-plans.** Do NOT invoke frontend-design, mcp-builder, or any other implementation skill. The ONLY skill you invoke after brainstorming is writing-plans.
+
+## The Process
+
+**Understanding the idea:**
+- Check out the current project state first (files, docs, recent commits)
+- Ask questions one at a time to refine the idea
+- Prefer multiple choice questions when possible, but open-ended is fine too
+- Only one question per message - if a topic needs more exploration, break it into multiple questions
+- Focus on understanding: purpose, constraints, success criteria
+
+**Exploring approaches:**
+- Propose 2-3 different approaches with trade-offs
+- Present options conversationally with your recommendation and reasoning
+- Lead with your recommended option and explain why
+
+**Presenting the design:**
+- Once you believe you understand what you're building, present the design
+- Scale each section to its complexity: a few sentences if straightforward, up to 200-300 words if nuanced
+- Ask after each section whether it looks right so far
+- Cover: architecture, components, data flow, error handling, testing
+- Be ready to go back and clarify if something doesn't make sense
+
+## After the Design
+
+**Documentation:**
+- Write the validated design to `docs/plans/YYYY-MM-DD-<topic>-design.md`
+- Use elements-of-style:writing-clearly-and-concisely skill if available
+- Commit the design document to git
+
+**Implementation:**
+- Invoke the writing-plans skill to create a detailed implementation plan
+- Do NOT invoke any other skill. writing-plans is the next step.
+
+## Key Principles
+
+- **One question at a time** - Don't overwhelm with multiple questions
+- **Multiple choice preferred** - Easier to answer than open-ended when possible
+- **YAGNI ruthlessly** - Remove unnecessary features from all designs
+- **Explore alternatives** - Always propose 2-3 approaches before settling
+- **Incremental validation** - Present design, get approval before moving on
+- **Be flexible** - Go back and clarify when something doesn't make sense
+
+---
+
+schon im video preview.
+
+---
+
+ok, option B
+
+---
+
+ja
+
+---
+
+ja
+
+---
+
+ja
+
+---
+
+ok
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/writing-plans
+
+# Writing Plans
+
+## Overview
+
+Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs they might need to check, how to test it. Give them the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits.
+
+Assume they are a skilled developer, but know almost nothing about our toolset or problem domain. Assume they don't know good test design very well.
+
+**Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
+
+**Context:** This should be run in a dedicated worktree (created by brainstorming skill).
+
+**Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
+
+## Bite-Sized Task Granularity
+
+**Each step is one action (2-5 minutes):**
+- "Write the failing test" - step
+- "Run it to make sure it fails" - step
+- "Implement the minimal code to make the test pass" - step
+- "Run the tests and make sure they pass" - step
+- "Commit" - step
+
+## Plan Document Header
+
+**Every plan MUST start with this header:**
+
+```markdown
+# [Feature Name] Implementation Plan
+
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+**Goal:** [One sentence describing what this builds]
+
+**Architecture:** [2-3 sentences about approach]
+
+**Tech Stack:** [Key technologies/libraries]
+
+---
+```
+
+## Task Structure
+
+````markdown
+### Task N: [Component Name]
+
+**Files:**
+- Create: `exact/path/to/file.py`
+- Modify: `exact/path/to/existing.py:123-145`
+- Test: `tests/exact/path/to/test.py`
+
+**Step 1: Write the failing test**
+
+```python
+def test_specific_behavior():
+    result = function(input)
+    assert result == expected
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `pytest tests/path/test.py::test_name -v`
+Expected: FAIL with "function not defined"
+
+**Step 3: Write minimal implementation**
+
+```python
+def function(input):
+    return expected
+```
+
+**Step 4: Run test to verify it passes**
+
+Run: `pytest tests/path/test.py::test_name -v`
+Expected: PASS
+
+**Step 5: Commit**
+
+```bash
+git add tests/path/test.py src/path/file.py
+git commit -m "feat: add specific feature"
+```
+````
+
+## Remember
+- Exact file paths always
+- Complete code in plan (not "add validation")
+- Exact commands with expected output
+- Reference relevant skills with @ syntax
+- DRY, YAGNI, TDD, frequent commits
+
+## Execution Handoff
+
+After saving the plan, offer execution choice:
+
+**"Plan complete and saved to `docs/plans/<filename>.md`. Two execution options:**
+
+**1. Subagent-Driven (this session)** - I dispatch fresh subagent per task, review between tasks, fast iteration
+
+**2. Parallel Session (separate)** - Open new session with executing-plans, batch execution with checkpoints
+
+**Which approach?"**
+
+**If Subagent-Driven chosen:**
+- **REQUIRED SUB-SKILL:** Use superpowers:subagent-driven-development
+- Stay in this session
+- Fresh subagent per task + code review
+
+**If Parallel Session chosen:**
+- Guide them to open new session in worktree
+- **REQUIRED SUB-SKILL:** New session uses superpowers:executing-plans
+
+---
+
+1
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/subagent-driven-development
+
+# Subagent-Driven Development
+
+Execute plan by dispatching fresh subagent per task, with two-stage review after each: spec compliance review first, then code quality review.
+
+**Core principle:** Fresh subagent per task + two-stage review (spec then quality) = high quality, fast iteration
+
+## When to Use
+
+```dot
+digraph when_to_use {
+    "Have implementation plan?" [shape=diamond];
+    "Tasks mostly independent?" [shape=diamond];
+    "Stay in this session?" [shape=diamond];
+    "subagent-driven-development" [shape=box];
+    "executing-plans" [shape=box];
+    "Manual execution or brainstorm first" [shape=box];
+
+    "Have implementation plan?" -> "Tasks mostly independent?" [label="yes"];
+    "Have implementation plan?" -> "Manual execution or brainstorm first" [label="no"];
+    "Tasks mostly independent?" -> "Stay in this session?" [label="yes"];
+    "Tasks mostly independent?" -> "Manual execution or brainstorm first" [label="no - tightly coupled"];
+    "Stay in this session?" -> "subagent-driven-development" [label="yes"];
+    "Stay in this session?" -> "executing-plans" [label="no - parallel session"];
+}
+```
+
+**vs. Executing Plans (parallel session):**
+- Same session (no context switch)
+- Fresh subagent per task (no context pollution)
+- Two-stage review after each task: spec compliance first, then code quality
+- Faster iteration (no human-in-loop between tasks)
+
+## The Process
+
+```dot
+digraph process {
+    rankdir=TB;
+
+    subgraph cluster_per_task {
+        label="Per Task";
+        "Dispatch implementer subagent (./implementer-prompt.md)" [shape=box];
+        "Implementer subagent asks questions?" [shape=diamond];
+        "Answer questions, provide context" [shape=box];
+        "Implementer subagent implements, tests, commits, self-reviews" [shape=box];
+        "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [shape=box];
+        "Spec reviewer subagent confirms code matches spec?" [shape=diamond];
+        "Implementer subagent fixes spec gaps" [shape=box];
+        "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [shape=box];
+        "Code quality reviewer subagent approves?" [shape=diamond];
+        "Implementer subagent fixes quality issues" [shape=box];
+        "Mark task complete in TodoWrite" [shape=box];
+    }
+
+    "Read plan, extract all tasks with full text, note context, create TodoWrite" [shape=box];
+    "More tasks remain?" [shape=diamond];
+    "Dispatch final code reviewer subagent for entire implementation" [shape=box];
+    "Use superpowers:finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
+
+    "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Dispatch implementer subagent (./implementer-prompt.md)";
+    "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer subagent asks questions?";
+    "Implementer subagent asks questions?" -> "Answer questions, provide context" [label="yes"];
+    "Answer questions, provide context" -> "Dispatch implementer subagent (./implementer-prompt.md)";
+    "Implementer subagent asks questions?" -> "Implementer subagent implements, tests, commits, self-reviews" [label="no"];
+    "Implementer subagent implements, tests, commits, self-reviews" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)";
+    "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" -> "Spec reviewer subagent confirms code matches spec?";
+    "Spec reviewer subagent confirms code matches spec?" -> "Implementer subagent fixes spec gaps" [label="no"];
+    "Implementer subagent fixes spec gaps" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [label="re-review"];
+    "Spec reviewer subagent confirms code matches spec?" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="yes"];
+    "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" -> "Code quality reviewer subagent approves?";
+    "Code quality reviewer subagent approves?" -> "Implementer subagent fixes quality issues" [label="no"];
+    "Implementer subagent fixes quality issues" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="re-review"];
+    "Code quality reviewer subagent approves?" -> "Mark task complete in TodoWrite" [label="yes"];
+    "Mark task complete in TodoWrite" -> "More tasks remain?";
+    "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
+    "More tasks remain?" -> "Dispatch final code reviewer subagent for entire implementation" [label="no"];
+    "Dispatch final code reviewer subagent for entire implementation" -> "Use superpowers:finishing-a-development-branch";
+}
+```
+
+## Prompt Templates
+
+- `./implementer-prompt.md` - Dispatch implementer subagent
+- `./spec-reviewer-prompt.md` - Dispatch spec compliance reviewer subagent
+- `./code-quality-reviewer-prompt.md` - Dispatch code quality reviewer subagent
+
+## Example Workflow
+
+```
+You: I'm using Subagent-Driven Development to execute this plan.
+
+[Read plan file once: docs/plans/feature-plan.md]
+[Extract all 5 tasks with full text and context]
+[Create TodoWrite with all tasks]
+
+Task 1: Hook installation script
+
+[Get Task 1 text and context (already extracted)]
+[Dispatch implementation subagent with full task text + context]
+
+Implementer: "Before I begin - should the hook be installed at user or system level?"
+
+You: "User level (~/.config/superpowers/hooks/)"
+
+Implementer: "Got it. Implementing now..."
+[Later] Implementer:
+  - Implemented install-hook command
+  - Added tests, 5/5 passing
+  - Self-review: Found I missed --force flag, added it
+  - Committed
+
+[Dispatch spec compliance reviewer]
+Spec reviewer: ✅ Spec compliant - all requirements met, nothing extra
+
+[Get git SHAs, dispatch code quality reviewer]
+Code reviewer: Strengths: Good test coverage, clean. Issues: None. Approved.
+
+[Mark Task 1 complete]
+
+Task 2: Recovery modes
+
+[Get Task 2 text and context (already extracted)]
+[Dispatch implementation subagent with full task text + context]
+
+Implementer: [No questions, proceeds]
+Implementer:
+  - Added verify/repair modes
+  - 8/8 tests passing
+  - Self-review: All good
+  - Committed
+
+[Dispatch spec compliance reviewer]
+Spec reviewer: ❌ Issues:
+  - Missing: Progress reporting (spec says "report every 100 items")
+  - Extra: Added --json flag (not requested)
+
+[Implementer fixes issues]
+Implementer: Removed --json flag, added progress reporting
+
+[Spec reviewer reviews again]
+Spec reviewer: ✅ Spec compliant now
+
+[Dispatch code quality reviewer]
+Code reviewer: Strengths: Solid. Issues (Important): Magic number (100)
+
+[Implementer fixes]
+Implementer: Extracted PROGRESS_INTERVAL constant
+
+[Code reviewer reviews again]
+Code reviewer: ✅ Approved
+
+[Mark Task 2 complete]
+
+...
+
+[After all tasks]
+[Dispatch final code-reviewer]
+Final reviewer: All requirements met, ready to merge
+
+Done!
+```
+
+## Advantages
+
+**vs. Manual execution:**
+- Subagents follow TDD naturally
+- Fresh context per task (no confusion)
+- Parallel-safe (subagents don't interfere)
+- Subagent can ask questions (before AND during work)
+
+**vs. Executing Plans:**
+- Same session (no handoff)
+- Continuous progress (no waiting)
+- Review checkpoints automatic
+
+**Efficiency gains:**
+- No file reading overhead (controller provides full text)
+- Controller curates exactly what context is needed
+- Subagent gets complete information upfront
+- Questions surfaced before work begins (not after)
+
+**Quality gates:**
+- Self-review catches issues before handoff
+- Two-stage review: spec compliance, then code quality
+- Review loops ensure fixes actually work
+- Spec compliance prevents over/under-building
+- Code quality ensures implementation is well-built
+
+**Cost:**
+- More subagent invocations (implementer + 2 reviewers per task)
+- Controller does more prep work (extracting all tasks upfront)
+- Review loops add iterations
+- But catches issues early (cheaper than debugging later)
+
+## Red Flags
+
+**Never:**
+- Start implementation on main/master branch without explicit user consent
+- Skip reviews (spec compliance OR code quality)
+- Proceed with unfixed issues
+- Dispatch multiple implementation subagents in parallel (conflicts)
+- Make subagent read plan file (provide full text instead)
+- Skip scene-setting context (subagent needs to understand where task fits)
+- Ignore subagent questions (answer before letting them proceed)
+- Accept "close enough" on spec compliance (spec reviewer found issues = not done)
+- Skip review loops (reviewer found issues = implementer fixes = review again)
+- Let implementer self-review replace actual review (both are needed)
+- **Start code quality review before spec compliance is ✅** (wrong order)
+- Move to next task while either review has open issues
+
+**If subagent asks questions:**
+- Answer clearly and completely
+- Provide additional context if needed
+- Don't rush them into implementation
+
+**If reviewer finds issues:**
+- Implementer (same subagent) fixes them
+- Reviewer reviews again
+- Repeat until approved
+- Don't skip the re-review
+
+**If subagent fails task:**
+- Dispatch fix subagent with specific instructions
+- Don't try to fix manually (context pollution)
+
+## Integration
+
+**Required workflow skills:**
+- **superpowers:using-git-worktrees** - REQUIRED: Set up isolated workspace before starting
+- **superpowers:writing-plans** - Creates the plan this skill executes
+- **superpowers:requesting-code-review** - Code review template for reviewer subagents
+- **superpowers:finishing-a-development-branch** - Complete development after all tasks
+
+**Subagents should use:**
+- **superpowers:test-driven-development** - Subagents follow TDD for each task
+
+**Alternative workflow:**
+- **superpowers:executing-plans** - Use for parallel session instead of same-session execution
+
+---
+
+[Request interrupted by user for tool use]
+
+---
+
+continue
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me chronologically analyze the conversation to create a thorough summary.
+
+1. Session started with bd prime - context recovery for sharemember-app and share-platform repos
+2. User asked to look at untracked docs/trash-bin-feature-implementation.md - reviewed it, identified a Cypher query bug
+3. User mentioned QR code identification feature was added in sharemember-app - I reviewed the implementation (VerifyPage.tsx, vouch.ts)
+4. User asked to deploy to prod (sharemember-app) - built, transferred, restarted, verified
+5. User asked to rename back button in email vouch mode to "Stattdessen QR-Code anzeigen" - added new i18n key, updated VerifyPage.tsx, deployed
+6. User asked if operator-ts is deployed - found it wasn't (missing /v2/sharemember/vouch-requests/open endpoint returning 404)
+7. Deployed operator-ts to prod
+8. User asked to create new password for manfred.schon - went through KC password policy iterations, ended up setting TestTest1234!
+9. User reported "ungültiger Benutzername oder Passwort" - investigated, found 14 failed brute-force attempts + emailVerified=false, cleared both
+10. User ran bd list - showed all open issues across repos
+11. User asked about SM-6d6 (camera capture) and mentioned example in shaRe-profile-picture-editor directory
+12. I checked SM-6d6 blocker (SM-e3y PWA - already closed), examined example project
+13. Brainstorming session: user wanted getUserMedia approach with circular overlay and touch support
+14. Decided on Option B (useCamera.ts + CameraModal.tsx)
+15. Design session: presented design in sections, user approved each
+16. Wrote design doc at docs/plans/2026-03-03-camera-capture-design.md
+17. Created implementation plan at docs/plans/2026-03-03-camera-capture.md
+18. Started subagent-driven development:
+    - Task 1: i18n keys - implemented, spec ✅, quality ✅
+    - Task 2: useCamera.ts - implemented, found stale closure bug + selectedCameraId sync issue, fixed, re-reviewed ✅
+    - Task 3: CSS - implemented, spec ✅, quality ✅
+    - Task 4: CameraModal.tsx - implemented, found ESLint error + SVG geometry bugs + aspect ratio issue, fixed all, re-reviewed ✅
+    - Task 5: Wire into ProfilePictureEditor - just implemented, report received, NOT YET reviewed
+
+Current state: Task 5 implemented, awaiting spec/quality review.
+
+Summary:
+1. Primary Request and Intent:
+   - Deploy sharemember-app to prod (QR vouch feature already built in previous session)
+   - Deploy operator-ts to prod (missing POST /v2/sharemember/vouch-requests/open endpoint)
+   - Fix UI bug: email vouch mode back button renamed to "Stattdessen QR-Code anzeigen" (new i18n key `verify.vouch_back_to_qr`)
+   - Fix double-click bug in QR vouch mode (QrVouchMode was idle on mount, required second click)
+   - Reset password for manfred.schon (ended up as TestTest1234! due to KC password policy)
+   - Unblock and implement SM-6d6: camera capture for profile picture in sharemember-app
+   - Use getUserMedia approach (not simple capture=environment) with live circular crop overlay, touch support, desktop+mobile
+
+2. Key Technical Concepts:
+   - sharemember-app: React/TypeScript PWA, react-i18next (DE+EN), react-router, OIDC auth
+   - operator-ts: NestJS/TypeScript backend, vouch-requests endpoints
+   - Keycloak: kcadm CLI, brute-force attack detection, emailVerified, password policies
+   - getUserMedia API: MediaStream, MediaDeviceInfo, enumerateDevices, facingMode
+   - SVG evenodd fill-rule for circular crop mask overlay
+   - useCallback with dependency arrays, stale closure patterns in React
+   - Subagent-driven development workflow: implementer → spec-reviewer → code-quality-reviewer
+   - Beads issue tracking (SM-6d6, SM-e3y)
+   - Docker build/transfer/restart production deploy flow
+   - BullMQ/NestJS route registration
+
+3. Files and Code Sections:
+
+   - `src/i18n/locales/de.json` and `en.json` (sharemember-app):
+     - Added `"picture_camera"` to `settings` namespace
+     - Added new top-level `"camera"` namespace with 8 keys: title, capture, flip, loading, error_permission, error_not_found, error_in_use, error_generic
+     - Added `"vouch_back_to_qr"` to `verify` namespace (earlier fix)
+
+   - `src/pages/VerifyPage.tsx` (sharemember-app):
+     - Renamed email-mode back button from `verify.vouch_back` to `verify.vouch_back_to_qr`
+     - Fixed QrVouchMode double-click: added `void handleShowQr()` in useEffect on mount
+     - `QrVouchMode` now auto-triggers camera request on mount
+
+   - `src/useCamera.ts` (sharemember-app, NEW):
+     ```typescript
+     export function useCamera() {
+       // State: isCapturing, stream, facingMode, availableCameras, selectedCameraId, cameraError
+       // Refs: videoRef, captureCanvasRef
+       // startCamera(deviceId?, facingModeOverride?): sets isCapturing=true immediately,
+       //   calls getUserMedia, enumerates cameras after permission, syncs selectedCameraId
+       //   from videoTrack.getSettings().deviceId
+       // stopCamera(): stops tracks, clears state
+       // capturePhoto(): draws to canvas, returns dataURL, calls stopCamera
+       // flipCamera(): mobile toggles facingMode (passes override to startCamera),
+       //   desktop cycles availableCameras
+       // clearError(), showFlip: boolean
+     }
+     ```
+     Key fixes applied:
+     - Stale closure: `startCamera(deviceId?, facingModeOverride?)` — `flipCamera` passes `next` directly as override
+     - `selectedCameraId` synced from `videoTrack.getSettings().deviceId` after getUserMedia resolves
+
+   - `src/components/CameraModal.tsx` (sharemember-app, NEW):
+     ```typescript
+     export function CameraModal({ onCapture, onClose }: CameraModalProps): JSX.Element
+     // Props: onCapture: (_dataURL: string) => void, onClose: () => void
+     // useEffect: startCamera() on mount, stopCamera() on unmount
+     // SVG mask: viewBox="0 0 100 100", preserveAspectRatio="none", fillRule="evenodd"
+     // Path: "M0,0 H100 V100 H0 Z M10,50 a40,40 0 1,0 80,0 a40,40 0 1,0 -80,0"
+     // Circle: cx="50" cy="50" r="40", vectorEffect="non-scaling-stroke"
+     // Shows: loading spinner, error box, flip/capture/close buttons
+     // click-outside closes modal
+     ```
+     Fixes applied:
+     - `dataURL` → `_dataURL` in interface (ESLint no-unused-vars)
+     - SVG path fixed: `M50,5 m-40,40` → `M10,50` (circle centred at 50,50 not 50,45)
+     - CSS aspect-ratio: 4/3 → 1/1 to prevent ellipse distortion
+
+   - `src/App.css` (sharemember-app):
+     - Appended camera modal CSS classes: `.camera-modal-overlay`, `.camera-modal`, `.camera-modal-title`, `.camera-video-wrapper` (aspect-ratio: 1/1), `.camera-video`, `.camera-svg-mask`, `.camera-loading`, `.camera-spinner`, `.camera-error`, `.camera-buttons`, `.camera-buttons .cta-button`
+     - Reused existing `@keyframes spin` (not duplicated)
+
+   - `eslint.config.js` (sharemember-app):
+     - Added `'no-unused-vars': 'off'` to TS rules block (standard typescript-eslint flat-config pattern)
+     - Added `varsIgnorePattern: '^_'`
+
+   - `src/components/ProfilePictureEditor.tsx` (sharemember-app, Task 5 just completed):
+     - Added `import { CameraModal } from './CameraModal'`
+     - Added `const [cameraOpen, setCameraOpen] = useState(false)`
+     - Added `loadImageFromUrl(dataURL: string)` useCallback (mirrors handleFileChange, loads from dataURL instead of File)
+     - Added "Foto aufnehmen" button (`settings.picture_camera`) in `avatar-editor-buttons`
+     - Added `{cameraOpen && <CameraModal onCapture={...} onClose={...} />}` at end of JSX
+
+   - `docs/plans/2026-03-03-camera-capture-design.md` (sharemember-app, NEW)
+   - `docs/plans/2026-03-03-camera-capture.md` (sharemember-app, NEW - implementation plan, 6 tasks)
+
+4. Errors and fixes:
+   - **operator-ts not deployed**: POST /v2/sharemember/vouch-requests/open returning 404. Fix: built and deployed operator-ts.
+   - **Docker build DNS timeout**: `node:22-alpine` not cached, Docker Hub DNS lookup failed. Fix: `docker pull node:22-alpine` first.
+   - **manfred.schon password policy**: `test1234` rejected (no special char), `Test1234!` rejected (no uppercase letter... wait, it had uppercase). Actually `Test1234!` succeeded but KC login still failed. Fixed by clearing brute-force (14 failed attempts) and setting `emailVerified=true`. Final password: `TestTest1234!`.
+   - **QR vouch double-click bug**: `QrVouchMode` started in `idle` state, required two clicks. Fix: added `void handleShowQr()` in `useEffect` on mount.
+   - **useCamera stale closure**: `flipCamera` mobile path called `setTimeout(() => void startCamera(), 150)` after `setFacingMode(next)` — startCamera closed over old facingMode. Fix: added `facingModeOverride?` parameter to `startCamera`, `flipCamera` passes `next` directly as `startCamera(undefined, next)`.
+   - **selectedCameraId null on desktop**: First flip always picked `availableCameras[0]` because `selectedCameraId` started as null. Fix: sync from `videoTrack.getSettings().deviceId` after getUserMedia.
+   - **ESLint no-unused-vars in CameraModal**: `onCapture: (dataURL: string)` triggered base rule. Fix: renamed to `_dataURL`, added `'no-unused-vars': 'off'` to eslint.config.js TS block.
+   - **SVG circle misaligned**: Path `M50,5 m-40,40` produced circle at (50,45), `<circle>` was at (50,50). Fix: path changed to `M10,50`.
+   - **SVG ellipse in 4:3 container**: `preserveAspectRatio="none"` + `aspect-ratio: 4/3` stretched circle to ellipse. Fix: `aspect-ratio: 1/1`.
+
+5. Problem Solving:
+   - Pre-existing ESLint `no-undef` errors (`React`, `RequestInit`, `MediaTrackConstraints`) in other files exposed by eslint.config.js cleanup — not introduced by this work, flagged for follow-up task.
+   - SM-6d6 was blocked by SM-e3y (PWA) which was already closed → issue unblocked.
+
+6. All user messages:
+   - "bd prime"
+   - "look at it" (trash-bin doc)
+   - "no, we added a feature for QR code INDENTIFCATION in sharememeber.app"
+   - "deploy to prod used devops skill"
+   - "wenn man die email methode wählt, gibt es einen BUtton rurück... bitte umbenebben 'Stattdessen QR-Code anzeigen'"
+   - "ist der operator-ts deployed?"
+   - "ja" (deploy operator-ts)
+   - "erstelle ein neues Password für shaRe Member manfred.schon"
+   - "test1234"
+   - "ja" (set test1234!)
+   - "yes" (set Test1234!)
+   - "wenn ich den button 'Show QR code' betätige, dann erscheint noch ein 'Show QR code' button, anstatt der QR Code. Warum ist das so?"
+   - "manfred.schon kann sich mit Test1234! nicht anmelden, erstelle ein neues Password TestTest1234!"
+   - "login wirft 'ungültiger Benutzername oder Passwort... was kann das sein?"
+   - "ja" (clear brute force + set emailVerified)
+   - "bd list"
+   - "bd list für alle"
+   - "prüfe ob wir 6d6 beginnen können. Ich habe ein Beispiel im Verzeinis 'shaRe-profile-picture-editor', ggf. kannst du etwas übernehmen"
+   - "ich möchte aber den Touch-pad code und die Maske mit dem Overlay nutzen. Auch nicht mobile vergessen"
+   - "ok, option B"
+   - "ja" (data flow approved)
+   - "ja" (useCamera API approved)
+   - "ja" (CameraModal layout approved)
+   - "ja" (ProfilePictureEditor changes approved)
+   - "ok" (full design approved)
+   - "1" (subagent-driven development chosen)
+   - Multiple empty responses (continuing workflow)
+   - "continue" (after interrupted tool use)
+
+7. Pending Tasks:
+   - **Task 5 spec+quality review**: ProfilePictureEditor wiring was just implemented (commit on `main`), needs spec compliance and code quality review
+   - **Task 6**: Close SM-6d6 beads issue + deploy sharemember-app to prod
+   - **Follow-up**: Fix pre-existing ESLint `no-undef` errors (React, RequestInit, MediaTrackConstraints) in other files
+   - **Follow-up**: Push sharemember-app commits to remote (`git push`)
+   - **Follow-up**: Commit trash-bin-feature-implementation.md or delete it (currently untracked in share-platform)
+   - **Memory update**: Update MEMORY.md with QR vouch architecture and camera capture feature
+
+8. Current Work:
+   Executing Task 5 of the camera capture implementation plan (SM-6d6) using subagent-driven development. The implementer subagent just completed wiring `CameraModal` into `ProfilePictureEditor.tsx`:
+
+   Changes made to `src/components/ProfilePictureEditor.tsx`:
+   - Added `import { CameraModal } from './CameraModal'`
+   - Added `const [cameraOpen, setCameraOpen] = useState(false)`
+   - Added `loadImageFromUrl` useCallback (mirrors handleFileChange logic but accepts dataURL):
+     ```typescript
+     const loadImageFromUrl = useCallback((dataURL: string) => {
+       const img = new Image()
+       img.onload = () => {
+         const w = img.naturalWidth; const h = img.naturalHeight
+         const minScale = Math.max(EDITOR_SIZE / w, EDITOR_SIZE / h) * 0.8 * 0.8
+         const maxScale = Math.min(w / EDITOR_SIZE, h / EDITOR_SIZE)
+         setImageState({ width: w, height: h, element: img })
+         setScaleRange({ min: minScale, max: Math.max(minScale, maxScale) })
+         setScale(minScale); setPosition({ x: 0, y: 0 }); setZoomValue(0)
+       }
+       img.src = dataURL
+     }, [])
+     ```
+   - Added "Foto aufnehmen" button in `avatar-editor-buttons`
+   - Added `{cameraOpen && <CameraModal onCapture={(dataURL) => { loadImageFromUrl(dataURL); setCameraOpen(false) }} onClose={() => setCameraOpen(false)} />}`
+   - TypeScript clean, build passes, committed as `feat(SM-6d6): wire CameraModal into ProfilePictureEditor`
+
+9. Optional Next Step:
+   Run spec compliance review for Task 5 (ProfilePictureEditor wiring), then code quality review, then proceed to Task 6 (close SM-6d6 + deploy). The implementer subagent reported: "Done. Here is a full report..." for Task 5, and the workflow requires: "Dispatch spec reviewer subagent" before marking complete.
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/tomblume/.REDACTED.jsonl
+Please continue the conversation from where we left off without asking the user any further questions. Continue with the last task that you were asked to work on.

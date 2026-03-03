@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "1ab08c7a66bf",
+  "session_id": "e70998dc-64f3-47f2-8af9-b7c9ca254794",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-03T06:40:20.538708175Z",
+  "branch": "main",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "docs/plans/2026-03-03-camera-capture-design.md",
+    "docs/plans/2026-03-03-camera-capture.md",
+    "src/i18n/locales/de.json",
+    "src/i18n/locales/en.json",
+    "src/pages/VerifyPage.tsx"
+  ],
+  "agent": "Claude Code",
+  "token_usage": {
+    "input_tokens": 4704,
+    "cache_creation_tokens": 574731,
+    "cache_read_tokens": 10995081,
+    "output_tokens": 61000,
+    "api_call_count": 131
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-03T06:40:19.824854248Z",
+    "agent_lines": 69,
+    "human_added": 442,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 511,
+    "agent_percentage": 13.50293542074364
+  }
+}
