@@ -43,7 +43,7 @@ export function useCamera() {
     setAvailableCameras(cameras)
   }, [])
 
-  const startCamera = useCallback(async (deviceId?: string) => {
+  const startCamera = useCallback(async (deviceId?: string, facingModeOverride?: 'user' | 'environment') => {
     setIsCapturing(true)
     setCameraError(null)
 
@@ -55,11 +55,19 @@ export function useCamera() {
       const videoConstraints: MediaTrackConstraints = deviceId
         ? { deviceId: { exact: deviceId } }
         : isMobile()
-          ? { facingMode }
+          ? { facingMode: facingModeOverride ?? facingMode }
           : { width: { ideal: 1280 }, height: { ideal: 720 } }
 
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints })
       setStream(mediaStream)
+
+      // Sync selectedCameraId to the actual active camera
+      const videoTrack = mediaStream.getVideoTracks()[0]
+      if (videoTrack) {
+        const actualDeviceId = videoTrack.getSettings().deviceId
+        if (actualDeviceId) setSelectedCameraId(actualDeviceId)
+      }
+
       await enumerateCameras()
 
       if (videoRef.current) {
@@ -98,7 +106,7 @@ export function useCamera() {
     if (isMobile()) {
       const next = facingMode === 'environment' ? 'user' : 'environment'
       setFacingMode(next)
-      setTimeout(() => void startCamera(), 150)
+      setTimeout(() => void startCamera(undefined, next), 150)
     } else {
       const currentIdx = availableCameras.findIndex((c) => c.deviceId === selectedCameraId)
       const next = availableCameras[(currentIdx + 1) % availableCameras.length]
