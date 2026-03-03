@@ -9,7 +9,9 @@
     "sign_up": "Sign Up",
     "sign_out": "Sign Out",
     "loading": "Loading…",
-    "settings": "Settings"
+    "settings": "Settings",
+    "open_menu": "Open menu",
+    "close_menu": "Close menu"
   },
   "landing": {
     "quote": "Our goal should be minimum standardization of human behavior.",

@@ -9,7 +9,9 @@
     "sign_up": "Registrieren",
     "sign_out": "Abmelden",
     "loading": "Laden…",
-    "settings": "Einstellungen"
+    "settings": "Einstellungen",
+    "open_menu": "Menü öffnen",
+    "close_menu": "Menü schließen"
   },
   "landing": {
     "quote": "Unser Ziel sollte die minimale Standardisierung menschlichen Verhaltens sein.",

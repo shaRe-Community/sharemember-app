@@ -110,8 +110,9 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
             <button
               className="hamburger-btn"
               onClick={() => setMenuOpen(o => !o)}
-              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-label={menuOpen ? t('nav.close_menu') : t('nav.open_menu')}
               aria-expanded={menuOpen}
+              aria-controls="mobile-nav"
             >
               {menuOpen ? '✕' : '☰'}
             </button>
@@ -120,7 +121,7 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
 
         {/* Mobile dropdown */}
         {menuOpen && (
-          <nav className="mobile-menu">
+          <nav className="mobile-menu" id="mobile-nav">
             <Link
               to="/hub"
               className="mobile-menu-item"
