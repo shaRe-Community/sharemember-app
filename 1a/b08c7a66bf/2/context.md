@@ -227,3 +227,81 @@ Let me chronologically analyze the conversation to create a thorough summary.
 2. User asked to look at untracked docs/trash-bin-feature-implementation.md - reviewed it, identified a Cypher query bug
 3. User mentioned QR code identification...
 
+### Prompt 36
+
+ich kann mich nochh immer nicht mit dem shaRe Member manfred.schon anmelden, bitte die logs prüfen
+
+### Prompt 37
+
+Base directory for this skill: /home/tomblume/.claude/skills/devops
+
+# shaRe Platform DevOps
+
+Manage the shaRe platform on the Scaleway production server.
+
+## Server
+
+- **IP**: `51.15.211.196`
+- **SSH**: `ssh -i ~/.ssh/scaleway_ed25519 root@51.15.211.196`
+- **Infra dir on server**: `/opt/share-platform/infra`
+- **Compose files**: `docker-compose.prod.yml`, `docker-compose.dev.yml`
+- **Env files**: `.env.prod`, `.env.dev`
+
+## Service Map
+
+| Service | Image | Compose service name | Source repo |
+|...
+
+### Prompt 38
+
+still cannot login
+
+### Prompt 39
+
+gerade eben
+
+### Prompt 40
+
+klappt jetzt
+
+### Prompt 41
+
+bd list
+
+### Prompt 42
+
+noch ein paar verbesserungen am UX von shaRe Member. das menue im header ist nicht nutzbar auf mobile telefon. mach doch rechts ein Hamburger dropdown
+
+### Prompt 43
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/brainstorming
+
+# Brainstorming Ideas Into Designs
+
+## Overview
+
+Help turn ideas into fully formed designs and specs through natural collaborative dialogue.
+
+Start by understanding the current project context, then ask questions one at a time to refine the idea. Once you understand what you're building, present the design and get user approval.
+
+<HARD-GATE>
+Do NOT invoke any implem...
+
+### Prompt 44
+
+1. shaRe ... language switch, avatar,  [☰]
+
+### Prompt 45
+
+so soll es sein
+
+### Prompt 46
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/writing-plans
+
+# Writing Plans
+
+## Overview
+
+Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs they might need to check, how to test it. Give them the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits....
+

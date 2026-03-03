@@ -3,11 +3,11 @@
   "checkpoint_id": "1ab08c7a66bf",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 1,
+  "checkpoints_count": 2,
   "files_touched": [
     "docs/plans/2026-03-01-settings-page.md",
-    "docs/plans/2026-03-03-camera-capture-design.md",
-    "docs/plans/2026-03-03-camera-capture.md",
+    "docs/plans/2026-03-03-mobile-hamburger-design.md",
+    "docs/plans/2026-03-03-mobile-hamburger.md",
     "index.html",
     "src/App.css",
     "src/App.tsx",
@@ -57,10 +57,10 @@
     }
   ],
   "token_usage": {
-    "input_tokens": 4795,
-    "cache_creation_tokens": 883206,
-    "cache_read_tokens": 16792018,
-    "output_tokens": 79734,
-    "api_call_count": 208
+    "input_tokens": 164,
+    "cache_creation_tokens": 588716,
+    "cache_read_tokens": 11034753,
+    "output_tokens": 50409,
+    "api_call_count": 126
   }
 }
