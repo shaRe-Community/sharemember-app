@@ -7,6 +7,7 @@ export function LandingPage(): JSX.Element {
   const { user, isLoading, login, register } = useAuth()
   const { t } = useTranslation()
   const [rememberMe, setRememberMe] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   const handleLogin = (): void => {
     void login(undefined, rememberMe)
@@ -20,6 +21,7 @@ export function LandingPage(): JSX.Element {
     <>
       <header className="header">
         <div className="header-content">
+          {/* Desktop nav — hidden on mobile via CSS */}
           <nav className="header-nav">
             {user ? (
               <a href="/hub" className="nav-btn nav-btn-primary">
@@ -53,7 +55,57 @@ export function LandingPage(): JSX.Element {
             )}
             <LanguageSwitcher />
           </nav>
+
+          {/* Mobile controls — shown only on mobile via CSS */}
+          <div className="header-mobile-controls">
+            <LanguageSwitcher />
+            <button
+              className="hamburger-btn"
+              onClick={() => setMenuOpen(o => !o)}
+              aria-label={menuOpen ? t('nav.close_menu') : t('nav.open_menu')}
+              aria-expanded={menuOpen}
+              aria-controls="landing-mobile-nav"
+            >
+              {menuOpen ? '✕' : '☰'}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile dropdown */}
+        {menuOpen && (
+          <nav className="mobile-menu" id="landing-mobile-nav">
+            {user ? (
+              <a href="/hub" className="mobile-menu-item" onClick={() => setMenuOpen(false)}>
+                {t('nav.my_communities')}
+              </a>
+            ) : (
+              <>
+                <label className="mobile-menu-item remember-me-label">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={e => setRememberMe(e.target.checked)}
+                  />
+                  {t('nav.remember_me')}
+                </label>
+                <button
+                  className="mobile-menu-item"
+                  onClick={() => { setMenuOpen(false); handleLogin() }}
+                  disabled={isLoading}
+                >
+                  {isLoading ? t('nav.loading') : t('nav.sign_in')}
+                </button>
+                <button
+                  className="mobile-menu-item mobile-menu-item-primary"
+                  onClick={() => { setMenuOpen(false); handleRegister() }}
+                  disabled={isLoading}
+                >
+                  {isLoading ? t('nav.loading') : t('nav.sign_up')}
+                </button>
+              </>
+            )}
+          </nav>
+        )}
       </header>
 
       <main>
