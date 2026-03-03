@@ -19,7 +19,7 @@ export function CallbackPage(): JSX.Element {
 
     userManager
       .signinRedirectCallback()
-      .then((user) => {
+      .then(user => {
         const redirectTo = (user.state as string) || '/hub'
         navigate(redirectTo, { replace: true })
       })
@@ -27,7 +27,14 @@ export function CallbackPage(): JSX.Element {
   }, [navigate])
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+      }}
+    >
       <p>{t('callback.signing_in')}</p>
     </div>
   )

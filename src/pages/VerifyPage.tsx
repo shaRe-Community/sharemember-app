@@ -5,7 +5,11 @@ import { QRCodeSVG } from 'qrcode.react'
 import { useAuth } from '../auth/AuthContext'
 import { AppShell } from '../components/AppShell'
 import { apiFetch, ApiError } from '../api/api'
-import { createVouchRequest, createOpenVouchRequest, fetchRequestStatus } from '../api/vouch'
+import {
+  createVouchRequest,
+  createOpenVouchRequest,
+  fetchRequestStatus,
+} from '../api/vouch'
 
 type Phase =
   | { kind: 'idle' }
@@ -53,14 +57,14 @@ export function VerifyPage(): JSX.Element {
         setPhase({ kind: 'success' })
         setTimeout(() => navigate('/profile', { replace: true }), 2000)
       })
-      .catch((err) => {
+      .catch(err => {
         if (err instanceof ApiError && err.status === 409) {
           setPhase({ kind: 'error', message: t('verify.error_duplicate') })
         } else {
           setPhase({ kind: 'error', message: t('verify.error_failed') })
         }
       })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // ── Start eID flow ─────────────────────────────────────────────────
@@ -68,10 +72,10 @@ export function VerifyPage(): JSX.Element {
     if (!user) return
     setPhase({ kind: 'starting' })
     try {
-      const { redirectUrl, state } = await apiFetch<{ redirectUrl: string; state: string }>(
-        '/v2/eid/start',
-        user.accessToken,
-      )
+      const { redirectUrl, state } = await apiFetch<{
+        redirectUrl: string
+        state: string
+      }>('/v2/eid/start', user.accessToken)
       sessionStorage.setItem(STATE_KEY, state)
       window.location.href = redirectUrl
     } catch {
@@ -85,8 +89,12 @@ export function VerifyPage(): JSX.Element {
         <div className="verify-container">
           <div className="verify-card">
             <div className="verify-icon verify-icon-success">✓</div>
-            <h1 className="verify-title">{t('verify.already_verified_title')}</h1>
-            <p className="verify-subtitle">{t('verify.already_verified_desc')}</p>
+            <h1 className="verify-title">
+              {t('verify.already_verified_title')}
+            </h1>
+            <p className="verify-subtitle">
+              {t('verify.already_verified_desc')}
+            </p>
             <button className="cta-button" onClick={() => navigate('/profile')}>
               {t('verify.back_to_profile')}
             </button>
@@ -100,7 +108,6 @@ export function VerifyPage(): JSX.Element {
     <AppShell>
       <div className="verify-container">
         <div className="verify-card">
-
           {phase.kind === 'processing' && (
             <LoadingState message={t('verify.processing')} />
           )}
@@ -156,7 +163,9 @@ export function VerifyPage(): JSX.Element {
                 onClick={() => void handleStart()}
                 disabled={phase.kind === 'starting'}
               >
-                {phase.kind === 'starting' ? t('verify.starting') : t('verify.start')}
+                {phase.kind === 'starting'
+                  ? t('verify.starting')
+                  : t('verify.start')}
               </button>
 
               <p className="verify-privacy">{t('verify.privacy')}</p>
@@ -198,12 +207,24 @@ function VouchSection(): JSX.Element {
   const [mode, setMode] = useState<'choose' | 'qr' | 'email'>('choose')
 
   if (mode === 'qr') return <QrVouchMode onBack={() => setMode('choose')} />
-  if (mode === 'email') return <EmailVouchMode onBack={() => setMode('choose')} />
+  if (mode === 'email')
+    return <EmailVouchMode onBack={() => setMode('choose')} />
 
-  return <VouchModeChooser onQr={() => setMode('qr')} onEmail={() => setMode('email')} />
+  return (
+    <VouchModeChooser
+      onQr={() => setMode('qr')}
+      onEmail={() => setMode('email')}
+    />
+  )
 }
 
-function VouchModeChooser({ onQr, onEmail }: { onQr: () => void; onEmail: () => void }): JSX.Element {
+function VouchModeChooser({
+  onQr,
+  onEmail,
+}: {
+  onQr: () => void
+  onEmail: () => void
+}): JSX.Element {
   const { t } = useTranslation()
   return (
     <div className="vouch-request-form">
@@ -215,10 +236,7 @@ function VouchModeChooser({ onQr, onEmail }: { onQr: () => void; onEmail: () => 
       >
         {t('verify.vouch_qr_cta')}
       </button>
-      <button
-        className="vouch-back-link"
-        onClick={onEmail}
-      >
+      <button className="vouch-back-link" onClick={onEmail}>
         {t('verify.vouch_email_cta')}
       </button>
     </div>
@@ -230,7 +248,9 @@ function QrVouchMode({ onBack }: { onBack: () => void }): JSX.Element {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [requestId, setRequestId] = useState<string | null>(null)
-  const [status, setStatus] = useState<'idle' | 'loading' | 'showing' | 'confirmed' | 'error'>('idle')
+  const [status, setStatus] = useState<
+    'idle' | 'loading' | 'showing' | 'confirmed' | 'error'
+  >('idle')
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
@@ -238,7 +258,7 @@ function QrVouchMode({ onBack }: { onBack: () => void }): JSX.Element {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleShowQr = async (): Promise<void> => {
@@ -252,7 +272,10 @@ function QrVouchMode({ onBack }: { onBack: () => void }): JSX.Element {
       // Start polling for status
       pollRef.current = setInterval(async () => {
         try {
-          const { status: reqStatus } = await fetchRequestStatus(req.id, user.accessToken)
+          const { status: reqStatus } = await fetchRequestStatus(
+            req.id,
+            user.accessToken
+          )
           if (reqStatus === 'confirmed') {
             if (pollRef.current) clearInterval(pollRef.current)
             setStatus('confirmed')
@@ -291,8 +314,12 @@ function QrVouchMode({ onBack }: { onBack: () => void }): JSX.Element {
             level="M"
           />
         </div>
-        <p className="vouch-request-label">{t('verify.vouch_qr_instructions')}</p>
-        <p className="vouch-responsibility" style={{ fontSize: '0.75rem' }}>{t('verify.vouch_qr_hint')}</p>
+        <p className="vouch-request-label">
+          {t('verify.vouch_qr_instructions')}
+        </p>
+        <p className="vouch-responsibility" style={{ fontSize: '0.75rem' }}>
+          {t('verify.vouch_qr_hint')}
+        </p>
         <button className="vouch-back-link" onClick={onBack}>
           {t('verify.vouch_back')}
         </button>
@@ -338,7 +365,14 @@ function VouchRequestForm(): JSX.Element {
   const { user } = useAuth()
   const { t } = useTranslation()
   const [email, setEmail] = useState('')
-  const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error_not_found' | 'error_duplicate' | 'error'>('idle')
+  const [state, setState] = useState<
+    | 'idle'
+    | 'sending'
+    | 'sent'
+    | 'error_not_found'
+    | 'error_duplicate'
+    | 'error'
+  >('idle')
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
@@ -369,13 +403,13 @@ function VouchRequestForm(): JSX.Element {
   return (
     <div className="vouch-request-form">
       <p className="vouch-request-label">{t('verify.vouch_request_intro')}</p>
-      <form onSubmit={(e) => void handleSubmit(e)} className="vouch-request-row">
+      <form onSubmit={e => void handleSubmit(e)} className="vouch-request-row">
         <input
           type="email"
           className="vouch-request-input"
           placeholder={t('verify.vouch_request_placeholder')}
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={e => setEmail(e.target.value)}
           disabled={state === 'sending'}
           required
         />
@@ -384,14 +418,20 @@ function VouchRequestForm(): JSX.Element {
           className="nav-btn nav-btn-secondary vouch-request-btn"
           disabled={state === 'sending' || !email.trim()}
         >
-          {state === 'sending' ? t('verify.vouch_request_sending') : t('verify.vouch_request_cta')}
+          {state === 'sending'
+            ? t('verify.vouch_request_sending')
+            : t('verify.vouch_request_cta')}
         </button>
       </form>
       {state === 'error_not_found' && (
-        <p className="vouch-request-error">{t('verify.vouch_error_not_found')}</p>
+        <p className="vouch-request-error">
+          {t('verify.vouch_error_not_found')}
+        </p>
       )}
       {state === 'error_duplicate' && (
-        <p className="vouch-request-error">{t('verify.vouch_error_duplicate')}</p>
+        <p className="vouch-request-error">
+          {t('verify.vouch_error_duplicate')}
+        </p>
       )}
       {state === 'error' && (
         <p className="vouch-request-error">{t('verify.vouch_error_generic')}</p>

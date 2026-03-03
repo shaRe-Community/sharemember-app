@@ -10,7 +10,7 @@ export function ProfilePage(): JSX.Element {
   const initials = user?.name
     ? user.name
         .split(' ')
-        .map((n) => n[0])
+        .map(n => n[0])
         .join('')
         .toUpperCase()
         .slice(0, 2)
@@ -21,7 +21,9 @@ export function ProfilePage(): JSX.Element {
       <div className="profile-container">
         <div className="profile-card">
           {/* Avatar */}
-          <div className={`avatar-wrapper${isIdentified ? '' : ' avatar-unidentified'}`}>
+          <div
+            className={`avatar-wrapper${isIdentified ? '' : ' avatar-unidentified'}`}
+          >
             <div className="avatar">
               {user?.picture ? (
                 <img
@@ -33,7 +35,9 @@ export function ProfilePage(): JSX.Element {
                 initials
               )}
             </div>
-            <span className={`avatar-badge${isIdentified ? ' avatar-badge-shield' : ' avatar-badge-question'}`}>
+            <span
+              className={`avatar-badge${isIdentified ? ' avatar-badge-shield' : ' avatar-badge-question'}`}
+            >
               {isIdentified ? '✓' : '?'}
             </span>
           </div>
@@ -56,7 +60,11 @@ export function ProfilePage(): JSX.Element {
               <div>
                 <strong>{t('profile.identity_unverified')}</strong>
                 <p>{t('profile.identity_unverified_desc')}</p>
-                <Link to="/verify" className="cta-button" style={{ marginTop: '1rem', display: 'inline-block' }}>
+                <Link
+                  to="/verify"
+                  className="cta-button"
+                  style={{ marginTop: '1rem', display: 'inline-block' }}
+                >
                   {t('profile.verify_cta')}
                 </Link>
               </div>

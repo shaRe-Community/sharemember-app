@@ -20,14 +20,14 @@ Production-ready MVP, deployed on Scaleway/Traefik (migrated from GCP).
 
 ## Routes
 
-| Path | Component | Auth |
-|------|-----------|------|
-| `/` | LandingPage | Public |
-| `/callback` | OIDC callback | Public |
-| `/hub` | Community hub | Protected |
-| `/join` | Join via invite code | Protected |
-| `/profile` | Profile page | Protected |
-| `/verify` | eID verification | Protected |
+| Path        | Component            | Auth      |
+| ----------- | -------------------- | --------- |
+| `/`         | LandingPage          | Public    |
+| `/callback` | OIDC callback        | Public    |
+| `/hub`      | Community hub        | Protected |
+| `/join`     | Join via invite code | Protected |
+| `/profile`  | Profile page         | Protected |
+| `/verify`   | eID verification     | Protected |
 
 Protected routes are wrapped in an `AppShell` that provides persistent navigation.
 
@@ -51,14 +51,14 @@ The `/verify` page triggers the eID flow via the `operator-ts` `/eid/` module.
 
 ## Environment Variables
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `VITE_APP_NAME` | Display name for the app | `shaRe Member` |
-| `VITE_API_URL` | operator-ts base URL | `https://wurzelwerk.up2go.com/api` |
-| `VITE_SSO_URL` | Keycloak base URL | `https://sso.wurzelwerk.up2go.com` |
-| `VITE_PUBLIC_URL` | Public URL of this app | `https://share.community` |
-| `VITE_KEYCLOAK_REALM` | Keycloak realm name | `prod-sharemembers` |
-| `VITE_KEYCLOAK_CLIENT_ID` | Keycloak client ID | `prod-sharemember-app` |
+| Variable                  | Description              | Example                            |
+| ------------------------- | ------------------------ | ---------------------------------- |
+| `VITE_APP_NAME`           | Display name for the app | `shaRe Member`                     |
+| `VITE_API_URL`            | operator-ts base URL     | `https://wurzelwerk.up2go.com/api` |
+| `VITE_SSO_URL`            | Keycloak base URL        | `https://sso.wurzelwerk.up2go.com` |
+| `VITE_PUBLIC_URL`         | Public URL of this app   | `https://share.community`          |
+| `VITE_KEYCLOAK_REALM`     | Keycloak realm name      | `prod-sharemembers`                |
+| `VITE_KEYCLOAK_CLIENT_ID` | Keycloak client ID       | `prod-sharemember-app`             |
 
 ## Development
 
@@ -79,9 +79,9 @@ Both `App.css` and `index.css` are imported in `main.tsx`.
 
 ## Related Projects
 
-| Repo | Purpose |
-|------|---------|
-| [share-ui](https://github.com/shaRe-Community/share-ui) | Community governance frontend (roundtables, documents) |
-| [operator-ts](https://github.com/shaRe-Community/operator-ts) | Shared NestJS backend API |
-| [sharemembers](https://github.com/shaRe-Community/sharemembers) | Keycloak customisation, SPIs, auth themes |
-| [share-platform](https://github.com/shaRe-Community/share-platform) | Platform specs, ADRs, cross-cutting issues |
+| Repo                                                                | Purpose                                                |
+| ------------------------------------------------------------------- | ------------------------------------------------------ |
+| [share-ui](https://github.com/shaRe-Community/share-ui)             | Community governance frontend (roundtables, documents) |
+| [operator-ts](https://github.com/shaRe-Community/operator-ts)       | Shared NestJS backend API                              |
+| [sharemembers](https://github.com/shaRe-Community/sharemembers)     | Keycloak customisation, SPIs, auth themes              |
+| [share-platform](https://github.com/shaRe-Community/share-platform) | Platform specs, ADRs, cross-cutting issues             |

@@ -21,7 +21,7 @@ export interface KcApiError {
 async function kcFetch<T>(
   path: string,
   token: string,
-  options?: RequestInit,
+  options?: RequestInit
 ): Promise<T | void> {
   const res = await fetch(`${BASE}${path}`, {
     ...options,
@@ -32,8 +32,11 @@ async function kcFetch<T>(
     },
   })
   if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as KcApiError
-    throw new ApiError(res.status, body.errorMessage ?? body.error ?? `KC API ${res.status}`)
+    const body = (await res.json().catch(() => ({}))) as KcApiError
+    throw new ApiError(
+      res.status,
+      body.errorMessage ?? body.error ?? `KC API ${res.status}`
+    )
   }
   // 204 No Content — return void
   const text = await res.text()
@@ -46,7 +49,10 @@ export async function getAccountInfo(token: string): Promise<KcUserInfo> {
   return result
 }
 
-export function updateAccountInfo(token: string, info: KcUserInfo): Promise<void> {
+export function updateAccountInfo(
+  token: string,
+  info: KcUserInfo
+): Promise<void> {
   return kcFetch<void>('', token, {
     method: 'POST',
     body: JSON.stringify(info),
@@ -56,7 +62,7 @@ export function updateAccountInfo(token: string, info: KcUserInfo): Promise<void
 export function changePassword(
   token: string,
   currentPassword: string,
-  newPassword: string,
+  newPassword: string
 ): Promise<void> {
   return kcFetch<void>('/credentials/password', token, {
     method: 'PUT',

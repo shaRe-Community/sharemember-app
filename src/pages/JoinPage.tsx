@@ -30,9 +30,11 @@ export function JoinPage(): JSX.Element {
         {
           method: 'POST',
           body: JSON.stringify({ inviteCode: inviteCode.trim() }),
-        },
+        }
       )
-      setSuccessMessage(t('join.success', { communityName: result.communityName }))
+      setSuccessMessage(
+        t('join.success', { communityName: result.communityName })
+      )
       setTimeout(() => navigate('/hub'), 1500)
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) {
@@ -52,7 +54,7 @@ export function JoinPage(): JSX.Element {
           <h1 className="join-title">{t('join.title')}</h1>
           <p className="join-subtitle">{t('join.subtitle')}</p>
 
-          <form onSubmit={(e) => void handleSubmit(e)} className="join-form">
+          <form onSubmit={e => void handleSubmit(e)} className="join-form">
             <div className="form-field">
               <label htmlFor="inviteCode" className="form-label">
                 {t('join.label')}
@@ -61,7 +63,7 @@ export function JoinPage(): JSX.Element {
                 id="inviteCode"
                 type="text"
                 value={inviteCode}
-                onChange={(e) => setInviteCode(e.target.value)}
+                onChange={e => setInviteCode(e.target.value)}
                 placeholder={t('join.placeholder')}
                 className={`form-input${error ? ' form-input-error' : ''}`}
                 disabled={isSubmitting || !!successMessage}
@@ -70,9 +72,7 @@ export function JoinPage(): JSX.Element {
               {error && <p className="form-error">{error}</p>}
             </div>
 
-            {successMessage && (
-              <p className="form-success">{successMessage}</p>
-            )}
+            {successMessage && <p className="form-success">{successMessage}</p>}
 
             <button
               type="submit"

@@ -6,7 +6,11 @@ import {
   ReactNode,
 } from 'react'
 import type { User } from 'oidc-client-ts'
-import { userManager, registerUserManager, REMEMBER_ME_KEY } from './auth.config'
+import {
+  userManager,
+  registerUserManager,
+  REMEMBER_ME_KEY,
+} from './auth.config'
 
 export type EidStatus = 'un_identified' | 'identified'
 
@@ -35,7 +39,8 @@ function mapUser(oidcUser: User): AuthUser {
   const profile = oidcUser.profile as Record<string, unknown>
   return {
     sub: oidcUser.profile.sub,
-    name: (profile.name as string) ?? (profile.preferred_username as string) ?? '',
+    name:
+      (profile.name as string) ?? (profile.preferred_username as string) ?? '',
     email: (profile.email as string) ?? '',
     accessToken: oidcUser.access_token,
     eidStatus: (profile.eid_status as EidStatus) ?? 'un_identified',
@@ -44,12 +49,16 @@ function mapUser(oidcUser: User): AuthUser {
   }
 }
 
-export function AuthProvider({ children }: { children: ReactNode }): JSX.Element {
+export function AuthProvider({
+  children,
+}: {
+  children: ReactNode
+}): JSX.Element {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    userManager.getUser().then((oidcUser) => {
+    userManager.getUser().then(oidcUser => {
       if (oidcUser && !oidcUser.expired) {
         setUser(mapUser(oidcUser))
       }
@@ -82,7 +91,9 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
   const refreshUser = () => userManager.signinSilent().then(() => undefined)
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, register, refreshUser }}>
+    <AuthContext.Provider
+      value={{ user, isLoading, login, logout, register, refreshUser }}
+    >
       {children}
     </AuthContext.Provider>
   )

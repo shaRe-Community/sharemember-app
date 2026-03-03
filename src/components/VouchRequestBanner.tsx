@@ -13,7 +13,9 @@ export function VouchRequestBanner(): JSX.Element | null {
     if (!user || user.eidStatus !== 'identified') return
     fetchPendingVouchRequests(user.accessToken)
       .then(setRequests)
-      .catch(() => { /* non-critical, fail silently */ })
+      .catch(() => {
+        /* non-critical, fail silently */
+      })
   }, [user])
 
   if (requests.length === 0) return null

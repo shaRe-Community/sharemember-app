@@ -33,8 +33,8 @@ export function VouchPage(): JSX.Element {
   useEffect(() => {
     if (!user || !requestId) return
     fetchVouchRequest(requestId, user.accessToken)
-      .then((req) => setState({ kind: 'active', request: req }))
-      .catch((err) => {
+      .then(req => setState({ kind: 'active', request: req }))
+      .catch(err => {
         if (err instanceof ApiError) {
           if (err.status === 404) setState({ kind: 'not_found' })
           else if (err.status === 409) setState({ kind: 'already_processed' })
@@ -78,11 +78,16 @@ export function VouchPage(): JSX.Element {
           </div>
         )}
 
-        {(state.kind === 'not_found' || state.kind === 'already_processed' || state.kind === 'not_identified' || state.kind === 'self_vouch' || state.kind === 'error') && (
+        {(state.kind === 'not_found' ||
+          state.kind === 'already_processed' ||
+          state.kind === 'not_identified' ||
+          state.kind === 'self_vouch' ||
+          state.kind === 'error') && (
           <div className="vouch-card">
             <p className="vouch-info-text">
               {state.kind === 'not_found' && t('vouch.not_found')}
-              {state.kind === 'already_processed' && t('vouch.already_processed')}
+              {state.kind === 'already_processed' &&
+                t('vouch.already_processed')}
               {state.kind === 'not_identified' && t('vouch.not_identified')}
               {state.kind === 'self_vouch' && t('vouch.self_vouch')}
               {state.kind === 'error' && t('vouch.network_error')}
@@ -100,11 +105,15 @@ export function VouchPage(): JSX.Element {
               pictureUrl={state.request.requestee.pictureUrl}
             />
             <h1 className="vouch-name">{state.request.requestee.name}</h1>
-            <p className="vouch-request-text">{t('vouch.requests_confirmation')}</p>
+            <p className="vouch-request-text">
+              {t('vouch.requests_confirmation')}
+            </p>
 
             <div className="vouch-divider" />
 
-            <p className="vouch-responsibility">{t('vouch.responsibility_statement')}</p>
+            <p className="vouch-responsibility">
+              {t('vouch.responsibility_statement')}
+            </p>
 
             <button
               className="cta-button vouch-confirm-btn"
@@ -159,7 +168,7 @@ function VoucheeAvatar({
 }): JSX.Element {
   const initials = name
     .split(' ')
-    .map((n) => n[0])
+    .map(n => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2)

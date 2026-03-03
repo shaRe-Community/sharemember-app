@@ -22,13 +22,19 @@ const getErrorDetails = (errorName: string): CameraError => {
 }
 
 const isMobile = (): boolean =>
-  /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  )
 
 export function useCamera() {
   const [isCapturing, setIsCapturing] = useState(false)
   const [stream, setStream] = useState<MediaStream | null>(null)
-  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment')
-  const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([])
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>(
+    'environment'
+  )
+  const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>(
+    []
+  )
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null)
   const [cameraError, setCameraError] = useState<CameraError | null>(null)
 
@@ -39,49 +45,54 @@ export function useCamera() {
   const enumerateCameras = useCallback(async () => {
     if (!navigator.mediaDevices?.enumerateDevices) return
     const devices = await navigator.mediaDevices.enumerateDevices()
-    const cameras = devices.filter((d) => d.kind === 'videoinput')
+    const cameras = devices.filter(d => d.kind === 'videoinput')
     setAvailableCameras(cameras)
   }, [])
 
-  const startCamera = useCallback(async (deviceId?: string, facingModeOverride?: 'user' | 'environment') => {
-    setIsCapturing(true)
-    setCameraError(null)
+  const startCamera = useCallback(
+    async (deviceId?: string, facingModeOverride?: 'user' | 'environment') => {
+      setIsCapturing(true)
+      setCameraError(null)
 
-    try {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        throw Object.assign(new Error(), { name: 'NotSupportedError' })
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw Object.assign(new Error(), { name: 'NotSupportedError' })
+        }
+
+        const videoConstraints: MediaTrackConstraints = deviceId
+          ? { deviceId: { exact: deviceId } }
+          : isMobile()
+            ? { facingMode: facingModeOverride ?? facingMode }
+            : { width: { ideal: 1280 }, height: { ideal: 720 } }
+
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: videoConstraints,
+        })
+        setStream(mediaStream)
+
+        // Sync selectedCameraId to the actual active camera
+        const videoTrack = mediaStream.getVideoTracks()[0]
+        if (videoTrack) {
+          const actualDeviceId = videoTrack.getSettings().deviceId
+          if (actualDeviceId) setSelectedCameraId(actualDeviceId)
+        }
+
+        await enumerateCameras()
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream
+          await videoRef.current.play()
+        }
+      } catch (err: any) {
+        setIsCapturing(false)
+        setCameraError(getErrorDetails(err?.name ?? ''))
       }
-
-      const videoConstraints: MediaTrackConstraints = deviceId
-        ? { deviceId: { exact: deviceId } }
-        : isMobile()
-          ? { facingMode: facingModeOverride ?? facingMode }
-          : { width: { ideal: 1280 }, height: { ideal: 720 } }
-
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints })
-      setStream(mediaStream)
-
-      // Sync selectedCameraId to the actual active camera
-      const videoTrack = mediaStream.getVideoTracks()[0]
-      if (videoTrack) {
-        const actualDeviceId = videoTrack.getSettings().deviceId
-        if (actualDeviceId) setSelectedCameraId(actualDeviceId)
-      }
-
-      await enumerateCameras()
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream
-        await videoRef.current.play()
-      }
-    } catch (err: any) {
-      setIsCapturing(false)
-      setCameraError(getErrorDetails(err?.name ?? ''))
-    }
-  }, [facingMode, enumerateCameras])
+    },
+    [facingMode, enumerateCameras]
+  )
 
   const stopCamera = useCallback(() => {
-    stream?.getTracks().forEach((t) => t.stop())
+    stream?.getTracks().forEach(t => t.stop())
     setStream(null)
     setIsCapturing(false)
     setCameraError(null)
@@ -108,19 +119,28 @@ export function useCamera() {
       setFacingMode(next)
       setTimeout(() => void startCamera(undefined, next), 150)
     } else {
-      const currentIdx = availableCameras.findIndex((c) => c.deviceId === selectedCameraId)
+      const currentIdx = availableCameras.findIndex(
+        c => c.deviceId === selectedCameraId
+      )
       const next = availableCameras[(currentIdx + 1) % availableCameras.length]
       if (next) {
         setSelectedCameraId(next.deviceId)
         setTimeout(() => void startCamera(next.deviceId), 150)
       }
     }
-  }, [isCapturing, facingMode, availableCameras, selectedCameraId, stopCamera, startCamera])
+  }, [
+    isCapturing,
+    facingMode,
+    availableCameras,
+    selectedCameraId,
+    stopCamera,
+    startCamera,
+  ])
 
   // Auto-stop on unmount
   useEffect(() => {
     return () => {
-      stream?.getTracks().forEach((t) => t.stop())
+      stream?.getTracks().forEach(t => t.stop())
     }
   }, [stream])
 

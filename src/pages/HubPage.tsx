@@ -13,13 +13,18 @@ export function HubPage(): JSX.Element {
   const [communities, setCommunities] = useState<CommunityTeaser[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [publicCommunities, setPublicCommunities] = useState<PublicCommunityTeaser[]>([])
+  const [publicCommunities, setPublicCommunities] = useState<
+    PublicCommunityTeaser[]
+  >([])
   const [discoverLoading, setDiscoverLoading] = useState(true)
   const [joiningId, setJoiningId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) return
-    apiFetch<CommunityTeaser[]>('/v2/sharemember/me/communities', user.accessToken)
+    apiFetch<CommunityTeaser[]>(
+      '/v2/sharemember/me/communities',
+      user.accessToken
+    )
       .then(setCommunities)
       .catch(() => setError(t('hub.load_error')))
       .finally(() => setIsLoading(false))
@@ -29,11 +34,16 @@ export function HubPage(): JSX.Element {
     if (!user) return
     fetchPublicCommunities(user.accessToken)
       .then(setPublicCommunities)
-      .catch(() => {/* silently ignore — discover is non-critical */})
+      .catch(() => {
+        /* silently ignore — discover is non-critical */
+      })
       .finally(() => setDiscoverLoading(false))
   }, [user])
 
-  const handleJoinOpen = async (communityId: string, frontendUrl: string | null): Promise<void> => {
+  const handleJoinOpen = async (
+    communityId: string,
+    frontendUrl: string | null
+  ): Promise<void> => {
     if (!user || joiningId) return
     setJoiningId(communityId)
     try {
@@ -41,9 +51,12 @@ export function HubPage(): JSX.Element {
       if (frontendUrl) {
         window.location.href = frontendUrl
       } else {
-        const updated = await apiFetch<CommunityTeaser[]>('/v2/sharemember/me/communities', user.accessToken)
+        const updated = await apiFetch<CommunityTeaser[]>(
+          '/v2/sharemember/me/communities',
+          user.accessToken
+        )
         setCommunities(updated)
-        setPublicCommunities((prev) => prev.filter((c) => c.id !== communityId))
+        setPublicCommunities(prev => prev.filter(c => c.id !== communityId))
       }
     } catch {
       // ignore
@@ -58,14 +71,18 @@ export function HubPage(): JSX.Element {
       {user?.eidStatus === 'un_identified' && (
         <div className="unidentified-banner">
           <span>{t('banner.unidentified')}</span>
-          <Link to="/verify" className="banner-cta">{t('banner.verify_cta')}</Link>
+          <Link to="/verify" className="banner-cta">
+            {t('banner.verify_cta')}
+          </Link>
         </div>
       )}
 
       <div className="hub-container">
         <div className="hub-header">
           <h1 className="hub-title">{t('hub.title')}</h1>
-          <Link to="/join" className="cta-button">{t('hub.join')}</Link>
+          <Link to="/join" className="cta-button">
+            {t('hub.join')}
+          </Link>
         </div>
 
         {isLoading && <p className="hub-loading">{t('hub.loading')}</p>}
@@ -74,7 +91,11 @@ export function HubPage(): JSX.Element {
         {!isLoading && !error && communities.length === 0 && (
           <div className="hub-empty">
             <p>{t('hub.empty')}</p>
-            <Link to="/join" className="cta-button" style={{ marginTop: '1rem' }}>
+            <Link
+              to="/join"
+              className="cta-button"
+              style={{ marginTop: '1rem' }}
+            >
               {t('hub.join')}
             </Link>
           </div>
@@ -82,19 +103,19 @@ export function HubPage(): JSX.Element {
 
         {communities.length > 0 && (
           <div className="community-grid">
-            {communities.map((c) => (
+            {communities.map(c => (
               <CommunityCard key={c.id} community={c} />
             ))}
           </div>
         )}
 
-        {!discoverLoading && publicCommunities.some((c) => !c.isMember) && (
+        {!discoverLoading && publicCommunities.some(c => !c.isMember) && (
           <div className="hub-discover">
             <h2 className="hub-discover-title">{t('hub.discover_title')}</h2>
             <div className="community-grid">
               {publicCommunities
-                .filter((c) => !c.isMember)
-                .map((c) => (
+                .filter(c => !c.isMember)
+                .map(c => (
                   <PublicCommunityCard
                     key={c.id}
                     community={c}
@@ -126,7 +147,11 @@ function PublicCommunityCard({
     <div className="community-card">
       <div className="community-card-logo">
         {c.logoUrl ? (
-          <img src={c.logoUrl} alt={`${c.name} logo`} className="community-logo-img" />
+          <img
+            src={c.logoUrl}
+            alt={`${c.name} logo`}
+            className="community-logo-img"
+          />
         ) : (
           <div className="community-logo-placeholder">
             {c.name.charAt(0).toUpperCase()}
@@ -144,7 +169,9 @@ function PublicCommunityCard({
       </div>
       <div className="community-card-footer">
         {c.hasInviteCode ? (
-          <a href="/join" className="cta-button">{t('hub.join_with_code')}</a>
+          <a href="/join" className="cta-button">
+            {t('hub.join_with_code')}
+          </a>
         ) : (
           <button
             className="cta-button"
@@ -159,7 +186,11 @@ function PublicCommunityCard({
   )
 }
 
-function CommunityCard({ community: c }: { community: CommunityTeaser }): JSX.Element {
+function CommunityCard({
+  community: c,
+}: {
+  community: CommunityTeaser
+}): JSX.Element {
   const { t } = useTranslation()
 
   const handleEnter = (): void => {
@@ -172,7 +203,11 @@ function CommunityCard({ community: c }: { community: CommunityTeaser }): JSX.El
     <div className="community-card">
       <div className="community-card-logo">
         {c.logoUrl ? (
-          <img src={c.logoUrl} alt={`${c.name} logo`} className="community-logo-img" />
+          <img
+            src={c.logoUrl}
+            alt={`${c.name} logo`}
+            className="community-logo-img"
+          />
         ) : (
           <div className="community-logo-placeholder">
             {c.name.charAt(0).toUpperCase()}
@@ -185,9 +220,13 @@ function CommunityCard({ community: c }: { community: CommunityTeaser }): JSX.El
         {c.intent && <p className="community-card-intent">{c.intent}</p>}
 
         <div className="community-card-meta">
-          <span className="community-member-count">{t('hub.member_count', { count: c.memberCount })}</span>
+          <span className="community-member-count">
+            {t('hub.member_count', { count: c.memberCount })}
+          </span>
           {c.purposeRoundtable && (
-            <span className="community-roundtable">{c.purposeRoundtable.name}</span>
+            <span className="community-roundtable">
+              {c.purposeRoundtable.name}
+            </span>
           )}
         </div>
       </div>

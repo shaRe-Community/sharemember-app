@@ -19,7 +19,10 @@ export function SettingsPage(): JSX.Element {
     <AppShell>
       <div className="settings-container">
         <h1 className="settings-title">{t('settings.title')}</h1>
-        <ProfilePictureSection token={user!.accessToken} currentPicture={user!.picture} />
+        <ProfilePictureSection
+          token={user!.accessToken}
+          currentPicture={user!.picture}
+        />
         <PersonalInfoSection token={user!.accessToken} />
         <PasswordSection token={user!.accessToken} />
         <TwoFactorSection token={user!.accessToken} />
@@ -43,7 +46,7 @@ function PersonalInfoSection({ token }: { token: string }): JSX.Element {
 
   useEffect(() => {
     getAccountInfo(token)
-      .then((info) => setForm(info))
+      .then(info => setForm(info))
       .catch(() => setError(t('settings.error_generic')))
       .finally(() => setIsLoading(false))
   }, [token])
@@ -57,27 +60,36 @@ function PersonalInfoSection({ token }: { token: string }): JSX.Element {
       await updateAccountInfo(token, form)
       setSuccess(true)
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 401
-        ? t('settings.error_401')
-        : t('settings.error_generic'))
+      setError(
+        err instanceof ApiError && err.status === 401
+          ? t('settings.error_401')
+          : t('settings.error_generic')
+      )
     } finally {
       setIsSaving(false)
     }
   }
 
-  if (isLoading) return <div className="settings-card"><p>{t('nav.loading')}</p></div>
+  if (isLoading)
+    return (
+      <div className="settings-card">
+        <p>{t('nav.loading')}</p>
+      </div>
+    )
 
   return (
     <div className="settings-card">
-      <h2 className="settings-section-title">{t('settings.personal_info_title')}</h2>
-      <form onSubmit={(e) => void handleSubmit(e)}>
+      <h2 className="settings-section-title">
+        {t('settings.personal_info_title')}
+      </h2>
+      <form onSubmit={e => void handleSubmit(e)}>
         <div className="settings-row">
           <div className="form-field">
             <label className="form-label">{t('settings.first_name')}</label>
             <input
               className="form-input"
               value={form.firstName}
-              onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+              onChange={e => setForm({ ...form, firstName: e.target.value })}
               required
             />
           </div>
@@ -86,7 +98,7 @@ function PersonalInfoSection({ token }: { token: string }): JSX.Element {
             <input
               className="form-input"
               value={form.lastName}
-              onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+              onChange={e => setForm({ ...form, lastName: e.target.value })}
               required
             />
           </div>
@@ -97,12 +109,14 @@ function PersonalInfoSection({ token }: { token: string }): JSX.Element {
             className="form-input"
             type="email"
             value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            onChange={e => setForm({ ...form, email: e.target.value })}
             required
           />
         </div>
         {error && <p className="form-error">{error}</p>}
-        {success && <p className="form-success">{t('settings.save_success')}</p>}
+        {success && (
+          <p className="form-success">{t('settings.save_success')}</p>
+        )}
         <button type="submit" className="cta-button" disabled={isSaving}>
           {isSaving ? t('settings.saving') : t('settings.save')}
         </button>
@@ -111,13 +125,21 @@ function PersonalInfoSection({ token }: { token: string }): JSX.Element {
   )
 }
 
-function ProfilePictureSection({ token, currentPicture }: { token: string; currentPicture: string | null }): JSX.Element {
+function ProfilePictureSection({
+  token,
+  currentPicture,
+}: {
+  token: string
+  currentPicture: string | null
+}): JSX.Element {
   const { t } = useTranslation()
   const { refreshUser } = useAuth()
   const [isUploading, setIsUploading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(currentPicture)
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(
+    currentPicture
+  )
   const localPreviewRef = useRef<string | null>(null)
 
   const ssoUrl = import.meta.env.VITE_SSO_URL as string
@@ -165,8 +187,16 @@ function ProfilePictureSection({ token, currentPicture }: { token: string; curre
         onUpload={handleUpload}
         isUploading={isUploading}
       />
-      {error && <p className="form-error" style={{ marginTop: '1rem' }}>{error}</p>}
-      {success && <p className="form-success" style={{ marginTop: '1rem' }}>{t('settings.picture_success')}</p>}
+      {error && (
+        <p className="form-error" style={{ marginTop: '1rem' }}>
+          {error}
+        </p>
+      )}
+      {success && (
+        <p className="form-success" style={{ marginTop: '1rem' }}>
+          {t('settings.picture_success')}
+        </p>
+      )}
     </div>
   )
 }
@@ -195,11 +225,11 @@ function TwoFactorSection({ token }: { token: string }): JSX.Element {
     fetch(`${ssoUrl}/realms/${realm}/account/credentials`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then(async (res) => {
+      .then(async res => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         return res.json() as Promise<OtpCredential[]>
       })
-      .then((data) => setCredentials(data.filter((c) => c.type === 'otp')))
+      .then(data => setCredentials(data.filter(c => c.type === 'otp')))
       .catch(() => setError(t('settings.two_factor_load_error')))
       .finally(() => setIsLoading(false))
   }, [token])
@@ -225,7 +255,7 @@ function TwoFactorSection({ token }: { token: string }): JSX.Element {
         {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` },
-        },
+        }
       )
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       setSuccess(true)
@@ -234,12 +264,12 @@ function TwoFactorSection({ token }: { token: string }): JSX.Element {
       fetch(`${ssoUrl}/realms/${realm}/account/credentials`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-        .then(async (res2) => {
+        .then(async res2 => {
           setSuccess(false)
           if (!res2.ok) throw new Error(`HTTP ${res2.status}`)
           return res2.json() as Promise<OtpCredential[]>
         })
-        .then((data) => setCredentials(data.filter((c) => c.type === 'otp')))
+        .then(data => setCredentials(data.filter(c => c.type === 'otp')))
         .catch(() => setError(t('settings.two_factor_load_error')))
         .finally(() => setIsLoading(false))
     } catch {
@@ -249,23 +279,46 @@ function TwoFactorSection({ token }: { token: string }): JSX.Element {
     }
   }
 
-  if (isLoading) return <div className="settings-card"><p>{t('nav.loading')}</p></div>
+  if (isLoading)
+    return (
+      <div className="settings-card">
+        <p>{t('nav.loading')}</p>
+      </div>
+    )
 
   return (
     <div className="settings-card">
-      <h2 className="settings-section-title">{t('settings.two_factor_title')}</h2>
+      <h2 className="settings-section-title">
+        {t('settings.two_factor_title')}
+      </h2>
       <div className="two-factor-status">
-        <span className={`two-factor-dot ${isEnabled ? 'enabled' : 'disabled'}`} />
-        <span>{isEnabled ? t('settings.two_factor_enabled') : t('settings.two_factor_disabled')}</span>
+        <span
+          className={`two-factor-dot ${isEnabled ? 'enabled' : 'disabled'}`}
+        />
+        <span>
+          {isEnabled
+            ? t('settings.two_factor_enabled')
+            : t('settings.two_factor_disabled')}
+        </span>
       </div>
       {error && <p className="form-error">{error}</p>}
-      {success && <p className="form-success">{t('settings.two_factor_disabled_success')}</p>}
+      {success && (
+        <p className="form-success">
+          {t('settings.two_factor_disabled_success')}
+        </p>
+      )}
       {!isEnabled && (
         <>
           <button type="button" className="cta-button" onClick={handleEnable}>
             {t('settings.two_factor_enable')}
           </button>
-          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+          <p
+            style={{
+              fontSize: '0.8rem',
+              color: 'rgba(255,255,255,0.5)',
+              margin: 0,
+            }}
+          >
             {t('settings.two_factor_setup_note')}
           </p>
         </>
@@ -277,7 +330,9 @@ function TwoFactorSection({ token }: { token: string }): JSX.Element {
           onClick={() => void handleDisable()}
           disabled={isDisabling}
         >
-          {isDisabling ? t('settings.two_factor_disabling') : t('settings.two_factor_disable')}
+          {isDisabling
+            ? t('settings.two_factor_disabling')
+            : t('settings.two_factor_disable')}
         </button>
       )}
     </div>
@@ -309,9 +364,11 @@ function PasswordSection({ token }: { token: string }): JSX.Element {
       setNewPassword('')
       setConfirmPassword('')
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 401
-        ? t('settings.error_401')
-        : t('settings.error_generic'))
+      setError(
+        err instanceof ApiError && err.status === 401
+          ? t('settings.error_401')
+          : t('settings.error_generic')
+      )
     } finally {
       setIsSaving(false)
     }
@@ -320,14 +377,14 @@ function PasswordSection({ token }: { token: string }): JSX.Element {
   return (
     <div className="settings-card">
       <h2 className="settings-section-title">{t('settings.password_title')}</h2>
-      <form onSubmit={(e) => void handleSubmit(e)}>
+      <form onSubmit={e => void handleSubmit(e)}>
         <div className="form-field">
           <label className="form-label">{t('settings.current_password')}</label>
           <input
             className="form-input"
             type="password"
             value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
+            onChange={e => setCurrentPassword(e.target.value)}
             autoComplete="current-password"
             required
           />
@@ -338,7 +395,7 @@ function PasswordSection({ token }: { token: string }): JSX.Element {
             className="form-input"
             type="password"
             value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
+            onChange={e => setNewPassword(e.target.value)}
             autoComplete="new-password"
             required
             minLength={8}
@@ -350,15 +407,19 @@ function PasswordSection({ token }: { token: string }): JSX.Element {
             className="form-input"
             type="password"
             value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            onChange={e => setConfirmPassword(e.target.value)}
             autoComplete="new-password"
             required
           />
         </div>
         {error && <p className="form-error">{error}</p>}
-        {success && <p className="form-success">{t('settings.password_success')}</p>}
+        {success && (
+          <p className="form-success">{t('settings.password_success')}</p>
+        )}
         <button type="submit" className="cta-button" disabled={isSaving}>
-          {isSaving ? t('settings.changing_password') : t('settings.change_password')}
+          {isSaving
+            ? t('settings.changing_password')
+            : t('settings.change_password')}
         </button>
       </form>
     </div>

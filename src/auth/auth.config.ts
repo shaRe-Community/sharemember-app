@@ -1,4 +1,8 @@
-import { UserManager, UserManagerSettings, WebStorageStateStore } from 'oidc-client-ts'
+import {
+  UserManager,
+  UserManagerSettings,
+  WebStorageStateStore,
+} from 'oidc-client-ts'
 
 const ssoUrl = import.meta.env.VITE_SSO_URL
 const realm = import.meta.env.VITE_KEYCLOAK_REALM
@@ -19,7 +23,9 @@ function buildSettings(authorizationEndpoint?: string): UserManagerSettings {
     scope: 'openid profile email',
     automaticSilentRenew: true,
     filterProtocolClaims: false,
-    userStore: new WebStorageStateStore({ store: rememberMe ? localStorage : sessionStorage }),
+    userStore: new WebStorageStateStore({
+      store: rememberMe ? localStorage : sessionStorage,
+    }),
     ...(authorizationEndpoint
       ? {
           metadata: {
@@ -39,5 +45,7 @@ export const userManager = new UserManager(buildSettings())
 
 // Registration uses the same PKCE flow but targets the /registrations endpoint
 export const registerUserManager = new UserManager(
-  buildSettings(`${ssoUrl}/realms/${realm}/protocol/openid-connect/registrations`),
+  buildSettings(
+    `${ssoUrl}/realms/${realm}/protocol/openid-connect/registrations`
+  )
 )

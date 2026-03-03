@@ -31,7 +31,7 @@ export function LandingPage(): JSX.Element {
                   <input
                     type="checkbox"
                     checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
+                    onChange={e => setRememberMe(e.target.checked)}
                   />
                   {t('nav.remember_me')}
                 </label>
@@ -66,14 +66,23 @@ export function LandingPage(): JSX.Element {
           <div className="hero-overlay"></div>
 
           <div className="scroll-indicator">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2"
+            >
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
           </div>
 
           <div className="hero-content">
             <h1 className="hero-title">
-              <span>sha</span><span className="red">R</span><span>e</span>
+              <span>sha</span>
+              <span className="red">R</span>
+              <span>e</span>
             </h1>
 
             <div className="hero-quote">
@@ -96,26 +105,38 @@ export function LandingPage(): JSX.Element {
             <h2 className="section-title">{t('landing.tagline')}</h2>
 
             <p className="section-text">
-              <span className="emphasis">sha</span><span className="emphasis red">R</span><span className="emphasis">e</span>{' '}
-              {t('landing.description')}
+              <span className="emphasis">sha</span>
+              <span className="emphasis red">R</span>
+              <span className="emphasis">e</span> {t('landing.description')}
             </p>
+
+            <p className="section-text">{t('landing.membership_intro')}</p>
 
             <p className="section-text">
-              {t('landing.membership_intro')}
+              {t('landing.membership_benefits')
+                .split('\n')
+                .map((line, i, arr) => (
+                  <span key={i}>
+                    {line}
+                    {i < arr.length - 1 && <br />}
+                  </span>
+                ))}
             </p>
 
-            <p className="section-text">
-              {t('landing.membership_benefits').split('\n').map((line, i, arr) => (
-                <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
-              ))}
-            </p>
-
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: '2rem 0 1rem 0' }}>
+            <h3
+              style={{
+                fontSize: '1.5rem',
+                fontWeight: 'bold',
+                margin: '2rem 0 1rem 0',
+              }}
+            >
               {t('landing.join_heading')}
             </h3>
 
             <p className="section-text">
-              <span className="emphasis">sha</span><span className="emphasis red">R</span><span className="emphasis">e</span>{' '}
+              <span className="emphasis">sha</span>
+              <span className="emphasis red">R</span>
+              <span className="emphasis">e</span>{' '}
               {t('landing.join_description')}
             </p>
           </div>

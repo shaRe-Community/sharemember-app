@@ -16,14 +16,20 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
         manifest: {
           name: 'shaRe Member',
           short_name: 'shaRe',
-          description: 'Menschen verbinden – Verantwortung teilen – Gemeinschaft stärken',
+          description:
+            'Menschen verbinden – Verantwortung teilen – Gemeinschaft stärken',
           theme_color: '#ff1001',
           background_color: '#ffffff',
           display: 'standalone',
           start_url: '/hub',
           icons: [
             { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-            { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+            {
+              src: 'pwa-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any maskable',
+            },
           ],
         },
         workbox: {
