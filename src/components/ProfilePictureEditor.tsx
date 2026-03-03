@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef, CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
+import { CameraModal } from './CameraModal'
 
 interface ProfilePictureEditorProps {
   currentPicture: string | null
@@ -32,6 +33,7 @@ export function ProfilePictureEditor({
   const [scaleRange, setScaleRange] = useState({ min: 1, max: 1 })
   const [zoomValue, setZoomValue] = useState(0)
   const [blob, setBlob] = useState<Blob | null>(null)
+  const [cameraOpen, setCameraOpen] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -73,12 +75,12 @@ export function ProfilePictureEditor({
       -imageState.width / 2,
       -imageState.height / 2,
       imageState.width,
-      imageState.height,
+      imageState.height
     )
     ctx.restore()
 
     // Export blob after drawing — always captures the freshly painted frame
-    canvas.toBlob((b) => {
+    canvas.toBlob(b => {
       if (b) setBlob(b)
     }, 'image/png')
   }, [imageState, scale, position])
@@ -89,7 +91,7 @@ export function ProfilePictureEditor({
       if (!file) return
 
       const reader = new FileReader()
-      reader.onload = (ev) => {
+      reader.onload = ev => {
         const result = ev.target?.result
         if (typeof result !== 'string') return
         const img = new Image()
@@ -97,7 +99,8 @@ export function ProfilePictureEditor({
           const w = img.naturalWidth
           const h = img.naturalHeight
           // Fix 3: apply 0.8 factor twice to give more zoom-out room for repositioning
-          const minScale = Math.max(EDITOR_SIZE / w, EDITOR_SIZE / h) * 0.8 * 0.8
+          const minScale =
+            Math.max(EDITOR_SIZE / w, EDITOR_SIZE / h) * 0.8 * 0.8
           const maxScale = Math.min(w / EDITOR_SIZE, h / EDITOR_SIZE)
           // Fix 4: removed unused `src` field from ImageState
           setImageState({ width: w, height: h, element: img })
@@ -109,6 +112,25 @@ export function ProfilePictureEditor({
         img.src = result
       }
       reader.readAsDataURL(file)
+    },
+    []
+  )
+
+  const loadImageFromUrl = useCallback(
+    (dataURL: string) => {
+      const img = new Image()
+      img.onload = () => {
+        const w = img.naturalWidth
+        const h = img.naturalHeight
+        const minScale = Math.max(EDITOR_SIZE / w, EDITOR_SIZE / h) * 0.8 * 0.8
+        const maxScale = Math.min(w / EDITOR_SIZE, h / EDITOR_SIZE)
+        setImageState({ width: w, height: h, element: img })
+        setScaleRange({ min: minScale, max: Math.max(minScale, maxScale) })
+        setScale(minScale)
+        setPosition({ x: 0, y: 0 })
+        setZoomValue(0)
+      }
+      img.src = dataURL
     },
     [],
   )
@@ -124,7 +146,7 @@ export function ProfilePictureEditor({
       })
       setInitialPosition(position)
     },
-    [imageState, position],
+    [imageState, position]
   )
 
   const handleMouseMove = useCallback(
@@ -138,7 +160,7 @@ export function ProfilePictureEditor({
         y: initialPosition.y + offsetY - dragStart.y,
       })
     },
-    [isDragging, dragStart, initialPosition],
+    [isDragging, dragStart, initialPosition]
   )
 
   const handleMouseUp = useCallback(() => setIsDragging(false), [])
@@ -157,7 +179,7 @@ export function ProfilePictureEditor({
       })
       setInitialPosition(position)
     },
-    [imageState, position],
+    [imageState, position]
   )
 
   const handleTouchMove = useCallback(
@@ -174,7 +196,7 @@ export function ProfilePictureEditor({
         y: initialPosition.y + offsetY - dragStart.y,
       })
     },
-    [isDragging, dragStart, initialPosition],
+    [isDragging, dragStart, initialPosition]
   )
 
   const handleTouchEnd = useCallback(() => setIsDragging(false), [])
@@ -200,7 +222,7 @@ export function ProfilePictureEditor({
       setZoomValue(v)
       setScale(scaleRange.min * Math.pow(scaleRange.max / scaleRange.min, v))
     },
-    [scaleRange],
+    [scaleRange]
   )
 
   const editorStyle: CSSProperties = {
@@ -228,21 +250,43 @@ export function ProfilePictureEditor({
         style={editorStyle}
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
-        onClick={() => { if (!imageState) fileInputRef.current?.click() }}
+        onClick={() => {
+          if (!imageState) fileInputRef.current?.click()
+        }}
         tabIndex={!imageState ? 0 : undefined}
         role={!imageState ? 'button' : undefined}
         aria-label={!imageState ? t('settings.picture_select') : undefined}
-        onKeyDown={!imageState ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click() } } : undefined}
+        onKeyDown={
+          !imageState
+            ? e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  fileInputRef.current?.click()
+                }
+              }
+            : undefined
+        }
       >
-        <canvas ref={canvasRef} width={EDITOR_SIZE} height={EDITOR_SIZE} style={{ display: 'block' }} />
+        <canvas
+          ref={canvasRef}
+          width={EDITOR_SIZE}
+          height={EDITOR_SIZE}
+          style={{ display: 'block' }}
+        />
       </div>
 
       <div className="avatar-editor-controls">
         {currentPicture && !imageState && (
           <div className="avatar-current">
             {/* Fix 7: meaningful alt text instead of empty string */}
-            <img src={currentPicture} alt={t('settings.picture_current')} className="avatar-current-img" />
-            <span className="avatar-current-label">{t('settings.picture_current')}</span>
+            <img
+              src={currentPicture}
+              alt={t('settings.picture_current')}
+              className="avatar-current-img"
+            />
+            <span className="avatar-current-label">
+              {t('settings.picture_current')}
+            </span>
           </div>
         )}
 
@@ -263,21 +307,42 @@ export function ProfilePictureEditor({
             className="cta-button cta-button--secondary"
             onClick={() => fileInputRef.current?.click()}
           >
-            {imageState ? t('settings.picture_change') : t('settings.picture_select')}
+            {imageState
+              ? t('settings.picture_change')
+              : t('settings.picture_select')}
+          </button>
+
+          <button
+            type="button"
+            className="cta-button cta-button--secondary"
+            onClick={() => setCameraOpen(true)}
+          >
+            {t('settings.picture_camera')}
           </button>
 
           {imageState && (
             <button
               type="button"
               className="cta-button"
-              onClick={() => { if (blob) void onUpload(blob) }}
+              onClick={() => {
+                if (blob) void onUpload(blob)
+              }}
               disabled={!blob || isUploading}
             >
-              {isUploading ? t('settings.picture_uploading') : t('settings.picture_upload')}
+              {isUploading
+                ? t('settings.picture_uploading')
+                : t('settings.picture_upload')}
             </button>
           )}
         </div>
       </div>
+
+      {cameraOpen && (
+        <CameraModal
+          onCapture={(dataURL) => { loadImageFromUrl(dataURL); setCameraOpen(false) }}
+          onClose={() => setCameraOpen(false)}
+        />
+      )}
     </div>
   )
 }
