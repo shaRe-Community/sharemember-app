@@ -81,6 +81,7 @@
     "picture_success": "Profile picture updated.",
     "picture_error": "Upload failed. Please try again.",
     "picture_size_error": "File too large — please use an image under 5 MB.",
+    "picture_camera": "Take photo",
     "two_factor_title": "Two-Factor Authentication",
     "two_factor_enabled": "Enabled — Authenticator app active",
     "two_factor_disabled": "Disabled — No two-factor method set",
@@ -162,5 +163,15 @@
     "banner_cta": "Confirm now →",
     "not_identified": "Only IDENTIFIED members can vouch for others.",
     "self_vouch": "You cannot vouch for yourself."
+  },
+  "camera": {
+    "title": "Take photo",
+    "capture": "Capture",
+    "flip": "Flip camera",
+    "loading": "Starting camera…",
+    "error_permission": "Camera access denied. Please allow camera access in your browser settings.",
+    "error_not_found": "No camera found. Please make sure a camera is connected.",
+    "error_in_use": "Camera is in use. Close other apps and try again.",
+    "error_generic": "Camera error. Please check permissions and try again."
   }
 }

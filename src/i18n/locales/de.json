@@ -81,6 +81,7 @@
     "picture_success": "Profilbild aktualisiert.",
     "picture_error": "Upload fehlgeschlagen. Bitte erneut versuchen.",
     "picture_size_error": "Datei zu groß — bitte verwende ein Bild unter 5 MB.",
+    "picture_camera": "Foto aufnehmen",
     "two_factor_title": "Zwei-Faktor-Authentifizierung",
     "two_factor_enabled": "Aktiviert — Authenticator-App verbunden",
     "two_factor_disabled": "Deaktiviert — Kein zweiter Faktor eingerichtet",
@@ -162,5 +163,15 @@
     "banner_cta": "Jetzt bestätigen →",
     "not_identified": "Nur IDENTIFIZIERTE Mitglieder können für andere bürgen.",
     "self_vouch": "Du kannst nicht für dich selbst bürgen."
+  },
+  "camera": {
+    "title": "Foto aufnehmen",
+    "capture": "Aufnehmen",
+    "flip": "Kamera wechseln",
+    "loading": "Kamera wird gestartet…",
+    "error_permission": "Kamera-Zugriff verweigert. Bitte erlaube den Kamera-Zugriff in den Browser-Einstellungen.",
+    "error_not_found": "Keine Kamera gefunden. Bitte stelle sicher, dass eine Kamera angeschlossen ist.",
+    "error_in_use": "Kamera wird bereits verwendet. Schließe andere Apps und versuche es erneut.",
+    "error_generic": "Kamera-Fehler. Bitte überprüfe die Berechtigungen und versuche es erneut."
   }
 }
