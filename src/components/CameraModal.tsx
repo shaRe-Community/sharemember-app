@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useCamera } from '../useCamera'
 
 interface CameraModalProps {
-  onCapture: (dataURL: string) => void
+  onCapture: (_dataURL: string) => void
   onClose: () => void
 }
 
@@ -50,7 +50,7 @@ export function CameraModal({ onCapture, onClose }: CameraModalProps): JSX.Eleme
       <path
         fillRule="evenodd"
         fill="rgba(0,0,0,0.55)"
-        d="M0,0 H100 V100 H0 Z M50,5 m-40,40 a40,40 0 1,0 80,0 a40,40 0 1,0 -80,0"
+        d="M0,0 H100 V100 H0 Z M10,50 a40,40 0 1,0 80,0 a40,40 0 1,0 -80,0"
       />
       <circle
         cx="50" cy="50" r="40"
