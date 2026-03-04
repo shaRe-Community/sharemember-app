@@ -73,3 +73,16 @@ export function changePassword(
     }),
   }) as Promise<void>
 }
+
+export async function deleteProfilePicture(token: string): Promise<void> {
+  const res = await fetch(
+    `${SSO_URL}/realms/${REALM}/profile_pictures`,
+    {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  )
+  if (!res.ok && res.status !== 204) {
+    throw new ApiError(res.status, `Delete profile picture failed: ${res.status}`)
+  }
+}
