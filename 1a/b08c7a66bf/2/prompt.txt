@@ -1847,3 +1847,716 @@ Done!
 
 **Alternative workflow:**
 - **superpowers:executing-plans** - Use for parallel session instead of same-session execution
+
+---
+
+bau noch die moeglichkeit das aktulle Profilbild zu "leeren" ein, also dann auch gleich mit save... z.b. kleines delete icon oder trash icon am aktuellen Avatar
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/brainstorming
+
+# Brainstorming Ideas Into Designs
+
+## Overview
+
+Help turn ideas into fully formed designs and specs through natural collaborative dialogue.
+
+Start by understanding the current project context, then ask questions one at a time to refine the idea. Once you understand what you're building, present the design and get user approval.
+
+<HARD-GATE>
+Do NOT invoke any implementation skill, write any code, scaffold any project, or take any implementation action until you have presented a design and the user has approved it. This applies to EVERY project regardless of perceived simplicity.
+</HARD-GATE>
+
+## Anti-Pattern: "This Is Too Simple To Need A Design"
+
+Every project goes through this process. A todo list, a single-function utility, a config change — all of them. "Simple" projects are where unexamined assumptions cause the most wasted work. The design can be short (a few sentences for truly simple projects), but you MUST present it and get approval.
+
+## Checklist
+
+You MUST create a task for each of these items and complete them in order:
+
+1. **Explore project context** — check files, docs, recent commits
+2. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
+3. **Propose 2-3 approaches** — with trade-offs and your recommendation
+4. **Present design** — in sections scaled to their complexity, get user approval after each section
+5. **Write design doc** — save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
+6. **Transition to implementation** — invoke writing-plans skill to create implementation plan
+
+## Process Flow
+
+```dot
+digraph brainstorming {
+    "Explore project context" [shape=box];
+    "Ask clarifying questions" [shape=box];
+    "Propose 2-3 approaches" [shape=box];
+    "Present design sections" [shape=box];
+    "User approves design?" [shape=diamond];
+    "Write design doc" [shape=box];
+    "Invoke writing-plans skill" [shape=doublecircle];
+
+    "Explore project context" -> "Ask clarifying questions";
+    "Ask clarifying questions" -> "Propose 2-3 approaches";
+    "Propose 2-3 approaches" -> "Present design sections";
+    "Present design sections" -> "User approves design?";
+    "User approves design?" -> "Present design sections" [label="no, revise"];
+    "User approves design?" -> "Write design doc" [label="yes"];
+    "Write design doc" -> "Invoke writing-plans skill";
+}
+```
+
+**The terminal state is invoking writing-plans.** Do NOT invoke frontend-design, mcp-builder, or any other implementation skill. The ONLY skill you invoke after brainstorming is writing-plans.
+
+## The Process
+
+**Understanding the idea:**
+- Check out the current project state first (files, docs, recent commits)
+- Ask questions one at a time to refine the idea
+- Prefer multiple choice questions when possible, but open-ended is fine too
+- Only one question per message - if a topic needs more exploration, break it into multiple questions
+- Focus on understanding: purpose, constraints, success criteria
+
+**Exploring approaches:**
+- Propose 2-3 different approaches with trade-offs
+- Present options conversationally with your recommendation and reasoning
+- Lead with your recommended option and explain why
+
+**Presenting the design:**
+- Once you believe you understand what you're building, present the design
+- Scale each section to its complexity: a few sentences if straightforward, up to 200-300 words if nuanced
+- Ask after each section whether it looks right so far
+- Cover: architecture, components, data flow, error handling, testing
+- Be ready to go back and clarify if something doesn't make sense
+
+## After the Design
+
+**Documentation:**
+- Write the validated design to `docs/plans/YYYY-MM-DD-<topic>-design.md`
+- Use elements-of-style:writing-clearly-and-concisely skill if available
+- Commit the design document to git
+
+**Implementation:**
+- Invoke the writing-plans skill to create a detailed implementation plan
+- Do NOT invoke any other skill. writing-plans is the next step.
+
+## Key Principles
+
+- **One question at a time** - Don't overwhelm with multiple questions
+- **Multiple choice preferred** - Easier to answer than open-ended when possible
+- **YAGNI ruthlessly** - Remove unnecessary features from all designs
+- **Explore alternatives** - Always propose 2-3 approaches before settling
+- **Incremental validation** - Present design, get approval before moving on
+- **Be flexible** - Go back and clarify when something doesn't make sense
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me chronologically analyze the conversation:
+
+1. Session resumed from a previous conversation that was compacted. The summary covered SM-6d6 camera capture feature that was being implemented via subagent-driven development. Task 5 (ProfilePictureEditor wiring) was just completed.
+
+2. The conversation resumed with spec review for Task 5 of SM-6d6 - spec compliance ✅ and code quality ✅ (both passed immediately).
+
+3. Task 6 (close SM-6d6 + deploy) was executed:
+   - Found unstaged changes (formatting-only) across 20 files
+   - Build passed, committed as "chore(SM-6d6): apply code style reformatting"
+   - Closed SM-6d6 beads issue
+   - Built Docker image, transferred to prod, restarted, verified HTTP/2 200
+   - Pushed to remote + bd sync
+
+4. User reported manfred.schon still can't login → checked KC logs → saw "invalid_user_credentials" repeatedly, also saw invalidPasswordMinUpperCaseCharsMessage from earlier session
+
+5. Diagnosis process:
+   - Checked brute force (4 failures, not locked)
+   - Checked password policy: upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and length(8) and notUsername
+   - Set password to ShaRe2026! (deleted old credential, created new)
+   - Cleared user cache and realm cache
+   - Login still failed at 07:01:26 after password reset
+   - Checked credential in Postgres - confirmed fresh credential 294d46aa
+   - Temporarily enabled ROPC on prod-sharemember-app client
+   - Tested ShaRe2026! via direct token request → SUCCESS
+   - Disabled ROPC
+   - Conclusion: password was correct, user was typing it wrong on mobile
+
+6. User confirmed "klappt jetzt" - login works
+
+7. User asked "bd list" - showed all open issues across repos
+
+8. SM-6d6 camera capture was shown as closed. Open issues listed.
+
+9. User requested mobile hamburger menu for header nav on mobile phones
+
+10. Brainstorming session:
+    - Explored AppShell.tsx - has header-nav with Communities, Settings, Verify Identity, Sign Out, LanguageSwitcher, Avatar
+    - Asked about Avatar visibility on mobile
+    - User chose: shaRe ... [language switch] [avatar] [☰]
+    - Designed: Desktop unchanged, Mobile shows LangSwitcher + Avatar + hamburger, dropdown has nav items
+    - User approved "so soll es sein"
+    - Wrote design doc docs/plans/2026-03-03-mobile-hamburger-design.md
+    - Created implementation plan docs/plans/2026-03-03-mobile-hamburger.md
+
+11. Executed via subagent-driven development (user chose option 1):
+    - Task 1 (CSS): Added 6 CSS classes + media query. Quality issues found: touch target too small + missing z-index. Fixed both. Re-reviewed ✅
+    - Task 2 (AppShell): Added menuOpen state, menuRef, click-outside effect, closeMenu helper, mobile controls, dropdown. Quality issues: missing aria-controls/id, hardcoded aria-labels. Fixed both (added aria-controls, id="mobile-nav", i18n keys nav.open_menu/nav.close_menu). Re-reviewed ✅
+    - Task 3 (Deploy): Built Docker, transferred, restarted, HTTP/2 200, pushed + bd sync ✅
+
+12. User asked to add ability to clear/delete the current profile picture ("leeren") with immediate save, small trash/delete icon on avatar.
+
+13. Brainstorming skill invoked - exploring context. Read SettingsPage.tsx and keycloak-account.ts. ProfilePictureSection handles upload via POST to `${ssoUrl}/realms/${realm}/profile_pictures`. No DELETE endpoint seen yet in the client code. ProfilePictureEditor.tsx shows a canvas editor. Context exploration was in progress.
+
+Current state: In brainstorming for the "delete/clear profile picture" feature. Just read SettingsPage.tsx and keycloak-account.ts to understand the API. Need to also check the KC plugin endpoint to understand if DELETE is supported.
+
+Summary:
+1. Primary Request and Intent:
+   - **SM-6d6 Camera Capture (completed)**: Add camera capture ("Foto aufnehmen") to profile picture editor with getUserMedia, live circular SVG crop overlay, front/back flip on mobile, multi-camera cycling on desktop
+   - **manfred.schon login fix**: User repeatedly couldn't log in. Root cause: typing error on mobile keyboard. Fixed by clearing brute-force, confirming password ShaRe2026! via ROPC test
+   - **Mobile hamburger menu (completed and deployed)**: Replace desktop-only header nav with a hamburger dropdown on mobile (≤640px). Header shows `shaRe ... [LangSwitcher] [Avatar] [☰]`. Dropdown contains Communities, Settings, Verify Identity, Sign Out
+   - **Delete/clear profile picture (in brainstorming)**: Add ability to "empty" current profile picture with a small trash/delete icon on the avatar, with immediate save. Brainstorming just started, exploring SettingsPage.tsx and keycloak-account.ts
+
+2. Key Technical Concepts:
+   - **Keycloak Admin API**: `kcadm.sh set-password`, `delete credentials/{id}`, `clear-user-cache`, `clear-realm-cache`, brute-force detection endpoints
+   - **ROPC testing**: Temporarily enabled `directAccessGrantsEnabled=true` on KC client to test password via `grant_type=password` token request, then disabled again
+   - **Subagent-Driven Development**: implementer → spec reviewer → quality reviewer per task, with fix loops
+   - **getUserMedia / MediaStream**: Camera capture hook with facingMode, enumerateDevices, stale-closure-safe `facingModeOverride` param
+   - **SVG evenodd fill-rule**: Circular crop overlay using outer rect minus inner arc path
+   - **CSS responsive design**: `@media (max-width: 640px)` to show/hide `.header-nav` vs `.header-mobile-controls`
+   - **ARIA accessibility**: `aria-controls`, `aria-expanded`, `id` linking button to controlled nav region
+   - **React click-outside pattern**: `useRef<HTMLElement>` on `<header>`, `useEffect` adds `mousedown` on document, cleans up on menu close
+   - **Keycloak profile picture endpoint**: `POST ${ssoUrl}/realms/${realm}/profile_pictures` for upload (multipart form). DELETE endpoint unknown — in exploration
+
+3. Files and Code Sections:
+
+   - **`src/components/AppShell.tsx`** (mobile hamburger complete):
+     ```tsx
+     import { ReactNode, useState, useEffect, useRef } from 'react'
+     // ...
+     const [menuOpen, setMenuOpen] = useState(false)
+     const menuRef = useRef<HTMLElement>(null)
+     
+     useEffect(() => {
+       if (!menuOpen) return
+       const handler = (e: MouseEvent) => {
+         if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+           setMenuOpen(false)
+         }
+       }
+       document.addEventListener('mousedown', handler)
+       return () => document.removeEventListener('mousedown', handler)
+     }, [menuOpen])
+     
+     const closeMenu = (path: string) => {
+       setMenuOpen(false)
+       navigate(path)
+     }
+     // <header ref={menuRef}> wraps both header-content and mobile-menu dropdown
+     // .header-mobile-controls: LanguageSwitcher + Avatar + hamburger button
+     // .mobile-menu (id="mobile-nav"): Communities, Settings, Verify, Sign Out
+     // hamburger: aria-controls="mobile-nav", aria-expanded={menuOpen}, t('nav.open_menu'/'close_menu')
+     ```
+
+   - **`src/App.css`** (mobile hamburger CSS, quality-fixed):
+     ```css
+     .header-mobile-controls { display: none; align-items: center; gap: 0.75rem }
+     .hamburger-btn {
+       background: transparent; border: none; color: white; font-size: 1.4rem;
+       cursor: pointer; padding: 0.625rem;
+       min-width: 2.75rem; min-height: 2.75rem; /* 44px touch target */
+       display: flex; align-items: center; justify-content: center;
+     }
+     .mobile-menu {
+       background: #031633; border-top: 1px solid rgba(255,255,255,0.1);
+       display: flex; flex-direction: column; width: 100%;
+       position: relative; z-index: 999;
+     }
+     .mobile-menu-item { padding: 0.875rem 1.5rem; ... width: 100%; }
+     .mobile-menu-item-primary { color: #ff3b2f }
+     @media (max-width: 640px) {
+       .header-nav { display: none }
+       .header-mobile-controls { display: flex }
+     }
+     ```
+
+   - **`src/i18n/locales/en.json`** — added `nav.open_menu: "Open menu"`, `nav.close_menu: "Close menu"`
+   - **`src/i18n/locales/de.json`** — added `nav.open_menu: "Menü öffnen"`, `nav.close_menu: "Menü schließen"`
+
+   - **`src/components/ProfilePictureEditor.tsx`** (SM-6d6 complete):
+     - `import { CameraModal } from './CameraModal'`
+     - `const [cameraOpen, setCameraOpen] = useState(false)`
+     - `loadImageFromUrl(dataURL: string)` useCallback — mirrors handleFileChange but from dataURL
+     - "Foto aufnehmen" button → `setCameraOpen(true)`
+     - `{cameraOpen && <CameraModal onCapture={(dataURL) => { loadImageFromUrl(dataURL); setCameraOpen(false) }} onClose={() => setCameraOpen(false)} />}`
+
+   - **`src/components/CameraModal.tsx`** (SM-6d6, new):
+     - SVG mask path: `"M0,0 H100 V100 H0 Z M10,50 a40,40 0 1,0 80,0 a40,40 0 1,0 -80,0"` (evenodd circle crop)
+     - `<nav id="mobile-nav">` — NOTE: this id is in AppShell, not CameraModal
+     - `onCapture: (_dataURL: string)` (prefixed to satisfy ESLint)
+
+   - **`src/useCamera.ts`** (SM-6d6, new):
+     - `startCamera(deviceId?: string, facingModeOverride?: 'user' | 'environment')` — stale-closure fix
+     - Syncs `selectedCameraId` from `videoTrack.getSettings().deviceId` after getUserMedia
+
+   - **`src/pages/SettingsPage.tsx`** (read for delete picture brainstorming):
+     - `ProfilePictureSection` uploads via `POST ${ssoUrl}/realms/${realm}/profile_pictures`
+     - `ProfilePictureEditor` receives `currentPicture`, `onUpload`, `isUploading`
+     - No delete/clear functionality yet
+
+   - **`src/api/keycloak-account.ts`** (read for delete picture brainstorming):
+     - Has `getAccountInfo`, `updateAccountInfo`, `changePassword`
+     - No `deleteProfilePicture` function — needs to be added
+     - KC endpoint for picture upload: `POST /realms/${realm}/profile_pictures` (from SettingsPage)
+
+4. Errors and Fixes:
+   - **manfred.schon login failure**: Multiple failed attempts. Diagnosis: checked brute force (4 failures, not locked), deleted old credential, created fresh one (`294d46aa`), cleared user+realm caches, temporarily enabled ROPC on `prod-sharemember-app` client, ran direct token test → SUCCESS. Root cause: user was mistyping `ShaRe2026!` on mobile keyboard.
+   - **Mobile hamburger quality issues**:
+     - `.hamburger-btn` touch target ~30px (< 44px minimum): Fixed with `padding: 0.625rem` + `min-width/min-height: 2.75rem`
+     - `.mobile-menu` missing `z-index`: Fixed with `position: relative; z-index: 999`
+   - **AppShell accessibility issues**:
+     - Missing `aria-controls` on hamburger + no `id` on dropdown nav: Added `aria-controls="mobile-nav"` on button, `id="mobile-nav"` on `<nav className="mobile-menu">`
+     - Hardcoded English `aria-label` strings: Added `nav.open_menu`/`nav.close_menu` to both locale files, replaced hardcoded strings with `t()` calls
+
+5. Problem Solving:
+   - SM-6d6 camera capture: fully implemented and deployed. Used subagent-driven dev with spec+quality reviews.
+   - Mobile hamburger: fully implemented and deployed. Two CSS quality rounds + one accessibility fix round.
+   - manfred.schon: ROPC test confirmed password was correct server-side. User was mistyping.
+   - Delete profile picture: brainstorming phase in progress. Have read SettingsPage.tsx and keycloak-account.ts. KC plugin endpoint for DELETE not yet confirmed.
+
+6. All user messages:
+   - (session resumed from compaction — previous context was provided as summary)
+   - "still cannot login" (after ShaRe2026! was set)
+   - "gerade eben" (just now — confirming fresh login attempt)
+   - "klappt jetzt" (works now)
+   - "bd list"
+   - "bd list für alle"
+   - "noch ein paar verbesserungen am UX von shaRe Member. das menue im header ist nicht nutzbar auf mobile telefon. mach doch rechts ein Hamburger dropdown"
+   - "1. shaRe ... language switch, avatar, [☰]" (mobile header layout choice)
+   - "so soll es sein" (approved hamburger design)
+   - "1" (chose subagent-driven development)
+   - (empty — continuing workflow after each review pass)
+   - "bau noch die moeglichkeit das aktulle Profilbild zu 'leeren' ein, also dann auch gleich mit save... z.b. kleines delete icon oder trash icon am aktuellen Avatar"
+
+7. Pending Tasks:
+   - **Delete/clear profile picture**: Brainstorming in progress. Need to determine:
+     - Backend DELETE endpoint on KC plugin (`DELETE /realms/${realm}/profile_pictures`?)
+     - Where the trash icon appears (on `currentPicture` preview in ProfilePictureEditor)
+     - UX: immediate action or confirmation?
+     - Success state: avatar reverts to initials
+
+8. Current Work:
+   Brainstorming the "delete/clear profile picture" feature. Just read:
+   - `src/pages/SettingsPage.tsx`: `ProfilePictureSection` calls `POST ${ssoUrl}/realms/${realm}/profile_pictures` for upload. Passes `onUpload` callback to `ProfilePictureEditor`. No delete handler exists yet.
+   - `src/api/keycloak-account.ts`: Has `getAccountInfo`, `updateAccountInfo`, `changePassword`. No delete picture function. Need to add `deleteProfilePicture(token)` calling `DELETE /realms/${realm}/profile_pictures`.
+
+   The user's request: *"bau noch die moeglichkeit das aktulle Profilbild zu 'leeren' ein, also dann auch gleich mit save... z.b. kleines delete icon oder trash icon am aktuellen Avatar"*
+
+9. Optional Next Step:
+   Continue brainstorming the delete profile picture feature. Next step is to check the Keycloak plugin source (`../sharemembers/`) to confirm whether a `DELETE /realms/{realm}/profile_pictures` endpoint exists, then present the design to the user. The user asked for: small trash/delete icon on the current avatar, with immediate save (no separate confirm step implied, or a simple inline confirmation).
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/tomblume/.REDACTED.jsonl
+Please continue the conversation from where we left off without asking the user any further questions. Continue with the last task that you were asked to work on.
+
+---
+
+this api can only be executed by the owner of the profile... so only the shaRe Member can manage his/her profile.
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/writing-plans
+
+# Writing Plans
+
+## Overview
+
+Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs they might need to check, how to test it. Give them the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits.
+
+Assume they are a skilled developer, but know almost nothing about our toolset or problem domain. Assume they don't know good test design very well.
+
+**Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
+
+**Context:** This should be run in a dedicated worktree (created by brainstorming skill).
+
+**Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
+
+## Bite-Sized Task Granularity
+
+**Each step is one action (2-5 minutes):**
+- "Write the failing test" - step
+- "Run it to make sure it fails" - step
+- "Implement the minimal code to make the test pass" - step
+- "Run the tests and make sure they pass" - step
+- "Commit" - step
+
+## Plan Document Header
+
+**Every plan MUST start with this header:**
+
+```markdown
+# [Feature Name] Implementation Plan
+
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+**Goal:** [One sentence describing what this builds]
+
+**Architecture:** [2-3 sentences about approach]
+
+**Tech Stack:** [Key technologies/libraries]
+
+---
+```
+
+## Task Structure
+
+````markdown
+### Task N: [Component Name]
+
+**Files:**
+- Create: `exact/path/to/file.py`
+- Modify: `exact/path/to/existing.py:123-145`
+- Test: `tests/exact/path/to/test.py`
+
+**Step 1: Write the failing test**
+
+```python
+def test_specific_behavior():
+    result = function(input)
+    assert result == expected
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `pytest tests/path/test.py::test_name -v`
+Expected: FAIL with "function not defined"
+
+**Step 3: Write minimal implementation**
+
+```python
+def function(input):
+    return expected
+```
+
+**Step 4: Run test to verify it passes**
+
+Run: `pytest tests/path/test.py::test_name -v`
+Expected: PASS
+
+**Step 5: Commit**
+
+```bash
+git add tests/path/test.py src/path/file.py
+git commit -m "feat: add specific feature"
+```
+````
+
+## Remember
+- Exact file paths always
+- Complete code in plan (not "add validation")
+- Exact commands with expected output
+- Reference relevant skills with @ syntax
+- DRY, YAGNI, TDD, frequent commits
+
+## Execution Handoff
+
+After saving the plan, offer execution choice:
+
+**"Plan complete and saved to `docs/plans/<filename>.md`. Two execution options:**
+
+**1. Subagent-Driven (this session)** - I dispatch fresh subagent per task, review between tasks, fast iteration
+
+**2. Parallel Session (separate)** - Open new session with executing-plans, batch execution with checkpoints
+
+**Which approach?"**
+
+**If Subagent-Driven chosen:**
+- **REQUIRED SUB-SKILL:** Use superpowers:subagent-driven-development
+- Stay in this session
+- Fresh subagent per task + code review
+
+**If Parallel Session chosen:**
+- Guide them to open new session in worktree
+- **REQUIRED SUB-SKILL:** New session uses superpowers:executing-plans
+
+---
+
+1
+
+---
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/subagent-driven-development
+
+# Subagent-Driven Development
+
+Execute plan by dispatching fresh subagent per task, with two-stage review after each: spec compliance review first, then code quality review.
+
+**Core principle:** Fresh subagent per task + two-stage review (spec then quality) = high quality, fast iteration
+
+## When to Use
+
+```dot
+digraph when_to_use {
+    "Have implementation plan?" [shape=diamond];
+    "Tasks mostly independent?" [shape=diamond];
+    "Stay in this session?" [shape=diamond];
+    "subagent-driven-development" [shape=box];
+    "executing-plans" [shape=box];
+    "Manual execution or brainstorm first" [shape=box];
+
+    "Have implementation plan?" -> "Tasks mostly independent?" [label="yes"];
+    "Have implementation plan?" -> "Manual execution or brainstorm first" [label="no"];
+    "Tasks mostly independent?" -> "Stay in this session?" [label="yes"];
+    "Tasks mostly independent?" -> "Manual execution or brainstorm first" [label="no - tightly coupled"];
+    "Stay in this session?" -> "subagent-driven-development" [label="yes"];
+    "Stay in this session?" -> "executing-plans" [label="no - parallel session"];
+}
+```
+
+**vs. Executing Plans (parallel session):**
+- Same session (no context switch)
+- Fresh subagent per task (no context pollution)
+- Two-stage review after each task: spec compliance first, then code quality
+- Faster iteration (no human-in-loop between tasks)
+
+## The Process
+
+```dot
+digraph process {
+    rankdir=TB;
+
+    subgraph cluster_per_task {
+        label="Per Task";
+        "Dispatch implementer subagent (./implementer-prompt.md)" [shape=box];
+        "Implementer subagent asks questions?" [shape=diamond];
+        "Answer questions, provide context" [shape=box];
+        "Implementer subagent implements, tests, commits, self-reviews" [shape=box];
+        "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [shape=box];
+        "Spec reviewer subagent confirms code matches spec?" [shape=diamond];
+        "Implementer subagent fixes spec gaps" [shape=box];
+        "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [shape=box];
+        "Code quality reviewer subagent approves?" [shape=diamond];
+        "Implementer subagent fixes quality issues" [shape=box];
+        "Mark task complete in TodoWrite" [shape=box];
+    }
+
+    "Read plan, extract all tasks with full text, note context, create TodoWrite" [shape=box];
+    "More tasks remain?" [shape=diamond];
+    "Dispatch final code reviewer subagent for entire implementation" [shape=box];
+    "Use superpowers:finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
+
+    "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Dispatch implementer subagent (./implementer-prompt.md)";
+    "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer subagent asks questions?";
+    "Implementer subagent asks questions?" -> "Answer questions, provide context" [label="yes"];
+    "Answer questions, provide context" -> "Dispatch implementer subagent (./implementer-prompt.md)";
+    "Implementer subagent asks questions?" -> "Implementer subagent implements, tests, commits, self-reviews" [label="no"];
+    "Implementer subagent implements, tests, commits, self-reviews" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)";
+    "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" -> "Spec reviewer subagent confirms code matches spec?";
+    "Spec reviewer subagent confirms code matches spec?" -> "Implementer subagent fixes spec gaps" [label="no"];
+    "Implementer subagent fixes spec gaps" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [label="re-review"];
+    "Spec reviewer subagent confirms code matches spec?" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="yes"];
+    "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" -> "Code quality reviewer subagent approves?";
+    "Code quality reviewer subagent approves?" -> "Implementer subagent fixes quality issues" [label="no"];
+    "Implementer subagent fixes quality issues" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="re-review"];
+    "Code quality reviewer subagent approves?" -> "Mark task complete in TodoWrite" [label="yes"];
+    "Mark task complete in TodoWrite" -> "More tasks remain?";
+    "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
+    "More tasks remain?" -> "Dispatch final code reviewer subagent for entire implementation" [label="no"];
+    "Dispatch final code reviewer subagent for entire implementation" -> "Use superpowers:finishing-a-development-branch";
+}
+```
+
+## Prompt Templates
+
+- `./implementer-prompt.md` - Dispatch implementer subagent
+- `./spec-reviewer-prompt.md` - Dispatch spec compliance reviewer subagent
+- `./code-quality-reviewer-prompt.md` - Dispatch code quality reviewer subagent
+
+## Example Workflow
+
+```
+You: I'm using Subagent-Driven Development to execute this plan.
+
+[Read plan file once: docs/plans/feature-plan.md]
+[Extract all 5 tasks with full text and context]
+[Create TodoWrite with all tasks]
+
+Task 1: Hook installation script
+
+[Get Task 1 text and context (already extracted)]
+[Dispatch implementation subagent with full task text + context]
+
+Implementer: "Before I begin - should the hook be installed at user or system level?"
+
+You: "User level (~/.config/superpowers/hooks/)"
+
+Implementer: "Got it. Implementing now..."
+[Later] Implementer:
+  - Implemented install-hook command
+  - Added tests, 5/5 passing
+  - Self-review: Found I missed --force flag, added it
+  - Committed
+
+[Dispatch spec compliance reviewer]
+Spec reviewer: ✅ Spec compliant - all requirements met, nothing extra
+
+[Get git SHAs, dispatch code quality reviewer]
+Code reviewer: Strengths: Good test coverage, clean. Issues: None. Approved.
+
+[Mark Task 1 complete]
+
+Task 2: Recovery modes
+
+[Get Task 2 text and context (already extracted)]
+[Dispatch implementation subagent with full task text + context]
+
+Implementer: [No questions, proceeds]
+Implementer:
+  - Added verify/repair modes
+  - 8/8 tests passing
+  - Self-review: All good
+  - Committed
+
+[Dispatch spec compliance reviewer]
+Spec reviewer: ❌ Issues:
+  - Missing: Progress reporting (spec says "report every 100 items")
+  - Extra: Added --json flag (not requested)
+
+[Implementer fixes issues]
+Implementer: Removed --json flag, added progress reporting
+
+[Spec reviewer reviews again]
+Spec reviewer: ✅ Spec compliant now
+
+[Dispatch code quality reviewer]
+Code reviewer: Strengths: Solid. Issues (Important): Magic number (100)
+
+[Implementer fixes]
+Implementer: Extracted PROGRESS_INTERVAL constant
+
+[Code reviewer reviews again]
+Code reviewer: ✅ Approved
+
+[Mark Task 2 complete]
+
+...
+
+[After all tasks]
+[Dispatch final code-reviewer]
+Final reviewer: All requirements met, ready to merge
+
+Done!
+```
+
+## Advantages
+
+**vs. Manual execution:**
+- Subagents follow TDD naturally
+- Fresh context per task (no confusion)
+- Parallel-safe (subagents don't interfere)
+- Subagent can ask questions (before AND during work)
+
+**vs. Executing Plans:**
+- Same session (no handoff)
+- Continuous progress (no waiting)
+- Review checkpoints automatic
+
+**Efficiency gains:**
+- No file reading overhead (controller provides full text)
+- Controller curates exactly what context is needed
+- Subagent gets complete information upfront
+- Questions surfaced before work begins (not after)
+
+**Quality gates:**
+- Self-review catches issues before handoff
+- Two-stage review: spec compliance, then code quality
+- Review loops ensure fixes actually work
+- Spec compliance prevents over/under-building
+- Code quality ensures implementation is well-built
+
+**Cost:**
+- More subagent invocations (implementer + 2 reviewers per task)
+- Controller does more prep work (extracting all tasks upfront)
+- Review loops add iterations
+- But catches issues early (cheaper than debugging later)
+
+## Red Flags
+
+**Never:**
+- Start implementation on main/master branch without explicit user consent
+- Skip reviews (spec compliance OR code quality)
+- Proceed with unfixed issues
+- Dispatch multiple implementation subagents in parallel (conflicts)
+- Make subagent read plan file (provide full text instead)
+- Skip scene-setting context (subagent needs to understand where task fits)
+- Ignore subagent questions (answer before letting them proceed)
+- Accept "close enough" on spec compliance (spec reviewer found issues = not done)
+- Skip review loops (reviewer found issues = implementer fixes = review again)
+- Let implementer self-review replace actual review (both are needed)
+- **Start code quality review before spec compliance is ✅** (wrong order)
+- Move to next task while either review has open issues
+
+**If subagent asks questions:**
+- Answer clearly and completely
+- Provide additional context if needed
+- Don't rush them into implementation
+
+**If reviewer finds issues:**
+- Implementer (same subagent) fixes them
+- Reviewer reviews again
+- Repeat until approved
+- Don't skip the re-review
+
+**If subagent fails task:**
+- Dispatch fix subagent with specific instructions
+- Don't try to fix manually (context pollution)
+
+## Integration
+
+**Required workflow skills:**
+- **superpowers:using-git-worktrees** - REQUIRED: Set up isolated workspace before starting
+- **superpowers:writing-plans** - Creates the plan this skill executes
+- **superpowers:requesting-code-review** - Code review template for reviewer subagents
+- **superpowers:finishing-a-development-branch** - Complete development after all tasks
+
+**Subagents should use:**
+- **superpowers:test-driven-development** - Subagents follow TDD for each task
+
+**Alternative workflow:**
+- **superpowers:executing-plans** - Use for parallel session instead of same-session execution
+
+---
+
+[Request interrupted by user for tool use]
+
+---
+
+seems keycloark deployment broke, jsut retry
+
+---
+
+[Request interrupted by user for tool use]
+
+---
+
+<task-notification>
+<task-id>b01em3ro6</task-id>
+<tool-use-id>toolu_01CNdtwF2zaad88UNSxhdJqD</tool-use-id>
+<output-file>/tmp/claude-1000/-home-tomblume-IdeaProjects-share-platform/tasks/b01em3ro6.output</output-file>
+<status>completed</status>
+<summary>Background command "Transfer Docker image to production server via SSH" completed (exit code 0)</summary>
+</task-notification>
+Read the output file to retrieve the result: /tmp/claude-1000/-home-tomblume-IdeaProjects-share-platform/tasks/b01em3ro6.output
+
+---
+
+[Request interrupted by user for tool use]
+
+---
+
+why this takes so long?
+
+---
+
+why this takes so long?
+
+---
+
+try again

@@ -325,3 +325,106 @@ Execute plan by dispatching fresh subagent per task, with two-stage review after
 digraph when_to_use {
     "Have implement...
 
+### Prompt 49
+
+bau noch die moeglichkeit das aktulle Profilbild zu "leeren" ein, also dann auch gleich mit save... z.b. kleines delete icon oder trash icon am aktuellen Avatar
+
+### Prompt 50
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/brainstorming
+
+# Brainstorming Ideas Into Designs
+
+## Overview
+
+Help turn ideas into fully formed designs and specs through natural collaborative dialogue.
+
+Start by understanding the current project context, then ask questions one at a time to refine the idea. Once you understand what you're building, present the design and get user approval.
+
+<HARD-GATE>
+Do NOT invoke any implem...
+
+### Prompt 51
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me chronologically analyze the conversation:
+
+1. Session resumed from a previous conversation that was compacted. The summary covered SM-6d6 camera capture feature that was being implemented via subagent-driven development. Task 5 (ProfilePictureEditor wiring) was just completed.
+
+2. The conversation resumed with spec review for Ta...
+
+### Prompt 52
+
+this api can only be executed by the owner of the profile... so only the shaRe Member can manage his/her profile.
+
+### Prompt 53
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/writing-plans
+
+# Writing Plans
+
+## Overview
+
+Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs they might need to check, how to test it. Give them the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits....
+
+### Prompt 54
+
+1
+
+### Prompt 55
+
+Base directory for this skill: /home/tomblume/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.1/skills/subagent-driven-development
+
+# Subagent-Driven Development
+
+Execute plan by dispatching fresh subagent per task, with two-stage review after each: spec compliance review first, then code quality review.
+
+**Core principle:** Fresh subagent per task + two-stage review (spec then quality) = high quality, fast iteration
+
+## When to Use
+
+```dot
+digraph when_to_use {
+    "Have implement...
+
+### Prompt 56
+
+[Request interrupted by user for tool use]
+
+### Prompt 57
+
+seems keycloark deployment broke, jsut retry
+
+### Prompt 58
+
+[Request interrupted by user for tool use]
+
+### Prompt 59
+
+<task-notification>
+<task-id>b01em3ro6</task-id>
+<tool-use-id>toolu_01CNdtwF2zaad88UNSxhdJqD</tool-use-id>
+<output-file>/tmp/claude-1000/-home-tomblume-IdeaProjects-share-platform/tasks/b01em3ro6.output</output-file>
+<status>completed</status>
+<summary>Background command "Transfer Docker image to production server via SSH" completed (exit code 0)</summary>
+</task-notification>
+Read the output file to retrieve the result: /tmp/claude-1000/-home-tomblume-IdeaProjects-share-platform/tasks/b01em3ro6...
+
+### Prompt 60
+
+[Request interrupted by user for tool use]
+
+### Prompt 61
+
+why this takes so long?
+
+### Prompt 62
+
+why this takes so long?
+
+### Prompt 63
+
+try again
+
