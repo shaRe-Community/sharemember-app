@@ -83,6 +83,7 @@
     "picture_success": "Profilbild aktualisiert.",
     "picture_error": "Upload fehlgeschlagen. Bitte erneut versuchen.",
     "picture_size_error": "Datei zu groß — bitte verwende ein Bild unter 5 MB.",
+    "picture_delete": "Profilbild löschen",
     "picture_camera": "Foto aufnehmen",
     "two_factor_title": "Zwei-Faktor-Authentifizierung",
     "two_factor_enabled": "Aktiviert — Authenticator-App verbunden",

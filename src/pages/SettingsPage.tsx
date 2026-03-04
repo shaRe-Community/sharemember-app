@@ -6,6 +6,7 @@ import {
   getAccountInfo,
   updateAccountInfo,
   changePassword,
+  deleteProfilePicture,
   type KcUserInfo,
 } from '../api/keycloak-account'
 import { ApiError } from '../api/api'
@@ -179,12 +180,28 @@ function ProfilePictureSection({
     }
   }
 
+  const handleDeletePicture = async (): Promise<void> => {
+    setError(null)
+    try {
+      await deleteProfilePicture(token)
+      if (localPreviewRef.current) {
+        URL.revokeObjectURL(localPreviewRef.current)
+        localPreviewRef.current = null
+      }
+      setLocalPreviewUrl(null)
+      await refreshUser()
+    } catch {
+      setError(t('settings.picture_error'))
+    }
+  }
+
   return (
     <div className="settings-card">
       <h2 className="settings-section-title">{t('settings.picture_title')}</h2>
       <ProfilePictureEditor
         currentPicture={localPreviewUrl}
         onUpload={handleUpload}
+        onDelete={handleDeletePicture}
         isUploading={isUploading}
       />
       {error && (
