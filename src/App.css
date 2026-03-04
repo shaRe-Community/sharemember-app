@@ -1043,6 +1043,34 @@
   border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
+.avatar-current-preview {
+  position: relative;
+  display: inline-block;
+}
+
+.avatar-delete-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #ff3b2f;
+  border: none;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  padding: 0;
+  line-height: 1;
+}
+
+.avatar-delete-btn:hover {
+  background: #e0342a;
+}
+
 .avatar-current-label {
   font-size: 0.875rem;
   color: rgba(255, 255, 255, 0.6);
