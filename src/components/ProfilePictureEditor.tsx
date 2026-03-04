@@ -7,6 +7,7 @@ interface ProfilePictureEditorProps {
   onUpload: (blob: Blob) => Promise<void>
   onDelete: () => Promise<void>
   isUploading: boolean
+  isDeleting?: boolean
 }
 
 interface ImageState {
@@ -23,6 +24,7 @@ export function ProfilePictureEditor({
   onUpload,
   onDelete,
   isUploading,
+  isDeleting = false,
 }: ProfilePictureEditorProps): JSX.Element {
   const { t } = useTranslation()
 
@@ -292,6 +294,7 @@ export function ProfilePictureEditor({
                 onClick={() => void onDelete()}
                 aria-label={t('settings.picture_delete')}
                 title={t('settings.picture_delete')}
+                disabled={isDeleting}
               >
                 🗑
               </button>

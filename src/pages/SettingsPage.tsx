@@ -136,6 +136,7 @@ function ProfilePictureSection({
   const { t } = useTranslation()
   const { refreshUser } = useAuth()
   const [isUploading, setIsUploading] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(
@@ -181,7 +182,10 @@ function ProfilePictureSection({
   }
 
   const handleDeletePicture = async (): Promise<void> => {
+    if (isUploading || isDeleting) return
     setError(null)
+    setSuccess(false)
+    setIsDeleting(true)
     try {
       await deleteProfilePicture(token)
       if (localPreviewRef.current) {
@@ -192,6 +196,8 @@ function ProfilePictureSection({
       await refreshUser()
     } catch {
       setError(t('settings.picture_error'))
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -203,6 +209,7 @@ function ProfilePictureSection({
         onUpload={handleUpload}
         onDelete={handleDeletePicture}
         isUploading={isUploading}
+        isDeleting={isDeleting}
       />
       {error && (
         <p className="form-error" style={{ marginTop: '1rem' }}>
