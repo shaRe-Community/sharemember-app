@@ -5,6 +5,7 @@ import { CameraModal } from './CameraModal'
 interface ProfilePictureEditorProps {
   currentPicture: string | null
   onUpload: (blob: Blob) => Promise<void>
+  onDelete: () => Promise<void>
   isUploading: boolean
 }
 
@@ -20,6 +21,7 @@ const EDITOR_SIZE = 200
 export function ProfilePictureEditor({
   currentPicture,
   onUpload,
+  onDelete,
   isUploading,
 }: ProfilePictureEditorProps): JSX.Element {
   const { t } = useTranslation()
@@ -278,12 +280,22 @@ export function ProfilePictureEditor({
       <div className="avatar-editor-controls">
         {currentPicture && !imageState && (
           <div className="avatar-current">
-            {/* Fix 7: meaningful alt text instead of empty string */}
-            <img
-              src={currentPicture}
-              alt={t('settings.picture_current')}
-              className="avatar-current-img"
-            />
+            <div className="avatar-current-preview">
+              <img
+                src={currentPicture}
+                alt={t('settings.picture_current')}
+                className="avatar-current-img"
+              />
+              <button
+                type="button"
+                className="avatar-delete-btn"
+                onClick={() => void onDelete()}
+                aria-label={t('settings.picture_delete')}
+                title={t('settings.picture_delete')}
+              >
+                🗑
+              </button>
+            </div>
             <span className="avatar-current-label">
               {t('settings.picture_current')}
             </span>
