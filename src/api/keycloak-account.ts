@@ -82,7 +82,11 @@ export async function deleteProfilePicture(token: string): Promise<void> {
       headers: { Authorization: `Bearer ${token}` },
     }
   )
-  if (!res.ok && res.status !== 204) {
-    throw new ApiError(res.status, `Delete profile picture failed: ${res.status}`)
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as KcApiError
+    throw new ApiError(
+      res.status,
+      body.errorMessage ?? body.error ?? `Delete profile picture failed: ${res.status}`
+    )
   }
 }
