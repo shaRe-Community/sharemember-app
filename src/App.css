@@ -1050,25 +1050,33 @@
 
 .avatar-delete-btn {
   position: absolute;
-  top: -6px;
-  right: -6px;
+  top: -15px;
+  right: -15px;
   background: #ff3b2f;
+  background-clip: content-box;
   border: none;
   border-radius: 50%;
   width: 26px;
   height: 26px;
+  padding: 9px;
+  box-sizing: content-box;
   font-size: 0.8rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  padding: 0;
   line-height: 1;
 }
 
 .avatar-delete-btn:hover {
   background: #e0342a;
+  background-clip: content-box;
+}
+
+.avatar-delete-btn:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
 }
 
 .avatar-current-label {
