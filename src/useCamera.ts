@@ -26,6 +26,16 @@ const isMobile = (): boolean =>
     navigator.userAgent
   )
 
+const getErrorName = (err: unknown): string => {
+  if (typeof err === 'object' && err !== null && 'name' in err) {
+    const name = (err as { name?: unknown }).name
+    if (typeof name === 'string') {
+      return name
+    }
+  }
+  return ''
+}
+
 export function useCamera() {
   const [isCapturing, setIsCapturing] = useState(false)
   const [stream, setStream] = useState<MediaStream | null>(null)
@@ -83,9 +93,9 @@ export function useCamera() {
           videoRef.current.srcObject = mediaStream
           await videoRef.current.play()
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         setIsCapturing(false)
-        setCameraError(getErrorDetails(err?.name ?? ''))
+        setCameraError(getErrorDetails(getErrorName(err)))
       }
     },
     [facingMode, enumerateCameras]

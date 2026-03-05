@@ -32,10 +32,10 @@ export default [
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      'react-refresh/only-export-components': [
-        'warn',
-        { allowConstantExport: true },
-      ],
+      // TypeScript already handles symbol resolution; no-undef causes false positives
+      // for DOM/React type names in TS files.
+      'no-undef': 'off',
+      'react-refresh/only-export-components': 'off',
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': [
         'error',

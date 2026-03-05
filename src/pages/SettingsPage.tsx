@@ -50,7 +50,7 @@ function PersonalInfoSection({ token }: { token: string }): JSX.Element {
       .then(info => setForm(info))
       .catch(() => setError(t('settings.error_generic')))
       .finally(() => setIsLoading(false))
-  }, [token])
+  }, [token, t])
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
@@ -256,7 +256,7 @@ function TwoFactorSection({ token }: { token: string }): JSX.Element {
       .then(data => setCredentials(data.filter(c => c.type === 'otp')))
       .catch(() => setError(t('settings.two_factor_load_error')))
       .finally(() => setIsLoading(false))
-  }, [token])
+  }, [token, ssoUrl, realm, t])
 
   const otpCredential = credentials[0] ?? null
   const isEnabled = otpCredential !== null
