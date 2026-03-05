@@ -1,6 +1,5 @@
 import type { PublicCommunityTeaser } from './types'
-
-const API_URL = import.meta.env.VITE_API_URL
+import { getOperatorUrls } from '../config/runtime'
 
 export class ApiError extends Error {
   constructor(
@@ -14,9 +13,11 @@ export class ApiError extends Error {
 export async function apiFetch<T>(
   path: string,
   accessToken: string,
-  options?: RequestInit
+  options?: RequestInit,
+  baseUrl?: string
 ): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
+  const url = (baseUrl ?? getOperatorUrls()[0]) + path
+  const res = await fetch(url, {
     ...options,
     headers: {
       ...(options?.body !== undefined
@@ -42,6 +43,26 @@ export async function apiFetch<T>(
   return JSON.parse(text) as T
 }
 
+// Calls the same path on all operators in parallel, merges results.
+// Uses allSettled so a down operator doesn't block the others.
+export async function apiFetchFromAll<T>(
+  path: string,
+  accessToken: string,
+): Promise<{ data: T[]; operatorUrl: string }[]> {
+  const results = await Promise.allSettled(
+    getOperatorUrls().map(async (operatorUrl) => ({
+      data: await apiFetch<T[]>(path, accessToken, undefined, operatorUrl),
+      operatorUrl,
+    }))
+  )
+  return results
+    .filter(
+      (r): r is PromiseFulfilledResult<{ data: T[]; operatorUrl: string }> =>
+        r.status === 'fulfilled'
+    )
+    .map((r) => r.value)
+}
+
 export function fetchPublicCommunities(
   accessToken: string
 ): Promise<PublicCommunityTeaser[]> {
@@ -53,7 +74,8 @@ export function fetchPublicCommunities(
 
 export function joinOpenCommunity(
   communityId: string,
-  accessToken: string
+  accessToken: string,
+  baseUrl?: string
 ): Promise<{
   communityId: string
   communityName: string
@@ -62,6 +84,7 @@ export function joinOpenCommunity(
   return apiFetch(
     `/v2/sharemember/me/communities/${communityId}/join-open`,
     accessToken,
-    { method: 'POST' }
+    { method: 'POST' },
+    baseUrl
   )
 }
