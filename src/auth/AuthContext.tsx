@@ -80,6 +80,8 @@ export function AuthProvider({
   const login = (redirectTo?: string, rememberMe?: boolean) => {
     if (rememberMe) {
       localStorage.setItem(REMEMBER_ME_KEY, '1')
+    } else {
+      localStorage.removeItem(REMEMBER_ME_KEY)
     }
     return userManager.signinRedirect({ state: redirectTo })
   }

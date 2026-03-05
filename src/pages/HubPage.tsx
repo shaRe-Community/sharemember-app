@@ -42,14 +42,15 @@ export function HubPage(): JSX.Element {
 
   const handleJoinOpen = async (
     communityId: string,
-    frontendUrl: string | null
+    fallbackFrontendUrl: string | null
   ): Promise<void> => {
     if (!user || joiningId) return
     setJoiningId(communityId)
     try {
-      await joinOpenCommunity(communityId, user.accessToken)
-      if (frontendUrl) {
-        window.location.href = frontendUrl
+      const result = await joinOpenCommunity(communityId, user.accessToken)
+      const targetUrl = result.frontendUrl ?? fallbackFrontendUrl
+      if (targetUrl) {
+        window.location.href = targetUrl
       } else {
         const updated = await apiFetch<CommunityTeaser[]>(
           '/v2/sharemember/me/communities',
