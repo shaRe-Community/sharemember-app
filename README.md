@@ -16,7 +16,7 @@ Production-ready MVP, deployed on Scaleway/Traefik (migrated from GCP).
 - Vite 7
 - react-oidc-context — OIDC auth (Keycloak)
 - react-router-dom — client-side routing
-- Keycloak realm: `prod-sharemembers` at `sso.wurzelwerk.up2go.com`, client: `prod-sharemember-app`
+- Keycloak realm: `prod-sharemembers` at `sso.share.community`, client: `prod-sharemember-app`
 
 ## Routes
 
