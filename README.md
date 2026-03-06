@@ -1,7 +1,7 @@
 # shaRe Member App
 
-The identity portal for shaRe platform members — live in production at **https://share.community**
-(also accessible via https://id.wurzelwerk.up2go.com).
+The identity portal for shaRe platform members — live in production at **https://id.share.community**
+(also at https://share.community; legacy alias https://id.wurzelwerk.up2go.com still active).
 
 A ShareMember is a **permanent real-world identity** — one per person, shared across all shaRe
 communities. You log in here once and get SSO access to every community you belong to via Keycloak.
