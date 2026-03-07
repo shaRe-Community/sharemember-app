@@ -182,7 +182,7 @@ export function StoryPage(): JSX.Element {
   const { t } = useTranslation()
   const [state, setState] = useState<PageState>({ kind: 'loading' })
 
-  const isOwnStory = !memberId
+  const isOwnStory = !memberId || memberId === user?.shareMemberId
   const targetId = memberId ?? user?.shareMemberId ?? ''
 
   useEffect(() => {
