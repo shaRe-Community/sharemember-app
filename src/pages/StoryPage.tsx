@@ -90,8 +90,8 @@ function StoryView({ story }: { story: Story }): JSX.Element {
             <div style={{ marginBottom: '0.5rem', fontSize: '0.9rem', color: '#374151' }}>
               {t('story.vouched_by')}{' '}
               {story.trustChain.vouchedBy.map((p, i) => (
-                <span key={p.shareMemberId}>
-                  <Link to={`/story/${p.shareMemberId}`}>{p.name}</Link>
+                <span key={p.keycloakId}>
+                  <Link to={`/story/${p.keycloakId}`}>{p.name}</Link>
                   {p.eidStatus === 'identified' && ' ✓'}
                   {i < story.trustChain.vouchedBy.length - 1 ? ', ' : ''}
                 </span>
@@ -102,8 +102,8 @@ function StoryView({ story }: { story: Story }): JSX.Element {
             <div style={{ fontSize: '0.9rem', color: '#374151' }}>
               {t('story.vouched_for')}{' '}
               {story.trustChain.vouchedFor.map((p, i) => (
-                <span key={p.shareMemberId}>
-                  <Link to={`/story/${p.shareMemberId}`}>{p.name}</Link>
+                <span key={p.keycloakId}>
+                  <Link to={`/story/${p.keycloakId}`}>{p.name}</Link>
                   {i < story.trustChain.vouchedFor.length - 1 ? ', ' : ''}
                 </span>
               ))}
@@ -183,8 +183,8 @@ export function StoryPage(): JSX.Element {
   const { t } = useTranslation()
   const [state, setState] = useState<PageState>({ kind: 'loading', messages: [] })
 
-  const isOwnStory = !memberId || memberId === user?.shareMemberId
-  const targetId = memberId ?? user?.shareMemberId ?? ''
+  const isOwnStory = !memberId || memberId === user?.sub
+  const targetId = memberId ?? user?.sub ?? ''
 
   useEffect(() => {
     if (!user || !targetId) return

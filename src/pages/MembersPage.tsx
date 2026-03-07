@@ -92,8 +92,8 @@ export function MembersPage(): JSX.Element {
         <div style={{ display: 'grid', gap: '0.75rem' }}>
           {results.map((member) => (
             <Link
-              key={member.shareMemberId}
-              to={`/story/${member.shareMemberId}`}
+              key={member.keycloakId}
+              to={`/story/${member.keycloakId}`}
               style={{ textDecoration: 'none', color: 'inherit' }}
             >
               <div

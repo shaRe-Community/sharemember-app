@@ -33,7 +33,7 @@ export interface JoinCommunityResponse {
 // ── ShareMember Story ──────────────────────────────────────────────────────
 
 export interface StorySummary {
-  shareMemberId: string
+  keycloakId: string
   name: string
   pictureUrl: string | null
   eidStatus: 'un_identified' | 'identified'
@@ -58,7 +58,7 @@ export interface CommunityEngagement {
 }
 
 export interface TrustChainPerson {
-  shareMemberId: string
+  keycloakId: string
   name: string
   eidStatus: 'un_identified' | 'identified'
 }
@@ -82,7 +82,7 @@ export interface TimelineEvent {
 }
 
 export interface Story {
-  shareMemberId: string
+  keycloakId: string
   name: string
   pictureUrl: string | null
   eidStatus: 'un_identified' | 'identified'

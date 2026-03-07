@@ -29,11 +29,11 @@ function mergeStories(stories: Story[]): Story {
     trustChain: {
       vouchedBy: deduplicateBy(
         stories.flatMap((s) => s.trustChain.vouchedBy),
-        'shareMemberId' as keyof TrustChainPerson,
+        'keycloakId' as keyof TrustChainPerson,
       ),
       vouchedFor: deduplicateBy(
         stories.flatMap((s) => s.trustChain.vouchedFor),
-        'shareMemberId' as keyof TrustChainPerson,
+        'keycloakId' as keyof TrustChainPerson,
       ),
     },
   }
@@ -42,17 +42,17 @@ function mergeStories(stories: Story[]): Story {
 /** Fetch story from a single operator. */
 export function fetchStoryFromOperator(
   operatorUrl: string,
-  shareMemberId: string,
+  keycloakId: string,
   accessToken: string,
 ): Promise<Story> {
-  return apiFetch<Story>(`/v2/sharemember/${shareMemberId}/story`, accessToken, undefined, operatorUrl)
+  return apiFetch<Story>(`/v2/sharemember/${keycloakId}/story`, accessToken, undefined, operatorUrl)
 }
 
 /** Fan out to all configured operators, merge community engagement across all of them. */
-export async function fetchStory(shareMemberId: string, accessToken: string): Promise<Story> {
+export async function fetchStory(keycloakId: string, accessToken: string): Promise<Story> {
   const operators = getOperators()
   const results = await Promise.allSettled(
-    operators.map(({ url }) => fetchStoryFromOperator(url, shareMemberId, accessToken)),
+    operators.map(({ url }) => fetchStoryFromOperator(url, keycloakId, accessToken)),
   )
 
   const stories = results
@@ -69,8 +69,8 @@ export async function fetchStory(shareMemberId: string, accessToken: string): Pr
   return mergeStories(stories)
 }
 
-export function fetchStorySummary(shareMemberId: string, accessToken: string): Promise<StorySummary> {
-  return apiFetch<StorySummary>(`/v2/sharemember/${shareMemberId}/story/summary`, accessToken)
+export function fetchStorySummary(keycloakId: string, accessToken: string): Promise<StorySummary> {
+  return apiFetch<StorySummary>(`/v2/sharemember/${keycloakId}/story/summary`, accessToken)
 }
 
 export function searchMembers(
