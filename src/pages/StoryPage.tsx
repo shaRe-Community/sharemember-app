@@ -207,13 +207,20 @@ export function StoryPage(): JSX.Element {
   const { t } = useTranslation()
   const [state, setState] = useState<PageState>({ kind: 'loading' })
 
+  const isOwnStory = !memberId
   const targetId = memberId ?? user?.shareMemberId ?? ''
 
   useEffect(() => {
     if (!user || !targetId) return
     setState({ kind: 'loading' })
     fetchStory(targetId, user.accessToken)
-      .then((story) => setState({ kind: 'ready', story }))
+      .then((story) => {
+        // For own story: inject the picture URL from the JWT (same source as the header avatar)
+        const enriched = isOwnStory && user.picture
+          ? { ...story, pictureUrl: user.picture }
+          : story
+        setState({ kind: 'ready', story: enriched })
+      })
       .catch((err: unknown) => {
         if (err instanceof ApiError && err.status === 404) {
           setState({ kind: 'notFound' })
@@ -221,7 +228,7 @@ export function StoryPage(): JSX.Element {
           setState({ kind: 'error', message: String(err) })
         }
       })
-  }, [user, targetId])
+  }, [user, targetId, isOwnStory])
 
   return (
     <AppShell>
