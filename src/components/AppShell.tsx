@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
 import { LanguageSwitcher } from './LanguageSwitcher'
+import { MemberAvatar } from './MemberAvatar'
 
 interface AppShellProps {
   children: ReactNode
@@ -17,7 +18,6 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
     void logout()
   }
 
-  const isIdentified = user?.eidStatus === 'identified'
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLElement>(null)
 
@@ -36,15 +36,6 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
     setMenuOpen(false)
     navigate(path)
   }
-
-  const initials = user?.name
-    ? user.name
-        .split(' ')
-        .map(n => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
-    : '?'
 
   return (
     <>
@@ -81,18 +72,12 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
             </button>
             <LanguageSwitcher />
             <Link to="/profile" className="nav-avatar-link">
-              <div className={`nav-avatar-wrapper${isIdentified ? '' : ' avatar-unidentified'}`}>
-                <div className="nav-avatar">
-                  {user?.picture ? (
-                    <img src={user.picture} alt="" className="avatar-img" />
-                  ) : (
-                    initials
-                  )}
-                </div>
-                <span className={`avatar-badge${isIdentified ? ' avatar-badge-shield' : ' avatar-badge-question'}`}>
-                  {isIdentified ? '✓' : '?'}
-                </span>
-              </div>
+              <MemberAvatar
+                name={user?.name ?? ''}
+                pictureUrl={user?.picture}
+                eidStatus={user?.eidStatus ?? 'un_identified'}
+                size="nav"
+              />
             </Link>
           </nav>
 
@@ -100,18 +85,12 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
           <div className="header-mobile-controls">
             <LanguageSwitcher />
             <Link to="/profile" className="nav-avatar-link" onClick={() => setMenuOpen(false)}>
-              <div className={`nav-avatar-wrapper${isIdentified ? '' : ' avatar-unidentified'}`}>
-                <div className="nav-avatar">
-                  {user?.picture ? (
-                    <img src={user.picture} alt="" className="avatar-img" />
-                  ) : (
-                    initials
-                  )}
-                </div>
-                <span className={`avatar-badge${isIdentified ? ' avatar-badge-shield' : ' avatar-badge-question'}`}>
-                  {isIdentified ? '✓' : '?'}
-                </span>
-              </div>
+              <MemberAvatar
+                name={user?.name ?? ''}
+                pictureUrl={user?.picture}
+                eidStatus={user?.eidStatus ?? 'un_identified'}
+                size="nav"
+              />
             </Link>
             <button
               className="hamburger-btn"

@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
 import { AppShell } from '../components/AppShell'
+import { MemberAvatar } from '../components/MemberAvatar'
 import { fetchStory } from '../api/story'
 import { ApiError } from '../api/api'
 import type { Story, CommunityEngagement, TimelineEvent } from '../api/types'
@@ -48,42 +49,16 @@ function SeatLevelBadge({ level }: { level: string }): JSX.Element {
 
 function StoryView({ story }: { story: Story }): JSX.Element {
   const { t } = useTranslation()
-  const isIdentified = story.eidStatus === 'identified'
-  const initials = story.name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
 
   return (
     <div>
       {/* Identity Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '2rem' }}>
-        <div style={{ position: 'relative', flexShrink: 0 }}>
-          <div
-            style={{
-              width: 72, height: 72, borderRadius: '50%', overflow: 'hidden',
-              background: '#e5e7eb', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', fontSize: '1.5rem', fontWeight: 700,
-            }}
-          >
-            {story.pictureUrl
-              ? <img src={story.pictureUrl} alt={story.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : initials}
-          </div>
-          <span
-            style={{
-              position: 'absolute', bottom: 0, right: 0,
-              background: isIdentified ? '#16a34a' : '#9ca3af',
-              color: '#fff', borderRadius: '50%', width: 20, height: 20,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '0.65rem', fontWeight: 700, border: '2px solid #fff',
-            }}
-          >
-            {isIdentified ? '✓' : '?'}
-          </span>
-        </div>
+        <MemberAvatar
+          name={story.name}
+          pictureUrl={story.pictureUrl}
+          eidStatus={story.eidStatus}
+        />
         <div>
           <h1 style={{ margin: 0, fontSize: '1.4rem' }}>{story.name}</h1>
           <p style={{ margin: '0.25rem 0 0', color: '#6b7280', fontSize: '0.9rem' }}>

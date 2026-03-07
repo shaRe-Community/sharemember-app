@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
 import { AppShell } from '../components/AppShell'
+import { MemberAvatar } from '../components/MemberAvatar'
 import { searchMembers } from '../api/story'
 import type { StorySummary } from '../api/types'
 
@@ -101,29 +102,12 @@ export function MembersPage(): JSX.Element {
                   display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer',
                 }}
               >
-                <div
-                  style={{
-                    width: 48, height: 48, borderRadius: '50%', overflow: 'hidden',
-                    background: '#e5e7eb', display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', fontWeight: 700, flexShrink: 0, position: 'relative',
-                    fontSize: '1rem',
-                  }}
-                >
-                  {member.pictureUrl
-                    ? <img src={member.pictureUrl} alt={member.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : member.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)}
-                  <span
-                    style={{
-                      position: 'absolute', bottom: 0, right: 0,
-                      background: member.eidStatus === 'identified' ? '#16a34a' : '#9ca3af',
-                      color: '#fff', borderRadius: '50%', width: 16, height: 16,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '0.55rem', fontWeight: 700, border: '2px solid #fff',
-                    }}
-                  >
-                    {member.eidStatus === 'identified' ? '✓' : '?'}
-                  </span>
-                </div>
+                <MemberAvatar
+                  name={member.name}
+                  pictureUrl={member.pictureUrl}
+                  eidStatus={member.eidStatus}
+                  size="nav"
+                />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600 }}>{member.name}</div>
                   <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
