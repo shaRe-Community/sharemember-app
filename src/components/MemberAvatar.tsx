@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 interface MemberAvatarProps {
   name: string
   pictureUrl: string | null | undefined
@@ -12,6 +14,7 @@ export function MemberAvatar({
   eidStatus,
   size = 'large',
 }: MemberAvatarProps): JSX.Element {
+  const { t } = useTranslation()
   const isIdentified = eidStatus === 'identified'
   const initials = name
     ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -29,7 +32,10 @@ export function MemberAvatar({
           initials
         )}
       </div>
-      <span className={`avatar-badge${isIdentified ? ' avatar-badge-shield' : ' avatar-badge-question'}`}>
+      <span
+        className={`avatar-badge${isIdentified ? ' avatar-badge-shield' : ' avatar-badge-question'}`}
+        title={isIdentified ? undefined : t('profile.identity_unverified')}
+      >
         {isIdentified ? '✓' : '?'}
       </span>
     </div>
