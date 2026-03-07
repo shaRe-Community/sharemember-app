@@ -6,10 +6,11 @@ import { AppShell } from '../components/AppShell'
 import { MemberAvatar } from '../components/MemberAvatar'
 import { fetchStory } from '../api/story'
 import { ApiError } from '../api/api'
+import { getOperators } from '../config/runtime'
 import type { Story, CommunityEngagement, TimelineEvent } from '../api/types'
 
 type PageState =
-  | { kind: 'loading' }
+  | { kind: 'loading'; messages: string[] }
   | { kind: 'ready'; story: Story }
   | { kind: 'notFound' }
   | { kind: 'error'; message: string }
@@ -180,14 +181,17 @@ export function StoryPage(): JSX.Element {
   const { memberId } = useParams<{ memberId?: string }>()
   const { user } = useAuth()
   const { t } = useTranslation()
-  const [state, setState] = useState<PageState>({ kind: 'loading' })
+  const [state, setState] = useState<PageState>({ kind: 'loading', messages: [] })
 
   const isOwnStory = !memberId || memberId === user?.shareMemberId
   const targetId = memberId ?? user?.shareMemberId ?? ''
 
   useEffect(() => {
     if (!user || !targetId) return
-    setState({ kind: 'loading' })
+    const messages = getOperators().map((op) =>
+      t('story.searching_in_community', { community: op.name }),
+    )
+    setState({ kind: 'loading', messages })
     fetchStory(targetId, user.accessToken)
       .then((story) => {
         // For own story: inject picture + eidStatus from the JWT (same source as ProfilePage / AppShell)
@@ -212,7 +216,16 @@ export function StoryPage(): JSX.Element {
   return (
     <AppShell>
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '1.5rem 1rem' }}>
-        {state.kind === 'loading' && <p>{t('common.loading')}</p>}
+        {state.kind === 'loading' && (
+          <div style={{ color: '#6b7280', fontSize: '0.9rem' }}>
+            {state.messages.length > 0
+              ? state.messages.map((msg) => (
+                  <p key={msg} style={{ margin: '0.35rem 0' }}>⏳ {msg}</p>
+                ))
+              : <p>{t('common.loading')}</p>
+            }
+          </div>
+        )}
         {state.kind === 'error' && <p style={{ color: 'red' }}>{state.message}</p>}
         {state.kind === 'notFound' && <p>{t('story.not_found')}</p>}
         {state.kind === 'ready' && <StoryView story={state.story} />}

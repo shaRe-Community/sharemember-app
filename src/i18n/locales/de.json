@@ -184,7 +184,8 @@
     "timeline": "Aktivitäts-Timeline",
     "event_joined_community": "{{community}} beigetreten",
     "event_gained_seat": "Seat in {{community}} — {{detail}}",
-    "event_left_seat": "Seat beendet in {{community}} — {{detail}}"
+    "event_left_seat": "Seat beendet in {{community}} — {{detail}}",
+    "searching_in_community": "Verantwortlichkeiten und Aktionen in {{community}} werden gesucht…"
   },
   "members": {
     "title": "ShareMember-Netzwerk",
