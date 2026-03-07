@@ -190,9 +190,13 @@ export function StoryPage(): JSX.Element {
     setState({ kind: 'loading' })
     fetchStory(targetId, user.accessToken)
       .then((story) => {
-        // For own story: inject the picture URL from the JWT (same source as the header avatar)
-        const enriched = isOwnStory && user.picture
-          ? { ...story, pictureUrl: user.picture }
+        // For own story: inject picture + eidStatus from the JWT (same source as ProfilePage / AppShell)
+        const enriched = isOwnStory
+          ? {
+              ...story,
+              pictureUrl: user?.picture ?? story.pictureUrl,
+              eidStatus: (user?.eidStatus ?? story.eidStatus) as 'identified' | 'un_identified',
+            }
           : story
         setState({ kind: 'ready', story: enriched })
       })
