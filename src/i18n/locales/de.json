@@ -2,6 +2,8 @@
   "nav": {
     "my_communities": "Meine Gemeinschaften",
     "communities": "Gemeinschaften",
+    "my_story": "Meine Story",
+    "members": "Netzwerk",
     "profile": "Profil",
     "verify_identity": "Identität bestätigen",
     "sign_in": "Anmelden",
@@ -166,6 +168,35 @@
     "banner_cta": "Jetzt bestätigen →",
     "not_identified": "Nur IDENTIFIZIERTE Mitglieder können für andere bürgen.",
     "self_vouch": "Du kannst nicht für dich selbst bürgen."
+  },
+  "story": {
+    "member_since": "Mitglied seit {{date}}",
+    "since": "seit {{date}}",
+    "not_found": "Mitglied nicht gefunden.",
+    "active_communities": "Communities",
+    "active_seats": "Aktive Seats",
+    "longest_seat_months": "Monate (längster Seat)",
+    "trust_chain": "Vertrauenskette",
+    "vouched_by": "Bestätigt von:",
+    "vouched_for": "Bestätigt für:",
+    "communities": "Community-Engagement",
+    "no_communities": "Noch keine Community-Aktivität.",
+    "timeline": "Aktivitäts-Timeline",
+    "event_joined_community": "{{community}} beigetreten",
+    "event_gained_seat": "Seat in {{community}} — {{detail}}",
+    "event_left_seat": "Seat beendet in {{community}} — {{detail}}"
+  },
+  "members": {
+    "title": "ShareMember-Netzwerk",
+    "search_placeholder": "Nach Name suchen…",
+    "search_button": "Suchen",
+    "filter_all": "Alle Mitglieder",
+    "filter_identified": "Nur verifiziert (eID)",
+    "filter_unidentified": "Noch nicht verifiziert",
+    "no_results": "Keine Mitglieder gefunden."
+  },
+  "common": {
+    "loading": "Laden…"
   },
   "camera": {
     "title": "Foto aufnehmen",

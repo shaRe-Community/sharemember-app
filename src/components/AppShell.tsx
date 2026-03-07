@@ -59,6 +59,12 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
             <Link to="/hub" className="shell-nav-link">
               {t('nav.communities')}
             </Link>
+            <Link to="/story" className="shell-nav-link">
+              {t('nav.my_story')}
+            </Link>
+            <Link to="/members" className="shell-nav-link">
+              {t('nav.members')}
+            </Link>
             <Link to="/settings" className="shell-nav-link">
               {t('nav.settings')}
             </Link>
@@ -128,6 +134,20 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
               onClick={() => setMenuOpen(false)}
             >
               {t('nav.communities')}
+            </Link>
+            <Link
+              to="/story"
+              className="mobile-menu-item"
+              onClick={() => setMenuOpen(false)}
+            >
+              {t('nav.my_story')}
+            </Link>
+            <Link
+              to="/members"
+              className="mobile-menu-item"
+              onClick={() => setMenuOpen(false)}
+            >
+              {t('nav.members')}
             </Link>
             <Link
               to="/settings"

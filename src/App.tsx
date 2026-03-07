@@ -9,6 +9,8 @@ import { ProfilePage } from './pages/ProfilePage'
 import { VerifyPage } from './pages/VerifyPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { VouchPage } from './pages/VouchPage'
+import { StoryPage } from './pages/StoryPage'
+import { MembersPage } from './pages/MembersPage'
 
 function App(): JSX.Element {
   return (
@@ -27,6 +29,9 @@ function App(): JSX.Element {
             <Route path="/verify" element={<VerifyPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/vouch/:requestId" element={<VouchPage />} />
+            <Route path="/story" element={<StoryPage />} />
+            <Route path="/story/:memberId" element={<StoryPage />} />
+            <Route path="/members" element={<MembersPage />} />
           </Route>
         </Routes>
       </AuthProvider>

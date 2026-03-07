@@ -2,6 +2,8 @@
   "nav": {
     "my_communities": "My Communities",
     "communities": "Communities",
+    "my_story": "My Story",
+    "members": "Network",
     "profile": "Profile",
     "verify_identity": "Verify Identity",
     "sign_in": "Sign In",
@@ -166,6 +168,35 @@
     "banner_cta": "Confirm now →",
     "not_identified": "Only IDENTIFIED members can vouch for others.",
     "self_vouch": "You cannot vouch for yourself."
+  },
+  "story": {
+    "member_since": "Member since {{date}}",
+    "since": "since {{date}}",
+    "not_found": "Member not found.",
+    "active_communities": "Communities",
+    "active_seats": "Active Seats",
+    "longest_seat_months": "Months (longest seat)",
+    "trust_chain": "Trust Chain",
+    "vouched_by": "Vouched by:",
+    "vouched_for": "Vouched for:",
+    "communities": "Community Involvement",
+    "no_communities": "No community activity yet.",
+    "timeline": "Activity Timeline",
+    "event_joined_community": "Joined {{community}}",
+    "event_gained_seat": "Gained seat in {{community}} — {{detail}}",
+    "event_left_seat": "Left seat in {{community}} — {{detail}}"
+  },
+  "members": {
+    "title": "ShareMember Network",
+    "search_placeholder": "Search by name…",
+    "search_button": "Search",
+    "filter_all": "All members",
+    "filter_identified": "Verified (eID) only",
+    "filter_unidentified": "Not yet verified",
+    "no_results": "No members found."
+  },
+  "common": {
+    "loading": "Loading…"
   },
   "camera": {
     "title": "Take photo",
