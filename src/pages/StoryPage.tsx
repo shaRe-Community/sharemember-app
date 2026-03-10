@@ -263,12 +263,15 @@ export function StoryPage(): JSX.Element {
 
   useEffect(() => {
     if (!user || !targetId) return
+    let cancelled = false
+    setTrust(null)
     const messages = getOperators().map((op) =>
       t('story.searching_in_community', { community: op.name }),
     )
     setState({ kind: 'loading', messages })
     fetchStory(targetId, user.accessToken)
       .then((story) => {
+        if (cancelled) return
         // For own story: inject picture + eidStatus from the JWT (same source as ProfilePage / AppShell)
         const enriched = isOwnStory
           ? {
@@ -280,20 +283,24 @@ export function StoryPage(): JSX.Element {
         setState({ kind: 'ready', story: enriched })
       })
       .catch((err: unknown) => {
+        if (cancelled) return
         if (err instanceof ApiError && err.status === 404) {
           setState({ kind: 'notFound' })
         } else {
           setState({ kind: 'error', message: String(err) })
         }
       })
+    return () => { cancelled = true }
   }, [user, targetId, isOwnStory])
 
   useEffect(() => {
     if (state.kind !== 'ready' || !user) return
     if (state.story.eidStatus !== 'identified') return
+    let cancelled = false
     fetchTrust(targetId, user.accessToken)
-      .then(setTrust)
-      .catch(() => setTrust(null))
+      .then((t) => { if (!cancelled) setTrust(t) })
+      .catch(() => { if (!cancelled) setTrust(null) })
+    return () => { cancelled = true }
   }, [state.kind, user, targetId])
 
   const handleConfirm = async (): Promise<void> => {
@@ -315,7 +322,7 @@ export function StoryPage(): JSX.Element {
       setTrust(updated)
     } catch {
       // Rollback: re-fetch actual state
-      fetchTrust(targetId, user.accessToken).then(setTrust).catch(() => null)
+      fetchTrust(targetId, user.accessToken).then(setTrust).catch(() => setTrust(null))
     } finally {
       setIsConfirming(false)
     }
