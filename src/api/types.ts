@@ -87,6 +87,7 @@ export interface Story {
   pictureUrl: string | null
   eidStatus: 'un_identified' | 'identified'
   memberSince: string
+  identificationMethod: 'eid' | 'vouch' | null
   signals: ActivitySignals
   trustChain: TrustChain
   communities: CommunityEngagement[]

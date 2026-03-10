@@ -6,6 +6,7 @@ export interface OperatorConfig {
 interface RuntimeConfig {
   operators?: OperatorConfig[]
   operatorUrls?: string[] // legacy format
+  identityServiceUrl?: string
 }
 
 let _config: RuntimeConfig | null = null
@@ -43,4 +44,8 @@ export function getOperators(): OperatorConfig[] {
 
 export function getOperatorUrls(): string[] {
   return getOperators().map((o) => o.url)
+}
+
+export function getIdentityServiceUrl(): string {
+  return _config?.identityServiceUrl ?? import.meta.env.VITE_IDENTITY_SERVICE_URL ?? 'http://localhost:3002'
 }
