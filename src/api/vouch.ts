@@ -1,4 +1,5 @@
 import { apiFetch } from './api'
+import { getIdentityServiceUrl } from '../config/runtime'
 
 export interface VouchRequest {
   id: string
@@ -15,15 +16,22 @@ export function fetchVouchRequest(
   accessToken: string
 ): Promise<VouchRequest> {
   return apiFetch<VouchRequest>(
-    `/v2/sharemember/vouch-requests/${requestId}`,
-    accessToken
+    `/v2/vouch-requests/${requestId}`,
+    accessToken,
+    undefined,
+    getIdentityServiceUrl()
   )
 }
 
 export function fetchPendingVouchRequests(
   accessToken: string
 ): Promise<VouchRequest[]> {
-  return apiFetch<VouchRequest[]>('/v2/sharemember/vouch-requests', accessToken)
+  return apiFetch<VouchRequest[]>(
+    '/v2/vouch-requests/pending',
+    accessToken,
+    undefined,
+    getIdentityServiceUrl()
+  )
 }
 
 export function confirmVouch(
@@ -31,9 +39,10 @@ export function confirmVouch(
   accessToken: string
 ): Promise<void> {
   return apiFetch(
-    `/v2/sharemember/vouch-requests/${requestId}/confirm`,
+    `/v2/vouch-requests/${requestId}/confirm`,
     accessToken,
-    { method: 'POST' }
+    { method: 'POST' },
+    getIdentityServiceUrl()
   )
 }
 
@@ -42,9 +51,10 @@ export function declineVouch(
   accessToken: string
 ): Promise<void> {
   return apiFetch(
-    `/v2/sharemember/vouch-requests/${requestId}/decline`,
+    `/v2/vouch-requests/${requestId}/decline`,
     accessToken,
-    { method: 'POST' }
+    { method: 'POST' },
+    getIdentityServiceUrl()
   )
 }
 
@@ -52,9 +62,10 @@ export function createOpenVouchRequest(
   accessToken: string
 ): Promise<VouchRequest> {
   return apiFetch<VouchRequest>(
-    '/v2/sharemember/vouch-requests/open',
+    '/v2/vouch-requests/open',
     accessToken,
-    { method: 'POST' }
+    { method: 'POST' },
+    getIdentityServiceUrl()
   )
 }
 
@@ -63,8 +74,10 @@ export function fetchRequestStatus(
   accessToken: string
 ): Promise<{ status: string }> {
   return apiFetch<{ status: string }>(
-    `/v2/sharemember/vouch-requests/${requestId}/status`,
-    accessToken
+    `/v2/vouch-requests/${requestId}/status`,
+    accessToken,
+    undefined,
+    getIdentityServiceUrl()
   )
 }
 
@@ -72,8 +85,13 @@ export function createVouchRequest(
   targetEmail: string,
   accessToken: string
 ): Promise<VouchRequest> {
-  return apiFetch<VouchRequest>('/v2/sharemember/vouch-requests', accessToken, {
-    method: 'POST',
-    body: JSON.stringify({ targetEmail }),
-  })
+  return apiFetch<VouchRequest>(
+    '/v2/vouch-requests',
+    accessToken,
+    {
+      method: 'POST',
+      body: JSON.stringify({ targetEmail }),
+    },
+    getIdentityServiceUrl()
+  )
 }
