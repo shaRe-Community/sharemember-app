@@ -38,7 +38,7 @@ export function confirmVouch(
   requestId: string,
   accessToken: string
 ): Promise<void> {
-  return apiFetch(
+  return apiFetch<void>(
     `/v2/vouch-requests/${requestId}/confirm`,
     accessToken,
     { method: 'POST' },
@@ -50,7 +50,7 @@ export function declineVouch(
   requestId: string,
   accessToken: string
 ): Promise<void> {
-  return apiFetch(
+  return apiFetch<void>(
     `/v2/vouch-requests/${requestId}/decline`,
     accessToken,
     { method: 'POST' },
