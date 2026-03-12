@@ -5,6 +5,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { useAuth } from '../auth/AuthContext'
 import { AppShell } from '../components/AppShell'
 import { apiFetch, ApiError } from '../api/api'
+import { getIdentityServiceUrl } from '../config/runtime'
 import {
   createVouchRequest,
   createOpenVouchRequest,
@@ -52,7 +53,7 @@ export function VerifyPage(): JSX.Element {
     apiFetch<void>('/v2/eid/callback', user.accessToken, {
       method: 'POST',
       body: JSON.stringify({ rid, state: returnedState }),
-    })
+    }, getIdentityServiceUrl())
       .then(() => {
         setPhase({ kind: 'success' })
         setTimeout(() => navigate('/profile', { replace: true }), 2000)
@@ -75,7 +76,7 @@ export function VerifyPage(): JSX.Element {
       const { redirectUrl, state } = await apiFetch<{
         redirectUrl: string
         state: string
-      }>('/v2/eid/start', user.accessToken)
+      }>('/v2/eid/start', user.accessToken, undefined, getIdentityServiceUrl())
       sessionStorage.setItem(STATE_KEY, state)
       window.location.href = redirectUrl
     } catch {
