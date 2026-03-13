@@ -1,5 +1,5 @@
 import { apiFetch, ApiError } from './api'
-import { getOperators } from '../config/runtime'
+import { getOperators, getIdentityServiceUrl } from '../config/runtime'
 import type { Story, StorySummary, TrustChainPerson } from './types'
 
 function deduplicateBy<T>(arr: T[], key: keyof T): T[] {
@@ -80,5 +80,10 @@ export function searchMembers(
 ): Promise<StorySummary[]> {
   const params = new URLSearchParams({ q })
   if (eidFilter) params.set('eidFilter', eidFilter)
-  return apiFetch<StorySummary[]>(`/v2/sharemember/search?${params.toString()}`, accessToken)
+  return apiFetch<StorySummary[]>(
+    `/v2/members/search?${params.toString()}`,
+    accessToken,
+    undefined,
+    getIdentityServiceUrl(),
+  )
 }
